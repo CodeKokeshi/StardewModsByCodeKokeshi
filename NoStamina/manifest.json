@@ -1,0 +1,9 @@
+{
+  "Name": "No Stamina Mod",
+  "Author": "CodeKokeshi",
+  "Version": "1.0.0",
+  "Description": "Removes the stamina mechanic.",
+  "UniqueID": "CodeKokeshi.NoStamina",
+  "EntryDll": "NoStamina.dll",
+  "MinimumApiVersion": "4.0.0"
+}

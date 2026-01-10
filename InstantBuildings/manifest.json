@@ -1,0 +1,10 @@
+{
+  "Name": "Instant Buildings",
+  "Author": "YourName",
+  "Version": "1.0.0",
+  "Description": "Buildings complete instantly, no waiting for Robin!",
+  "UniqueID": "YourName.InstantBuildings",
+  "UpdateKeys": [],
+  "MinimumApiVersion": "3.0.0",
+  "EntryDll": "InstantBuildings.dll"
+}
