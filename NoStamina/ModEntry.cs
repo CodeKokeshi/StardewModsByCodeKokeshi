@@ -1,6 +1,6 @@
 using System;
+using HarmonyLib;
 using StardewModdingAPI;
-using StardewModdingAPI.Events;
 using StardewValley;
 
 namespace NoStamina;
@@ -9,15 +9,21 @@ public class ModEntry : Mod
 {
     public override void Entry(IModHelper helper)
     {
-        helper.Events.GameLoop.UpdateTicked += OnUpdateTicked;
+        var harmony = new Harmony(this.ModManifest.UniqueID);
+        harmony.PatchAll();
     }
+}
 
-    private void OnUpdateTicked(object? sender, UpdateTickedEventArgs e)
+[HarmonyPatch(typeof(Farmer), nameof(Farmer.Stamina), MethodType.Setter)]
+public static class FarmerStaminaPatch
+{
+    public static void Prefix(Farmer __instance, ref float value)
     {
-        if (Context.IsWorldReady && Game1.player != null)
+        // Only affect the local player
+        if (__instance == Game1.player)
         {
-            // basically every stamina value is max value
-            Game1.player.Stamina = Game1.player.MaxStamina;
+            // Instead of allowing stamina to drop, force it to MaxStamina
+            value = __instance.MaxStamina; 
         }
     }
 }

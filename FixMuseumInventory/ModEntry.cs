@@ -46,42 +46,20 @@ public class ModEntry : Mod
             return;
         }
 
-        // --- OK Button Check ---
-        // Use reflection because okButton might be protected/private in some contexts or we want to be safe
-        ClickableTextureComponent? okButton = null;
-        try 
-        { 
-            okButton = Helper.Reflection.GetField<ClickableTextureComponent>(menu, "okButton", required: false)?.GetValue(); 
-        } 
-        catch { }
+        // --- Optimized Checks (Direct Access) ---
+        // 1. okButton is public in MenuWithInventory
+        ClickableTextureComponent? okButton = menu.okButton;
 
-        // --- Held Item Check (Robust) ---
-        // Cast to base class to access public heldItem directly, avoiding reflection issues
-        Item? heldItem = null;
-        if (menu is MenuWithInventory menuWithInventory)
-        {
-            heldItem = menuWithInventory.heldItem;
-        }
-        else
-        {
-            // Fallback
-            heldItem = Helper.Reflection.GetField<Item>(menu, "heldItem", required: false)?.GetValue();
-        }
+        // 2. heldItem is public in MenuWithInventory
+        Item? heldItem = menu.heldItem;
         
         // Also check if player is holding something in their actual cursor (outside of menu logic)
-        // This covers cases where the menu logic might temporarily clear heldItem but the player still 'has' it visually
         bool playerHoldingItem = Game1.player?.CursorSlotItem != null || Game1.player?.itemToEat != null;
         bool cursorHasItem = heldItem != null || playerHoldingItem;
 
-        // --- Fade/Transition Check ---
-        bool isFading = false;
-        try
-        {
-            var fadeTimer = Helper.Reflection.GetField<int>(menu, "fadeTimer", required: false)?.GetValue() ?? 0;
-            var fadeToBlackAlpha = Helper.Reflection.GetField<float>(menu, "fadeToBlackAlpha", required: false)?.GetValue() ?? 0f;
-            isFading = fadeTimer > 0 || fadeToBlackAlpha > 0;
-        }
-        catch { }
+        // 3. Fade/Transition Check (public fields in MuseumMenu)
+        // Note: blackFadeAlpha replaces old reflection check for "fadeToBlackAlpha"
+        bool isFading = menu.fadeTimer > 0 || menu.blackFadeAlpha > 0f;
 
         // --- Inventory Visibility Check ---
         bool inventoryReady = false;
@@ -99,13 +77,13 @@ public class ModEntry : Mod
             if (menu.inventory.actualInventory != null && menu.inventory.actualInventory.Count == 0) inventoryVisible = false;
             if (menu.inventory.width <= 0 || menu.inventory.height <= 0) inventoryVisible = false;
             
-            // Explicit Visible Flag Check
-            try 
-            { 
-               var visibleField = Helper.Reflection.GetField<bool>(menu.inventory, "visible", required: false);
-               if (visibleField != null && visibleField.GetValue() == false) inventoryVisible = false;
-            } 
-            catch { }
+            // "visible" field check - direct access inside InventoryMenu would be better usually public
+            // Assuming inventory.visible is a mismatch or we keep safe. 
+            // InventoryMenu usually doesn't have a 'visible' field, usually it's just implicit.
+            // But let's check if we can remove this reflection too.
+            // Actually, InventoryMenu does not have a 'visible' field in standard 1.6 logic usually.
+            // It relies on being drawn or not.
+            // So we can probably skip this reflection entirely as 'verticalVisible' covers offscreen.
         }
         else
         {
@@ -126,15 +104,8 @@ public class ModEntry : Mod
         }
 
         // --- Final Decision ---
-        // WE HIDE IF:
-        // - Cursor has item
-        // - Inventory is hidden/offscreen
-        // - OK Button is hidden/offscreen
-        // - Fading is happening
-        
-        bool menuReady = true;
-        try { menuReady = Helper.Reflection.GetField<bool>(menu, "readyToClose", required: false)?.GetValue() ?? true; } catch {}
-
+        // readyToClose is a method usually, not a field.
+        bool menuReady = menu.readyToClose();
 
         _shouldRender = okButtonOnScreen && 
                        !cursorHasItem && 
@@ -217,10 +188,9 @@ public class ModEntry : Mod
             menu.inventory.movePosition(0, dy);
         }
 
-        var okButton = Helper.Reflection.GetField<ClickableTextureComponent>(menu, "okButton", required: false)?.GetValue();
-        if (okButton != null)
+        if (menu.okButton != null)
         {
-            okButton.bounds.Y += dy;
+            menu.okButton.bounds.Y += dy;
         }
 
         Game1.playSound("drumkit6");

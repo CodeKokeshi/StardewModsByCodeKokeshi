@@ -6,3 +6,4 @@ D:\December 2025 OS\Development\StardewModding\FixMuseumInventory\obj\Debug\net6
 D:\December 2025 OS\Development\StardewModding\FixMuseumInventory\obj\Debug\net6.0\FixMuseumInventory.AssemblyInfo.cs
 D:\December 2025 OS\Development\StardewModding\FixMuseumInventory\obj\Debug\net6.0\FixMuseumInventory.csproj.CoreCompileInputs.cache
 D:\December 2025 OS\Development\StardewModding\FixMuseumInventory\obj\Debug\net6.0\FixMuseumInventory.dll
+D:\December 2025 OS\Development\StardewModding\FixMuseumInventory\obj\Debug\net6.0\FixMuseumInventory.sourcelink.json
