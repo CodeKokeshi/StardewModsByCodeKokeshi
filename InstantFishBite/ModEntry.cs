@@ -19,15 +19,16 @@ public class ModEntry : Mod
         if (!Context.IsWorldReady || Game1.player == null)
             return;
 
+        // Optimization: If player isn't using a tool, they can't be fishing.
+        // This avoids unnecessary casting and logic when just walking around.
+        if (!Game1.player.UsingTool)
+            return;
+
         // Check if player is holding a fishing rod
         if (Game1.player.CurrentTool is FishingRod rod)
         {
             // If the rod is in the water (isFishing) but not yet nibbling/biting
             // We want to force the bite timer to 0 so it happens instantly.
-            // We check !rod.isNibbling to assume it's in the waiting phase.
-            // also check !rod.hit and !rod.pullingOutOfWater etc to be safe, 
-            // though simply setting timeUntilFishingBite to 0 when it > 0 is usually enough.
-            
             if (rod.isFishing && !rod.isNibbling && !rod.hit && !rod.pullingOutOfWater && rod.timeUntilFishingBite > 0)
             {
                 rod.timeUntilFishingBite = 0;
