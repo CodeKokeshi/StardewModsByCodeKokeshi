@@ -1,0 +1,17 @@
+MOD OPTIMIZATION CHANGELOG
+===========================
+
+NOSTAMINA
+---------
+Before: Polling via UpdateTicked (60fps)
+After:  Harmony patch on Farmer.Stamina setter (event-driven)
+
+FIXMUSEUMINVENTORY
+------------------
+Before: Reflection to access menu properties (60fps)
+After:  Direct property access (no reflection)
+
+INSTANTFISHBITE
+---------------
+Before: Checking fishing rod every frame
+After:  Early return when not using tool (!Game1.player.UsingTool)

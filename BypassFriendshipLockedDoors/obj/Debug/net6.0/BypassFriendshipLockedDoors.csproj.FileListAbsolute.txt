@@ -6,3 +6,4 @@ D:\December 2025 OS\Development\StardewModding\BypassFriendshipLockedDoors\obj\D
 D:\December 2025 OS\Development\StardewModding\BypassFriendshipLockedDoors\bin\Debug\net6.0\BypassFriendshipLockedDoors.deps.json
 D:\December 2025 OS\Development\StardewModding\BypassFriendshipLockedDoors\bin\Debug\net6.0\BypassFriendshipLockedDoors.dll
 D:\December 2025 OS\Development\StardewModding\BypassFriendshipLockedDoors\obj\Debug\net6.0\BypassFriendshipLockedDoors.dll
+D:\December 2025 OS\Development\StardewModding\BypassFriendshipLockedDoors\obj\Debug\net6.0\BypassFriendshipLockedDoors.sourcelink.json

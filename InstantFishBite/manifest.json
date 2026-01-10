@@ -1,7 +1,7 @@
 {
   "Name": "Instant Fish Bite",
   "Author": "CodeKokeshi",
-  "Version": "1.0.0",
+  "Version": "1.1.0",
   "Description": "Makes fish bite instantly.",
   "UniqueID": "CodeKokeshi.InstantFishBite",
   "EntryDll": "InstantFishBite.dll",
