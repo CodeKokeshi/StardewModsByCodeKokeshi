@@ -134,9 +134,19 @@ namespace WorkingPets.UI
             if (pet == null)
                 return;
 
+            // Check if already petted today
+            if (pet.grantedFriendshipForPet.Value)
+            {
+                // Already petted - just show text bubble or soft acknowledgement
+                pet.doEmote(8); // Question mark or happy? Let's use 20 (Heart) again but no sound/points, or maybe 40 (dot dot dot)
+                Game1.drawObjectDialogue($"{pet.Name} seems happy today.");
+                return;
+            }
+
             // Trigger normal pet love action
             pet.playContentSound();
             pet.doEmote(20); // Heart emote
+            pet.grantedFriendshipForPet.Value = true;
 
             // Give friendship
             int friendship = pet.friendshipTowardFarmer.Value;
