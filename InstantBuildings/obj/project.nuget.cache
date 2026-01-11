@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "InlO6PVr1Po=",
+  "dgSpecHash": "AqOgOXwQFkE=",
   "success": true,
-  "projectFilePath": "d:\\December 2025 OS\\Development\\StardewModding\\InstantBuildings\\InstantBuildings.csproj",
+  "projectFilePath": "D:\\December 2025 OS\\Development\\StardewModding\\InstantBuildings\\InstantBuildings.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Aikawa\\.nuget\\packages\\pathoschild.stardew.modbuildconfig\\4.1.1\\pathoschild.stardew.modbuildconfig.4.1.1.nupkg.sha512"
   ],

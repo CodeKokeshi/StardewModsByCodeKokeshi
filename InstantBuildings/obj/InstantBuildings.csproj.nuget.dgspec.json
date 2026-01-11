@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "d:\\December 2025 OS\\Development\\StardewModding\\InstantBuildings\\InstantBuildings.csproj": {}
+    "D:\\December 2025 OS\\Development\\StardewModding\\InstantBuildings\\InstantBuildings.csproj": {}
   },
   "projects": {
-    "d:\\December 2025 OS\\Development\\StardewModding\\InstantBuildings\\InstantBuildings.csproj": {
+    "D:\\December 2025 OS\\Development\\StardewModding\\InstantBuildings\\InstantBuildings.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "d:\\December 2025 OS\\Development\\StardewModding\\InstantBuildings\\InstantBuildings.csproj",
+        "projectUniqueName": "D:\\December 2025 OS\\Development\\StardewModding\\InstantBuildings\\InstantBuildings.csproj",
         "projectName": "InstantBuildings",
-        "projectPath": "d:\\December 2025 OS\\Development\\StardewModding\\InstantBuildings\\InstantBuildings.csproj",
+        "projectPath": "D:\\December 2025 OS\\Development\\StardewModding\\InstantBuildings\\InstantBuildings.csproj",
         "packagesPath": "C:\\Users\\Aikawa\\.nuget\\packages\\",
-        "outputPath": "d:\\December 2025 OS\\Development\\StardewModding\\InstantBuildings\\obj\\",
+        "outputPath": "D:\\December 2025 OS\\Development\\StardewModding\\InstantBuildings\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Aikawa\\AppData\\Roaming\\NuGet\\NuGet.Config"
