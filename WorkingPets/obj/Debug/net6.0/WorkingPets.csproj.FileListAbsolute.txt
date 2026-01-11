@@ -1,0 +1,9 @@
+D:\December 2025 OS\Development\StardewModding\WorkingPets\obj\Debug\net6.0\WorkingPets.csproj.AssemblyReference.cache
+D:\December 2025 OS\Development\StardewModding\WorkingPets\obj\Debug\net6.0\WorkingPets.GeneratedMSBuildEditorConfig.editorconfig
+D:\December 2025 OS\Development\StardewModding\WorkingPets\obj\Debug\net6.0\WorkingPets.AssemblyInfoInputs.cache
+D:\December 2025 OS\Development\StardewModding\WorkingPets\obj\Debug\net6.0\WorkingPets.AssemblyInfo.cs
+D:\December 2025 OS\Development\StardewModding\WorkingPets\obj\Debug\net6.0\WorkingPets.csproj.CoreCompileInputs.cache
+D:\December 2025 OS\Development\StardewModding\WorkingPets\obj\Debug\net6.0\WorkingPets.sourcelink.json
+D:\December 2025 OS\Development\StardewModding\WorkingPets\bin\Debug\net6.0\WorkingPets.deps.json
+D:\December 2025 OS\Development\StardewModding\WorkingPets\bin\Debug\net6.0\WorkingPets.dll
+D:\December 2025 OS\Development\StardewModding\WorkingPets\obj\Debug\net6.0\WorkingPets.dll

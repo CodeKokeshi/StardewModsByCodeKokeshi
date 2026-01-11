@@ -4,6 +4,40 @@ Here is a list of potential mods derived from analyzing the Stardew Valley sourc
 
 ---
 
+## 🐕 AUTOMATION MODS (HIGH PRIORITY!)
+
+### ⭐⭐ WorkingPets - Make Your Pet Useful!
+*   **Status**: [FEASIBLE - See WORKING_PETS_PLAN.md for full details](./WORKING_PETS_PLAN.md)
+*   **Concept**: Your cat/dog actually WORKS now! They clear weeds, stones, sticks, chop trees, and store items in their own inventory!
+*   **Why It's Unique**: 
+    *   No mod makes pets actually useful like this!
+    *   Tractor Mod requires player control
+    *   Better Junimos can't clear debris/trees
+    *   This uses EXISTING pets - no new sprites needed!
+*   **Core Features**:
+    *   Talk to pet → Custom dialogue menu
+    *   Toggle work mode on/off
+    *   Pet clears: weeds, stones, sticks, trees, stumps
+    *   Built-in 36-slot inventory (open via dialogue)
+    *   Pet stays on farm, easy to find
+*   **Key APIs**:
+    *   `Pet.checkAction()` - Harmony patch for custom dialogue
+    *   `GameLocation.createQuestionDialogue()` - Dialogue menu (NO XNB needed!)
+    *   `ItemGrabMenu` - Open pet's inventory like a chest
+    *   `Object.performToolAction()` - Clear debris
+    *   `Tree.performToolAction()` - Chop trees
+*   **Implementation**:
+    *   Harmony patch `Pet.checkAction()` for dialogue
+    *   `UpdateTicked` event for work logic
+    *   Store inventory in `pet.modData`
+
+### AutomatedFarming - Robot Farm Helper (Alternative)
+*   **Status**: [FEASIBLE - See AUTOMATED_FARMING_ANALYSIS.md for full details](./AUTOMATED_FARMING_ANALYSIS.md)
+*   **Concept**: Create an autonomous robot/helper that clears farm debris, chops trees, etc.
+*   **Note**: WorkingPets is the preferred approach - uses existing game assets!
+
+---
+
 ## 🏃 PLAYER MECHANICS
 
 ### 1. FlashSpeed (Movement Speed Multiplier)

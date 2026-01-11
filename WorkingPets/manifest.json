@@ -1,0 +1,10 @@
+{
+  "Name": "Working Pets",
+  "Author": "YourName",
+  "Version": "1.0.0",
+  "Description": "Makes your pet actually useful! Your cat/dog can clear weeds, stones, sticks, and chop trees. Talk to them to toggle work mode and access their inventory.",
+  "UniqueID": "YourName.WorkingPets",
+  "EntryDll": "WorkingPets.dll",
+  "MinimumApiVersion": "3.0.0",
+  "UpdateKeys": []
+}
