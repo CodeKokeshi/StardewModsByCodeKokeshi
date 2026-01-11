@@ -11,6 +11,9 @@ namespace WorkingPets.UI
     /// <summary>Handles pet dialogue and menu interactions.</summary>
     public static class PetDialogueHandler
     {
+        // Track if rename has been used (stored in pet modData for persistence)
+        private const string RENAME_USED_KEY = "WorkingPets.RenameUsed";
+
         /*********
         ** Public methods
         *********/
@@ -43,6 +46,13 @@ namespace WorkingPets.UI
             }
 
             responses.Add(new Response("PetThem", $"Give {petName} some love"));
+
+            // One-time rename option - only show if not used yet
+            if (!pet.modData.ContainsKey(RENAME_USED_KEY))
+            {
+                responses.Add(new Response("Rename", $"Give {petName} a new name"));
+            }
+
             responses.Add(new Response("Cancel", "Never mind"));
 
             // Create question dialogue
@@ -76,6 +86,10 @@ namespace WorkingPets.UI
 
                 case "PetThem":
                     HandlePetAction(pet, who);
+                    break;
+
+                case "Rename":
+                    HandleRename(pet);
                     break;
 
                 case "Cancel":
@@ -176,6 +190,40 @@ namespace WorkingPets.UI
             pet.playContentSound();
 
             Game1.drawObjectDialogue($"{petName} loves the attention!");
+        }
+
+        private static void HandleRename(Pet? pet)
+        {
+            if (pet == null)
+                return;
+
+            string oldName = pet.Name ?? "Your pet";
+
+            // Open the naming menu (same one used when first getting a pet)
+            Game1.activeClickableMenu = new NamingMenu(
+                (string newName) => 
+                {
+                    if (!string.IsNullOrWhiteSpace(newName))
+                    {
+                        // Set the new name exactly like vanilla does in PetLicense.cs
+                        pet.Name = newName;
+                        pet.displayName = newName;
+
+                        // Mark rename as used - this option won't appear again
+                        pet.modData[RENAME_USED_KEY] = "true";
+
+                        Game1.playSound("newArtifact");
+                        Game1.addHUDMessage(new HUDMessage($"{oldName} is now known as {newName}!", HUDMessage.newQuest_type));
+                    }
+                    
+                    // Always close the menu after naming
+                    Game1.exitActiveMenu();
+                },
+                Game1.content.LoadString("Strings\\StringsFromCSFiles:Event.cs.1236"), // "Name your pet:"
+                pet.Name // Default to current name
+            );
+
+            Game1.playSound("bigSelect");
         }
     }
 }
