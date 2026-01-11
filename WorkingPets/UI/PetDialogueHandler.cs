@@ -18,22 +18,40 @@ namespace WorkingPets.UI
         public static void ShowPetMenu(Pet pet, Farmer who, GameLocation location)
         {
             string petName = pet.Name ?? "Your pet";
-            string workStatus = ModEntry.WorkManager.IsWorking ? "ON" : "OFF";
-            int itemCount = ModEntry.InventoryManager.ItemCount;
+            bool isWorking = ModEntry.WorkManager.IsWorking;
             int totalItems = ModEntry.InventoryManager.TotalItemCount;
 
-            // Build response options
-            var responses = new List<Response>
+            // Build response options - natural dialogue style
+            var responses = new List<Response>();
+
+            if (isWorking)
             {
-                new Response("ToggleWork", $"Toggle Work Mode [Currently: {workStatus}]"),
-                new Response("OpenInventory", $"Check Inventory ({itemCount} slots used, {totalItems} items)"),
-                new Response("PetThem", "Pet them"),
-                new Response("Cancel", "Cancel")
-            };
+                responses.Add(new Response("ToggleWork", $"Let {petName} rest"));
+            }
+            else
+            {
+                responses.Add(new Response("ToggleWork", $"Ask {petName} to help around the farm"));
+            }
+
+            if (totalItems > 0)
+            {
+                responses.Add(new Response("OpenInventory", $"Check what {petName} has found ({totalItems} items)"));
+            }
+            else
+            {
+                responses.Add(new Response("OpenInventory", $"Check {petName}'s pouch"));
+            }
+
+            responses.Add(new Response("PetThem", $"Give {petName} some love"));
+            responses.Add(new Response("Cancel", "Never mind"));
 
             // Create question dialogue
+            string greeting = isWorking 
+                ? $"{petName} pauses and looks at you, tail wagging."
+                : $"{petName} looks up at you expectantly.";
+
             location.createQuestionDialogue(
-                $"{petName} looks at you expectantly!",
+                greeting,
                 responses.ToArray(),
                 HandlePetResponse
             );
@@ -72,19 +90,17 @@ namespace WorkingPets.UI
             ModEntry.WorkManager.ToggleWork();
 
             string petName = pet?.Name ?? "Your pet";
-            string status = ModEntry.WorkManager.IsWorking ? "started working" : "stopped working";
-            string statusColor = ModEntry.WorkManager.IsWorking ? "green" : "red";
 
-            Game1.addHUDMessage(new HUDMessage($"{petName} has {status}!", HUDMessage.newQuest_type));
-
-            // Play sound
+            // Play sound and show message
             if (ModEntry.WorkManager.IsWorking)
             {
                 Game1.playSound("questcomplete");
+                Game1.addHUDMessage(new HUDMessage($"{petName} is now helping on the farm!", HUDMessage.newQuest_type));
             }
             else
             {
                 Game1.playSound("breathout");
+                Game1.addHUDMessage(new HUDMessage($"{petName} is taking a break.", HUDMessage.newQuest_type));
             }
         }
 
@@ -104,7 +120,7 @@ namespace WorkingPets.UI
                     showReceivingMenu: true,
                     highlightFunction: InventoryMenu.highlightAllItems,
                     behaviorOnItemSelectFunction: null,
-                    message: $"{petName}'s Inventory",
+                    message: $"{petName}'s Finds",
                     behaviorOnItemGrab: OnItemGrabbed,
                     snapToBottom: false,
                     canBeExitedWithKey: true,
@@ -119,7 +135,7 @@ namespace WorkingPets.UI
             catch (Exception ex)
             {
                 ModEntry.Instance.Monitor.Log($"Error opening pet inventory: {ex}", LogLevel.Error);
-                Game1.addHUDMessage(new HUDMessage("Error opening inventory!", HUDMessage.error_type));
+                Game1.addHUDMessage(new HUDMessage("Something went wrong!", HUDMessage.error_type));
             }
         }
 
@@ -131,18 +147,35 @@ namespace WorkingPets.UI
 
         private static void HandlePetAction(Pet? pet, Farmer who)
         {
-            if (pet == null)
+            if (pet == null || pet.currentLocation == null)
                 return;
 
-            // Use the vanilla checkAction method which handles lastPetDay, mutex, and grantedFriendshipForPet properly
-            // This ensures compatibility with mods that track pet status
-            bool result = pet.checkAction(who, pet.currentLocation);
-            
-            if (!result)
+            string petName = pet.Name ?? "Your pet";
+
+            // Check if already petted today using lastPetDay (the vanilla way)
+            if (pet.lastPetDay.TryGetValue(who.UniqueMultiplayerID, out int lastDay) && lastDay == Game1.Date.TotalDays)
             {
-                // Already petted today - show a soft acknowledgement
-                Game1.drawObjectDialogue($"{pet.Name} seems happy today.");
+                // Already petted today
+                pet.doEmote(32); // Happy emote
+                Game1.drawObjectDialogue($"{petName} purrs contentedly. You've already given them attention today.");
+                return;
             }
+
+            // Mark as petted today
+            pet.lastPetDay[who.UniqueMultiplayerID] = Game1.Date.TotalDays;
+
+            // Grant friendship if not already granted
+            if (!pet.grantedFriendshipForPet.Value)
+            {
+                pet.grantedFriendshipForPet.Value = true;
+                pet.friendshipTowardFarmer.Value = Math.Min(Pet.maxFriendship, pet.friendshipTowardFarmer.Value + 12);
+            }
+
+            // Visual and audio feedback
+            pet.doEmote(20); // Heart emote
+            pet.playContentSound();
+
+            Game1.drawObjectDialogue($"{petName} loves the attention!");
         }
     }
 }
