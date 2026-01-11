@@ -27,6 +27,9 @@ namespace WorkingPets
         /// <summary>Manages pet inventory.</summary>
         public static PetInventoryManager InventoryManager { get; private set; } = null!;
 
+        /// <summary>Manages daily scavenging.</summary>
+        public static PetScavengeManager ScavengeManager { get; private set; } = null!;
+
         /*********
         ** Public methods
         *********/
@@ -40,6 +43,7 @@ namespace WorkingPets
             // Initialize managers
             WorkManager = new PetWorkManager();
             InventoryManager = new PetInventoryManager();
+            ScavengeManager = new PetScavengeManager();
 
             // Apply Harmony patches
             var harmony = new Harmony(this.ModManifest.UniqueID);
@@ -97,9 +101,15 @@ namespace WorkingPets
         /// <summary>Raised when a new day starts.</summary>
         private void OnDayStarted(object? sender, DayStartedEventArgs e)
         {
-            // Ensure pet is on the farm
             Pet? pet = GetPlayerPet();
-            if (pet != null && pet.currentLocation?.Name != "Farm")
+            if (pet == null)
+                return;
+
+            // Trigger daily scavengehunt
+            ScavengeManager.PerformDailyScavenge(pet);
+
+            // Ensure pet is on the farm
+            if (pet.currentLocation?.Name != "Farm")
             {
                 // Warp pet to farm
                 Game1.warpCharacter(pet, "Farm", new Microsoft.Xna.Framework.Vector2(54, 8));

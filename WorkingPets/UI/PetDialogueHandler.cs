@@ -216,8 +216,10 @@ namespace WorkingPets.UI
                         Game1.addHUDMessage(new HUDMessage($"{oldName} is now known as {newName}!", HUDMessage.newQuest_type));
                     }
                     
-                    // Always close the menu after naming
+                    // Force close menu and ensure player can move
                     Game1.exitActiveMenu();
+                    Game1.player.canMove = true;
+                    Game1.dialogueUp = false;
                 },
                 Game1.content.LoadString("Strings\\StringsFromCSFiles:Event.cs.1236"), // "Name your pet:"
                 pet.Name // Default to current name
