@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Microsoft.Xna.Framework;
 using StardewModdingAPI;
@@ -5,21 +6,39 @@ using StardewModdingAPI.Events;
 using StardewValley;
 using StardewValley.Buildings;
 using StardewValley.Locations;
+using HarmonyLib;
 
 namespace InstantBuildings
 {
     public class ModEntry : Mod
     {
+        private static IMonitor SMonitor;
+
         public override void Entry(IModHelper helper)
         {
+            SMonitor = this.Monitor;
+
+            // Initialize Harmony
+            var harmony = new Harmony(this.ModManifest.UniqueID);
+            harmony.Patch(
+                original: AccessTools.Method(typeof(StardewValley.Network.NetWorldState), nameof(StardewValley.Network.NetWorldState.MarkUnderConstruction)),
+                postfix: new HarmonyMethod(typeof(ModEntry), nameof(AfterMarkUnderConstruction))
+            );
+
             helper.Events.GameLoop.DayStarted += OnDayStarted;
             helper.Events.World.BuildingListChanged += OnBuildingListChanged;
+        }
+
+        private static void AfterMarkUnderConstruction()
+        {
+            // Trigger completion logic immediately when a building is marked under construction
+            CompleteAllBuildingsStatic();
         }
 
         private void OnDayStarted(object sender, DayStartedEventArgs e)
         {
             // Complete any buildings currently under construction
-            CompleteAllBuildings();
+            CompleteAllBuildingsStatic();
         }
 
         private void OnBuildingListChanged(object sender, BuildingListChangedEventArgs e)
@@ -27,11 +46,11 @@ namespace InstantBuildings
             // Only trigger when buildings are added
             if (e.Added.Any())
             {
-                CompleteAllBuildings();
+                CompleteAllBuildingsStatic();
             }
         }
 
-        private void CompleteAllBuildings()
+        private static void CompleteAllBuildingsStatic()
         {
             Farm farm = Game1.getFarm();
             if (farm == null)
@@ -44,11 +63,10 @@ namespace InstantBuildings
                 // Check for both construction AND upgrades
                 if (building.isUnderConstruction(ignoreUpgrades: false))
                 {
-                    building.daysOfConstructionLeft.Value = 0;
-                    building.daysUntilUpgrade.Value = 0;
+                    // Fix: Do not set days to 0 manually. FinishConstruction needs them > 0 to work.
                     building.FinishConstruction();
                     foundConstruction = true;
-                    this.Monitor.Log($"Completed construction of {building.buildingType.Value}!", LogLevel.Info);
+                    SMonitor?.Log($"Completed construction of {building.buildingType.Value}!", LogLevel.Info);
                 }
             }
 
@@ -64,7 +82,7 @@ namespace InstantBuildings
                 NPC robin = Game1.getCharacterFromName("Robin");
                 if (robin != null)
                 {
-                    // Stop the hammer animation flag (from extracted NPC.cs)
+                    // Stop the hammer animation flag
                     robin.shouldPlayRobinHammerAnimation.Value = false;
                     
                     // Reset her AI and schedule flags
@@ -80,7 +98,7 @@ namespace InstantBuildings
                     Game1.warpCharacter(robin, "ScienceHouse", new Vector2(8, 18));
                     robin.checkSchedule(Game1.timeOfDay);
                     
-                    this.Monitor.Log("Sent Robin home, cleared dialogue, and reset her schedule!", LogLevel.Debug);
+                    SMonitor?.Log("Sent Robin home, cleared dialogue, and reset her schedule!", LogLevel.Debug);
                 }
             }
         }
