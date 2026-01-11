@@ -6,3 +6,4 @@ D:\December 2025 OS\Development\StardewModding\InstantBuildings\obj\Debug\net6.0
 D:\December 2025 OS\Development\StardewModding\InstantBuildings\bin\Debug\net6.0\InstantBuildings.deps.json
 D:\December 2025 OS\Development\StardewModding\InstantBuildings\bin\Debug\net6.0\InstantBuildings.dll
 D:\December 2025 OS\Development\StardewModding\InstantBuildings\obj\Debug\net6.0\InstantBuildings.dll
+D:\December 2025 OS\Development\StardewModding\InstantBuildings\obj\Debug\net6.0\InstantBuildings.sourcelink.json

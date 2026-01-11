@@ -77,7 +77,7 @@ namespace InstantBuildings
                     robin.resetCurrentDialogue();
                     
                     // Warp her home and make her follow her schedule
-                    Game1.warpCharacter(robin, "ScienceHouse", new Vector2(27, 10));
+                    Game1.warpCharacter(robin, "ScienceHouse", new Vector2(8, 18));
                     robin.checkSchedule(Game1.timeOfDay);
                     
                     this.Monitor.Log("Sent Robin home, cleared dialogue, and reset her schedule!", LogLevel.Debug);
