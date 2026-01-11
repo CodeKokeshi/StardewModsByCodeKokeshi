@@ -144,18 +144,13 @@ namespace WorkingPets.Behaviors
         {
             if (_pet == null || !_targetTile.HasValue) return;
 
-            // Check if we already have a pathfinding controller running
-            if (_pet.controller != null)
-            {
-                // Still moving, wait for arrival
-                return;
-            }
-
             // Check if we've arrived (close enough to target)
             float distance = Vector2.Distance(_pet.Tile, _targetTile.Value);
             if (distance < 2f)
             {
                 // Arrived! Execute the action
+                _pet.Halt();
+                _pet.controller = null;
                 _pendingAction?.Invoke();
                 _targetTile = null;
                 _pendingAction = null;
@@ -163,8 +158,32 @@ namespace WorkingPets.Behaviors
                 return;
             }
 
-            // If we don't have a controller but haven't arrived, pathfinding failed
-            // Skip this target and try another
+            // If we have a pathfinding controller, update it manually (pets don't auto-update like NPCs)
+            if (_pet.controller != null)
+            {
+                // Call the controller's update to actually move the pet
+                bool finished = _pet.controller.update(Game1.currentGameTime);
+                
+                if (finished)
+                {
+                    // Pathfinding completed (arrived or gave up)
+                    _pet.controller = null;
+                    
+                    // Check if we're close enough to do the action
+                    distance = Vector2.Distance(_pet.Tile, _targetTile.Value);
+                    if (distance < 3f)
+                    {
+                        _pendingAction?.Invoke();
+                    }
+                    
+                    _targetTile = null;
+                    _pendingAction = null;
+                    _isMovingToTarget = false;
+                }
+                return;
+            }
+
+            // No controller but we should be moving - pathfinding failed, skip target
             if (_isMovingToTarget)
             {
                 ModEntry.Instance.Monitor.Log($"Pathfinding failed to reach target at {_targetTile.Value}, skipping.", LogLevel.Trace);
