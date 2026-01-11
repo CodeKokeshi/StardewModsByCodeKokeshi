@@ -1,9 +1,0 @@
-D:\December 2025 OS\Development\StardewModding\NoStamina\bin\Debug\net6.0\NoStamina.deps.json
-D:\December 2025 OS\Development\StardewModding\NoStamina\bin\Debug\net6.0\NoStamina.dll
-D:\December 2025 OS\Development\StardewModding\NoStamina\obj\Debug\net6.0\NoStamina.csproj.AssemblyReference.cache
-D:\December 2025 OS\Development\StardewModding\NoStamina\obj\Debug\net6.0\NoStamina.GeneratedMSBuildEditorConfig.editorconfig
-D:\December 2025 OS\Development\StardewModding\NoStamina\obj\Debug\net6.0\NoStamina.AssemblyInfoInputs.cache
-D:\December 2025 OS\Development\StardewModding\NoStamina\obj\Debug\net6.0\NoStamina.AssemblyInfo.cs
-D:\December 2025 OS\Development\StardewModding\NoStamina\obj\Debug\net6.0\NoStamina.csproj.CoreCompileInputs.cache
-D:\December 2025 OS\Development\StardewModding\NoStamina\obj\Debug\net6.0\NoStamina.dll
-D:\December 2025 OS\Development\StardewModding\NoStamina\obj\Debug\net6.0\NoStamina.sourcelink.json
