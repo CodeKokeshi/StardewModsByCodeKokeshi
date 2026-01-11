@@ -22,18 +22,47 @@ namespace InstantBuildings
             var harmony = new Harmony(this.ModManifest.UniqueID);
             harmony.Patch(
                 original: AccessTools.Method(typeof(StardewValley.Network.NetWorldState), nameof(StardewValley.Network.NetWorldState.MarkUnderConstruction)),
-                postfix: new HarmonyMethod(typeof(ModEntry), nameof(AfterMarkUnderConstruction))
+                prefix: new HarmonyMethod(typeof(ModEntry), nameof(MarkUnderConstructionPrefix))
             );
 
             helper.Events.GameLoop.DayStarted += OnDayStarted;
             helper.Events.World.BuildingListChanged += OnBuildingListChanged;
         }
 
+        private static bool MarkUnderConstructionPrefix(string builderName, Building building)
+        {
+            try
+            {
+                // Finish construction immediately
+                building.FinishConstruction();
+                SMonitor?.Log($"Instant completed {building.buildingType.Value} (intercepted MarkUnderConstruction) by {builderName}", LogLevel.Info);
+
+                // Free the builder
+                FreeBuilder(builderName);
+
+                // Release build lock if held
+                if (Game1.player.team.buildLock.IsLocked())
+                {
+                    Game1.player.team.buildLock.ReleaseLock();
+                }
+
+                // Return false to skip the original method
+                // This prevents the building from being added to the 'builders' list (under construction queue)
+                return false; 
+            }
+            catch (Exception ex)
+            {
+                SMonitor?.Log($"Error in MarkUnderConstructionPrefix: {ex}", LogLevel.Error);
+                return true; // Use original logic on error
+            }
+        }
+
+        /*
         private static void AfterMarkUnderConstruction()
         {
-            // Trigger completion logic immediately when a building is marked under construction
-            CompleteAllBuildingsStatic();
+             // Deprecated in favor of Prefix
         }
+        */
 
         private void OnDayStarted(object sender, DayStartedEventArgs e)
         {
@@ -79,27 +108,37 @@ namespace InstantBuildings
                     Game1.player.team.buildLock.ReleaseLock();
                 }
                 
-                NPC robin = Game1.getCharacterFromName("Robin");
-                if (robin != null)
+                FreeBuilder("Robin");
+            }
+        }
+
+        private static void FreeBuilder(string builderName)
+        {
+            NPC builder = Game1.getCharacterFromName(builderName);
+            if (builder != null)
+            {
+                // Stop the hammer animation flag
+                builder.shouldPlayRobinHammerAnimation.Value = false;
+                
+                // Reset her AI and schedule flags
+                builder.ignoreScheduleToday = false;
+                builder.controller = null;
+                builder.Sprite.StopAnimation();
+                
+                // Clear her construction dialogue
+                builder.CurrentDialogue.Clear();
+                builder.resetCurrentDialogue();
+                
+                // Warp her home and make her follow her schedule
+                // Only do this for Robin, as she has a shop we need to access.
+                // Others (like Wizard) might be fine staying where they are.
+                if (builderName == "Robin")
                 {
-                    // Stop the hammer animation flag
-                    robin.shouldPlayRobinHammerAnimation.Value = false;
-                    
-                    // Reset her AI and schedule flags
-                    robin.ignoreScheduleToday = false;
-                    robin.controller = null;
-                    robin.Sprite.StopAnimation();
-                    
-                    // Clear her construction dialogue
-                    robin.CurrentDialogue.Clear();
-                    robin.resetCurrentDialogue();
-                    
-                    // Warp her home and make her follow her schedule
-                    Game1.warpCharacter(robin, "ScienceHouse", new Vector2(8, 18));
-                    robin.checkSchedule(Game1.timeOfDay);
-                    
-                    SMonitor?.Log("Sent Robin home, cleared dialogue, and reset her schedule!", LogLevel.Debug);
+                    Game1.warpCharacter(builder, "ScienceHouse", new Vector2(8, 18));
+                    builder.checkSchedule(Game1.timeOfDay);
                 }
+                
+                SMonitor?.Log($"Freed builder {builderName}, cleared dialogue, and reset schedule!", LogLevel.Debug);
             }
         }
     }
