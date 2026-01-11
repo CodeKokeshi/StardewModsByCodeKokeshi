@@ -22,6 +22,9 @@ namespace WorkingPets
         /// <summary>Whether to show floating text when pet clears something.</summary>
         public bool ShowWorkingMessages { get; set; } = true;
 
+        /// <summary>Whether the pet can follow you outside the farm.</summary>
+        public bool FollowOutsideFarm { get; set; } = false;
+
         /*********
         ** Work Type Toggles
         *********/

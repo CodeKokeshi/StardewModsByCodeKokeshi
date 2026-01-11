@@ -130,6 +130,14 @@ namespace WorkingPets
                 setValue: value => Config.ShowWorkingMessages = value
             );
 
+            configMenu.AddBoolOption(
+                mod: this.ModManifest,
+                name: () => "Follow Outside Farm (Experimental)",
+                tooltip: () => "Allow your pet to follow you outside the farm. If disabled, pet stops following when you leave the farm.",
+                getValue: () => Config.FollowOutsideFarm,
+                setValue: value => Config.FollowOutsideFarm = value
+            );
+
             // === Work Types ===
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,

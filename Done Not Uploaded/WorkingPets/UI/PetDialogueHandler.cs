@@ -24,11 +24,23 @@ namespace WorkingPets.UI
         {
             string petName = pet.Name ?? "Your pet";
             bool isWorking = ModEntry.WorkManager.IsWorking;
+            bool isFollowing = ModEntry.WorkManager.IsFollowing;
             int totalItems = ModEntry.InventoryManager.TotalItemCount;
 
             // Build response options - natural dialogue style
             var responses = new List<Response>();
 
+            // Follow option
+            if (isFollowing)
+            {
+                responses.Add(new Response("ToggleFollow", $"That's enough following for now, {petName}"));
+            }
+            else
+            {
+                responses.Add(new Response("ToggleFollow", $"Follow me, {petName}!"));
+            }
+
+            // Work option (always available - selecting it cancels follow mode)
             if (isWorking)
             {
                 responses.Add(new Response("ToggleWork", $"Let {petName} rest"));
@@ -58,9 +70,13 @@ namespace WorkingPets.UI
             responses.Add(new Response("Cancel", "Never mind"));
 
             // Create question dialogue
-            string greeting = isWorking 
-                ? $"{petName} pauses and looks at you, tail wagging."
-                : $"{petName} looks up at you expectantly.";
+            string greeting;
+            if (isFollowing)
+                greeting = $"{petName} is happily following you!";
+            else if (isWorking)
+                greeting = $"{petName} pauses and looks at you, tail wagging.";
+            else
+                greeting = $"{petName} looks up at you expectantly.";
 
             location.createQuestionDialogue(
                 greeting,
@@ -78,6 +94,10 @@ namespace WorkingPets.UI
 
             switch (answer)
             {
+                case "ToggleFollow":
+                    HandleToggleFollow(pet);
+                    break;
+
                 case "ToggleWork":
                     HandleToggleWork(pet);
                     break;
@@ -101,8 +121,32 @@ namespace WorkingPets.UI
             }
         }
 
+        private static void HandleToggleFollow(Pet? pet)
+        {
+            ModEntry.WorkManager.ToggleFollow();
+
+            string petName = pet?.Name ?? "Your pet";
+
+            if (ModEntry.WorkManager.IsFollowing)
+            {
+                Game1.playSound("dog_pant");
+                Game1.addHUDMessage(new HUDMessage($"{petName} is now following you!", HUDMessage.newQuest_type));
+            }
+            else
+            {
+                Game1.playSound("cat");
+                Game1.addHUDMessage(new HUDMessage($"{petName} is no longer following you.", HUDMessage.newQuest_type));
+            }
+        }
+
         private static void HandleToggleWork(Pet? pet)
         {
+            // If currently following, stop following first
+            if (ModEntry.WorkManager.IsFollowing)
+            {
+                ModEntry.WorkManager.StopFollowing();
+            }
+            
             ModEntry.WorkManager.ToggleWork();
 
             string petName = pet?.Name ?? "Your pet";
