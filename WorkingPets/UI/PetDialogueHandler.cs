@@ -134,33 +134,15 @@ namespace WorkingPets.UI
             if (pet == null)
                 return;
 
-            // Check if already petted today
-            if (pet.grantedFriendshipForPet.Value)
+            // Use the vanilla checkAction method which handles lastPetDay, mutex, and grantedFriendshipForPet properly
+            // This ensures compatibility with mods that track pet status
+            bool result = pet.checkAction(who, pet.currentLocation);
+            
+            if (!result)
             {
-                // Already petted - just show text bubble or soft acknowledgement
-                pet.doEmote(8); // Question mark or happy? Let's use 20 (Heart) again but no sound/points, or maybe 40 (dot dot dot)
+                // Already petted today - show a soft acknowledgement
                 Game1.drawObjectDialogue($"{pet.Name} seems happy today.");
-                return;
             }
-
-            // Trigger normal pet love action
-            pet.playContentSound();
-            pet.doEmote(20); // Heart emote
-            pet.grantedFriendshipForPet.Value = true;
-
-            // Give friendship
-            int friendship = pet.friendshipTowardFarmer.Value;
-            if (friendship < Pet.maxFriendship)
-            {
-                pet.friendshipTowardFarmer.Value = Math.Min(friendship + 12, Pet.maxFriendship);
-            }
-
-            // Visual feedback
-            pet.faceDirection(2); // Face down (toward player usually)
-            pet.Halt();
-            pet.CurrentBehavior = Pet.behavior_Sleep; // Happy/relaxed state
-
-            Game1.playSound("dwop");
         }
     }
 }

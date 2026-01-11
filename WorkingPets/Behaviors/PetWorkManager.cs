@@ -115,14 +115,15 @@ namespace WorkingPets.Behaviors
         {
             if (_pet == null) return;
 
-            // Reset strict control
+            // Clear our control
             _pet.Halt();
             _pet.controller = null;
             
-            // Resume idle behavior (Sit or Sleep)
-            _pet.CurrentBehavior = Pet.behavior_Sleep; 
-            _pet.Sprite.StopAnimation();
-            _pet.faceDirection(2);
+            // Resume normal pet behavior - use "Walk" which is the standard patrol behavior
+            // This allows the vanilla AI to take over again
+            _pet.CurrentBehavior = "Walk";
+            _pet.OnNewBehavior();
+            _pet.Sprite.UpdateSourceRect();
         }
 
         private void MoveTowardTarget()
@@ -307,8 +308,7 @@ namespace WorkingPets.Behaviors
 
             foreach (var item in drops) ModEntry.InventoryManager.AddItem(item);
             
-            if (ModEntry.Config.ShowWorkingMessages) 
-                ShowWorkMessage($"Cleared {obj.Name}!");
+            // Removed spammy message - toggle messages are sufficient
         }
 
         private void ChopTreeAt(Farm farm, Vector2 tile, Tree tree)
@@ -330,8 +330,6 @@ namespace WorkingPets.Behaviors
                 ModEntry.InventoryManager.AddItem(ItemRegistry.Create("(O)388", _random.Next(8, 15)));
                 if (_random.NextDouble() < 0.5)
                     ModEntry.InventoryManager.AddItem(ItemRegistry.Create("(O)92", _random.Next(1, 3)));
-                
-                ShowWorkMessage("Chopped down tree!");
             }
         }
 
@@ -350,7 +348,6 @@ namespace WorkingPets.Behaviors
                 _treeDamage.Remove(tile);
 
                 ModEntry.InventoryManager.AddItem(ItemRegistry.Create("(O)388", _random.Next(3, 6)));
-                ShowWorkMessage("Removed stump!");
             }
         }
 
@@ -372,7 +369,6 @@ namespace WorkingPets.Behaviors
                 _treeDamage.Remove(tile);
 
                 ModEntry.InventoryManager.AddItem(ItemRegistry.Create("(O)709", _random.Next(2, 5))); // Hardwood
-                ShowWorkMessage("Removed large stump!");
             }
         }
 
