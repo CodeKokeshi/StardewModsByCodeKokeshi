@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using HarmonyLib;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
@@ -50,6 +51,7 @@ namespace WorkingPets
             PetPatches.Apply(harmony, this.Monitor);
 
             // Register events
+            helper.Events.GameLoop.GameLaunched += OnGameLaunched;
             helper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
             helper.Events.GameLoop.Saving += OnSaving;
             helper.Events.GameLoop.UpdateTicked += OnUpdateTicked;
@@ -61,6 +63,205 @@ namespace WorkingPets
         /*********
         ** Private methods
         *********/
+        /// <summary>Raised after the game is launched, right before the first update tick.</summary>
+        private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
+        {
+            // Get Generic Mod Config Menu's API (if it's installed)
+            var configMenu = this.Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
+            if (configMenu is null)
+            {
+                this.Monitor.Log("Generic Mod Config Menu not found. Config can only be edited via config.json", LogLevel.Info);
+                return;
+            }
+
+            // Register mod
+            configMenu.Register(
+                mod: this.ModManifest,
+                reset: () => Config = new ModConfig(),
+                save: () => 
+                {
+                    // Validate priorities before saving
+                    ValidatePriorities();
+                    this.Helper.WriteConfig(Config);
+                },
+                titleScreenOnly: false // Allow editing in-game!
+            );
+
+            // === General Settings ===
+            configMenu.AddSectionTitle(
+                mod: this.ModManifest,
+                text: () => "General Settings"
+            );
+
+            configMenu.AddBoolOption(
+                mod: this.ModManifest,
+                name: () => "Mod Enabled",
+                tooltip: () => "Enable or disable the Working Pets mod entirely.",
+                getValue: () => Config.ModEnabled,
+                setValue: value => Config.ModEnabled = value
+            );
+
+            configMenu.AddNumberOption(
+                mod: this.ModManifest,
+                name: () => "Work Interval (ticks)",
+                tooltip: () => "Number of game ticks between each work scan. 60 ticks = 1 second. Lower = faster but more CPU.",
+                getValue: () => Config.TicksBetweenActions,
+                setValue: value => Config.TicksBetweenActions = value,
+                min: 10,
+                max: 300,
+                interval: 10
+            );
+
+            configMenu.AddNumberOption(
+                mod: this.ModManifest,
+                name: () => "Work Radius (tiles)",
+                tooltip: () => "How far (in tiles) your pet will search for work.",
+                getValue: () => Config.WorkRadius,
+                setValue: value => Config.WorkRadius = value,
+                min: 5,
+                max: 100
+            );
+
+            configMenu.AddBoolOption(
+                mod: this.ModManifest,
+                name: () => "Show Work Messages",
+                tooltip: () => "Show HUD messages when your pet clears things.",
+                getValue: () => Config.ShowWorkingMessages,
+                setValue: value => Config.ShowWorkingMessages = value
+            );
+
+            // === Work Types ===
+            configMenu.AddSectionTitle(
+                mod: this.ModManifest,
+                text: () => "What Your Pet Will Clear"
+            );
+
+            configMenu.AddBoolOption(
+                mod: this.ModManifest,
+                name: () => "Clear Debris",
+                tooltip: () => "Clear weeds, small stones, and twigs.",
+                getValue: () => Config.ClearDebris,
+                setValue: value => Config.ClearDebris = value
+            );
+
+            configMenu.AddBoolOption(
+                mod: this.ModManifest,
+                name: () => "Clear Stumps & Logs",
+                tooltip: () => "Clear tree stumps and large logs (gives hardwood).",
+                getValue: () => Config.ClearStumpsAndLogs,
+                setValue: value => Config.ClearStumpsAndLogs = value
+            );
+
+            configMenu.AddBoolOption(
+                mod: this.ModManifest,
+                name: () => "Chop Trees",
+                tooltip: () => "Chop down fully grown trees. WARNING: This includes trees you planted!",
+                getValue: () => Config.ChopTrees,
+                setValue: value => Config.ChopTrees = value
+            );
+
+            configMenu.AddBoolOption(
+                mod: this.ModManifest,
+                name: () => "Break Boulders",
+                tooltip: () => "Break large boulders (gives stone and ore).",
+                getValue: () => Config.BreakBoulders,
+                setValue: value => Config.BreakBoulders = value
+            );
+
+            // === Priority Settings ===
+            configMenu.AddSectionTitle(
+                mod: this.ModManifest,
+                text: () => "Priority Settings"
+            );
+
+            configMenu.AddParagraph(
+                mod: this.ModManifest,
+                text: () => "Lower number = higher priority. Your pet will prioritize work types with lower numbers first. Use different numbers (1-99) for each type!"
+            );
+
+            configMenu.AddBoolOption(
+                mod: this.ModManifest,
+                name: () => "Ignore Priority (Target Nearest)",
+                tooltip: () => "When enabled, your pet ignores priority and just targets the nearest thing.",
+                getValue: () => Config.IgnorePriority,
+                setValue: value => Config.IgnorePriority = value
+            );
+
+            configMenu.AddNumberOption(
+                mod: this.ModManifest,
+                name: () => "Debris Priority",
+                tooltip: () => "Priority for clearing debris. Lower = higher priority.",
+                getValue: () => Config.DebrisPriority,
+                setValue: value => Config.DebrisPriority = value,
+                min: 1,
+                max: 99
+            );
+
+            configMenu.AddNumberOption(
+                mod: this.ModManifest,
+                name: () => "Stumps & Logs Priority",
+                tooltip: () => "Priority for clearing stumps and logs. Lower = higher priority.",
+                getValue: () => Config.StumpsAndLogsPriority,
+                setValue: value => Config.StumpsAndLogsPriority = value,
+                min: 1,
+                max: 99
+            );
+
+            configMenu.AddNumberOption(
+                mod: this.ModManifest,
+                name: () => "Trees Priority",
+                tooltip: () => "Priority for chopping trees. Lower = higher priority.",
+                getValue: () => Config.TreesPriority,
+                setValue: value => Config.TreesPriority = value,
+                min: 1,
+                max: 99
+            );
+
+            configMenu.AddNumberOption(
+                mod: this.ModManifest,
+                name: () => "Boulders Priority",
+                tooltip: () => "Priority for breaking boulders. Lower = higher priority.",
+                getValue: () => Config.BouldersPriority,
+                setValue: value => Config.BouldersPriority = value,
+                min: 1,
+                max: 99
+            );
+
+            this.Monitor.Log("Generic Mod Config Menu integration complete!", LogLevel.Debug);
+        }
+
+        /// <summary>Validate that all priorities are unique. If not, auto-fix them.</summary>
+        private void ValidatePriorities()
+        {
+            var priorities = new HashSet<int>();
+            var usedPriorities = new List<(string name, int value)>
+            {
+                ("Debris", Config.DebrisPriority),
+                ("StumpsAndLogs", Config.StumpsAndLogsPriority),
+                ("Trees", Config.TreesPriority),
+                ("Boulders", Config.BouldersPriority)
+            };
+
+            bool hasDuplicates = false;
+            foreach (var (name, value) in usedPriorities)
+            {
+                if (!priorities.Add(value))
+                {
+                    hasDuplicates = true;
+                    break;
+                }
+            }
+
+            if (hasDuplicates)
+            {
+                this.Monitor.Log("Duplicate priorities detected! Auto-fixing to 1, 2, 3, 4...", LogLevel.Warn);
+                Config.DebrisPriority = 1;
+                Config.StumpsAndLogsPriority = 2;
+                Config.TreesPriority = 3;
+                Config.BouldersPriority = 4;
+            }
+        }
+
         /// <summary>Raised after the save file is loaded.</summary>
         private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
         {

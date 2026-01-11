@@ -11,7 +11,9 @@ namespace WorkingPets.UI
     /// <summary>Handles pet dialogue and menu interactions.</summary>
     public static class PetDialogueHandler
     {
-        // Track if rename has been used (stored in pet modData for persistence)
+        /*********
+        ** Constants
+        *********/
         private const string RENAME_USED_KEY = "WorkingPets.RenameUsed";
 
         /*********
@@ -205,11 +207,12 @@ namespace WorkingPets.UI
                 {
                     if (!string.IsNullOrWhiteSpace(newName))
                     {
-                        // Set the new name exactly like vanilla does in PetLicense.cs
+                        // Set the new name exactly like vanilla does
                         pet.Name = newName;
                         pet.displayName = newName;
 
-                        // Mark rename as used - this option won't appear again
+                        // Mark rename as used - this option won't appear in dialogue again
+                        // but will now appear in settings menu instead
                         pet.modData[RENAME_USED_KEY] = "true";
 
                         Game1.playSound("newArtifact");
