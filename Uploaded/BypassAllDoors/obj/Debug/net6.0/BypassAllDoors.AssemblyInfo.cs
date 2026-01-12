@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("BypassAllDoors")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+863b0862149446df4e866d8d2604e4b7c65dc87a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+55eb2b153ca32cc4966e44186dbf24961e10bf80")]
 [assembly: System.Reflection.AssemblyProductAttribute("BypassAllDoors")]
 [assembly: System.Reflection.AssemblyTitleAttribute("BypassAllDoors")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
