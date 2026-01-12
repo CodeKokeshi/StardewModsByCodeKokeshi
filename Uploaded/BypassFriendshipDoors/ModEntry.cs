@@ -21,6 +21,20 @@ namespace BypassFriendshipDoors
         public override void Entry(IModHelper helper)
         {
             ModMonitor = this.Monitor;
+
+            // Hard incompatibility: don't allow multiple door-bypass mods from this set at once.
+            // SMAPI doesn't have a manifest-level incompatibility flag, so we enforce it here.
+            if (helper.ModRegistry.IsLoaded("CodeKokeshi.BypassAllDoors")
+                || helper.ModRegistry.IsLoaded("CodeKokeshi.BypassFriendshipLockedDoors"))
+            {
+                ModMonitor.Log(
+                    "[BypassFriendshipDoors] Incompatible mod detected (BypassAllDoors/BypassFriendshipLockedDoors). "
+                    + "Disable the other door-bypass mod to use BypassFriendshipDoors.",
+                    LogLevel.Error
+                );
+                return;
+            }
+
             var harmony = new Harmony(this.ModManifest.UniqueID);
             harmony.PatchAll();
             ModMonitor.Log("[BypassFriendshipDoors] Loaded - Friendship door requirements bypassed (time restrictions still apply)", LogLevel.Info);
