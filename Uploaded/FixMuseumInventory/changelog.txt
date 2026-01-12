@@ -1,5 +1,6 @@
 1.2.0
-- Improved the move button appearance (now uses a single vanilla hand/drag icon with better hover feedback)
+- Improved the move button appearance (new vanilla icon + nicer button styling)
+- Added controller support (A toggles move/place, B cancels)
 
 1.1.0
 - Museum inventory menu can now be moved anywhere on the screen (click to move, click again to place)
