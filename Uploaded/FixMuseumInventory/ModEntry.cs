@@ -13,11 +13,19 @@ public class ModEntry : Mod
     private bool _isInventoryOnTop = false;
     private bool _shouldRender = false;
 
+    // Dragging state (drag the button to reposition the menu)
+    private bool _isDragging;
+    private Vector2 _dragStartMouse;
+    private Point _dragStartMenuPos;
+    private bool _dragMoved;
+
     public override void Entry(IModHelper helper)
     {
         helper.Events.Display.MenuChanged += OnMenuChanged;
-        helper.Events.Display.RenderingActiveMenu += OnRenderingActiveMenu; // Changed from RenderedActiveMenu
+        // Draw after the menu so our button isn't covered by it.
+        helper.Events.Display.RenderedActiveMenu += OnRenderedActiveMenu;
         helper.Events.Input.ButtonPressed += OnButtonPressed;
+        helper.Events.Input.ButtonReleased += OnButtonReleased;
         helper.Events.GameLoop.UpdateTicked += OnUpdateTicked;
     }
 
@@ -26,6 +34,9 @@ public class ModEntry : Mod
         _toggleButton = null;
         _isInventoryOnTop = false;
         _shouldRender = false;
+
+        _isDragging = false;
+        _dragMoved = false;
 
         if (e.NewMenu is MuseumMenu)
         {
@@ -46,82 +57,50 @@ public class ModEntry : Mod
             return;
         }
 
-        // --- Optimized Checks (Direct Access) ---
-        // 1. okButton is public in MenuWithInventory
+        // Keep this simple so the button doesn't "disappear" due to over-strict checks.
+        // If the museum menu is open and not fading, show it (unless the cursor is holding an item).
         ClickableTextureComponent? okButton = menu.okButton;
-
-        // 2. heldItem is public in MenuWithInventory
         Item? heldItem = menu.heldItem;
-        
-        // Also check if player is holding something in their actual cursor (outside of menu logic)
         bool playerHoldingItem = Game1.player?.CursorSlotItem != null || Game1.player?.itemToEat != null;
         bool cursorHasItem = heldItem != null || playerHoldingItem;
-
-        // 3. Fade/Transition Check (public fields in MuseumMenu)
-        // Note: blackFadeAlpha replaces old reflection check for "fadeToBlackAlpha"
         bool isFading = menu.fadeTimer > 0 || menu.blackFadeAlpha > 0f;
 
-        // --- Inventory Visibility Check ---
-        bool inventoryReady = false;
-        bool inventoryVisible = true;
-        if (menu.inventory != null)
-        {
-            // Position Checks
-            bool verticalVisible = menu.inventory.yPositionOnScreen < Game1.viewport.Height - 32;
-            inventoryReady = menu.inventory.xPositionOnScreen > 0 && 
-                           menu.inventory.yPositionOnScreen > 0 &&
-                           menu.inventory.xPositionOnScreen < Game1.viewport.Width &&
-                           verticalVisible;
-            
-            // Content Checks
-            if (menu.inventory.actualInventory != null && menu.inventory.actualInventory.Count == 0) inventoryVisible = false;
-            if (menu.inventory.width <= 0 || menu.inventory.height <= 0) inventoryVisible = false;
-            
-            // "visible" field check - direct access inside InventoryMenu would be better usually public
-            // Assuming inventory.visible is a mismatch or we keep safe. 
-            // InventoryMenu usually doesn't have a 'visible' field, usually it's just implicit.
-            // But let's check if we can remove this reflection too.
-            // Actually, InventoryMenu does not have a 'visible' field in standard 1.6 logic usually.
-            // It relies on being drawn or not.
-            // So we can probably skip this reflection entirely as 'verticalVisible' covers offscreen.
-        }
-        else
-        {
-            inventoryVisible = false;
-        }
+        _shouldRender = okButton != null && okButton.visible && !cursorHasItem && !isFading;
 
-        // --- OK Button Screen Checks ---
-        // 1. Must exist and be 'visible' flag wise
-        // 2. Must be physically on screen (yPosition check) - often UI slides offscreen
-        bool okButtonOnScreen = false;
-        if (okButton != null)
+        if (_shouldRender)
         {
-            okButtonOnScreen = okButton.visible && 
-                               okButton.bounds.Y < Game1.viewport.Height && 
-                               okButton.bounds.Y > 0 &&
-                               okButton.bounds.X > 0 && 
-                               okButton.bounds.X < Game1.viewport.Width;
-        }
-
-        // --- Final Decision ---
-        // readyToClose is a method usually, not a field.
-        bool menuReady = menu.readyToClose();
-
-        _shouldRender = okButtonOnScreen && 
-                       !cursorHasItem && 
-                       inventoryReady &&
-                       inventoryVisible &&
-                       !isFading &&
-                       menuReady;
-
-        if (_shouldRender && okButton != null)
-        {
-            _toggleButton.bounds.X = okButton.bounds.X;
+            // Position the button near the OK button.
+            // (If the menu is moved, okButton bounds already reflect the new position.)
+            _toggleButton.bounds.X = okButton!.bounds.X;
             _toggleButton.bounds.Y = okButton.bounds.Y - 80;
+        }
+
+        // Handle dragging to reposition the menu.
+        if (_isDragging)
+        {
+            Vector2 mouse = new Vector2(Game1.getMouseX(), Game1.getMouseY());
+            Vector2 delta = mouse - _dragStartMouse;
+            if (!_dragMoved && delta.LengthSquared() > 16f)
+                _dragMoved = true;
+
+            int targetX = _dragStartMenuPos.X + (int)delta.X;
+            int targetY = _dragStartMenuPos.Y + (int)delta.Y;
+
+            // Clamp to keep the menu on screen.
+            targetX = Math.Clamp(targetX, 0, Game1.viewport.Width - menu.width);
+            targetY = Math.Clamp(targetY, 0, Game1.viewport.Height - menu.height);
+
+            int dx = targetX - menu.xPositionOnScreen;
+            int dy = targetY - menu.yPositionOnScreen;
+            if (dx != 0 || dy != 0)
+            {
+                // Use the menu's own movePosition so internal state stays consistent.
+                menu.movePosition(dx, dy);
+            }
         }
     }
 
-    private void OnRenderingActiveMenu(object? sender, RenderingActiveMenuEventArgs e)
+    private void OnRenderedActiveMenu(object? sender, RenderedActiveMenuEventArgs e)
     {
         if (!_shouldRender || _toggleButton == null) return;
 
@@ -129,8 +108,8 @@ public class ModEntry : Mod
             ? new Rectangle(421, 459, 11, 12) // UP
             : new Rectangle(421, 472, 11, 12); // DOWN
 
-        // Draw button background - using simple draw without sprite batch parameters
-        Game1.spriteBatch.Draw(
+        // Draw button background
+        e.SpriteBatch.Draw(
             Game1.mouseCursors,
             _toggleButton.bounds,
             new Rectangle(128, 256, 64, 64),
@@ -144,7 +123,7 @@ public class ModEntry : Mod
             _toggleButton.bounds.Y + (_toggleButton.bounds.Height - arrowSource.Height * scale) / 2
         );
 
-        Game1.spriteBatch.Draw(
+        e.SpriteBatch.Draw(
             Game1.mouseCursors,
             arrowPos,
             arrowSource,
@@ -153,7 +132,7 @@ public class ModEntry : Mod
             Vector2.Zero,
             scale,
             SpriteEffects.None,
-            1f  // Maximum layer depth - draws first, cursor draws last
+            0.9f
         );
     }
 
@@ -164,34 +143,44 @@ public class ModEntry : Mod
 
         if (_toggleButton.containsPoint((int)e.Cursor.ScreenPixels.X, (int)e.Cursor.ScreenPixels.Y))
         {
-            ToggleInventoryPosition(menu);
+            // Start drag (release will toggle if it wasn't actually dragged).
+            _isDragging = true;
+            _dragMoved = false;
+            _dragStartMouse = new Vector2(Game1.getMouseX(), Game1.getMouseY());
+            _dragStartMenuPos = new Point(menu.xPositionOnScreen, menu.yPositionOnScreen);
             Helper.Input.Suppress(e.Button);
         }
     }
 
+    private void OnButtonReleased(object? sender, ButtonReleasedEventArgs e)
+    {
+        if (e.Button != SButton.MouseLeft)
+            return;
+
+        if (!_isDragging)
+            return;
+
+        _isDragging = false;
+
+        // If it was a click (not a drag), keep the old up/down toggle behavior.
+        if (!_dragMoved && Game1.activeClickableMenu is MuseumMenu menu)
+        {
+            ToggleInventoryPosition(menu);
+        }
+
+        _dragMoved = false;
+    }
+
     private void ToggleInventoryPosition(MuseumMenu menu)
     {
-        int viewportHeight = Game1.viewport.Height;
         _isInventoryOnTop = !_isInventoryOnTop;
 
-        int currentY = menu.yPositionOnScreen;
-        int targetY = _isInventoryOnTop ? 0 : viewportHeight - menu.height;
+        int targetY = _isInventoryOnTop ? 0 : Game1.viewport.Height - menu.height;
+        targetY = Math.Clamp(targetY, 0, Game1.viewport.Height - menu.height);
 
-        if (targetY > viewportHeight - 100) targetY = viewportHeight - 300;
-
-        int dy = targetY - currentY;
-
-        menu.yPositionOnScreen += dy;
-
-        if (menu.inventory != null)
-        {
-            menu.inventory.movePosition(0, dy);
-        }
-
-        if (menu.okButton != null)
-        {
-            menu.okButton.bounds.Y += dy;
-        }
+        int dy = targetY - menu.yPositionOnScreen;
+        if (dy != 0)
+            menu.movePosition(0, dy);
 
         Game1.playSound("drumkit6");
     }
