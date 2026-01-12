@@ -1,12 +1,14 @@
 {
   "Name": "Working Pets",
   "Author": "CodeKokeshi",
-  "Version": "1.0.0",
+  "Version": "1.1.0",
   "Description": "Transform your pet into a helpful farmhand! Your cat or dog can clear debris (weeds, stones, twigs), chop trees, break boulders, and scavenge for daily loot. Features a toggleable work mode by talking to your pet, priority system for work types, and a dedicated inventory for their gatherings.",
   "UniqueID": "CodeKokeshi.WorkingPets",
   "EntryDll": "WorkingPets.dll",
   "MinimumApiVersion": "3.0.0",
-  "UpdateKeys": [],
+  "UpdateKeys": [
+    "Nexus:41161"
+  ],
   "Dependencies": [
     {
       "UniqueID": "spacechase0.GenericModConfigMenu",

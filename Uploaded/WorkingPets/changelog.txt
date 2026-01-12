@@ -1,0 +1,5 @@
+1.1.0
+- Added proper destruction visuals/FX/SFX when pets clear debris/wood/stone (no more silent disappearing).
+- Adjusted wood-related destruction to use a consistent twig-style particle/poof effect.
+- Fixed cases where pets could get stuck while doing work by adding a warp fallback near the target.
+- Improved follow behavior with catch-up speed scaling and a stuck warp fallback near the player.
