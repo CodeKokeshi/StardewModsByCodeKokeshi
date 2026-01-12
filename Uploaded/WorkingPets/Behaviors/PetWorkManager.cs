@@ -47,6 +47,15 @@ namespace WorkingPets.Behaviors
         private readonly HashSet<Vector2> _unreachableTiles = new();
         private int _unreachableClearTimer;
 
+        // Stuck detection (fallback warp near target)
+        private float _lastDistanceToTarget = float.MaxValue;
+        private int _noProgressTicks;
+        private Vector2? _lastTargetTile;
+
+        // Follow-mode stuck detection
+        private float _lastDistanceToPlayer = float.MaxValue;
+        private int _noProgressFollowTicks;
+
         private readonly Random _random = new();
 
         // Track damage for multi-hit objects
@@ -239,6 +248,47 @@ namespace WorkingPets.Behaviors
             Vector2 currentPos = _pet.Position + new Vector2(32, 32);
             float distance = Vector2.Distance(currentPos, targetPos);
 
+            // Detect if we're not making progress toward the target.
+            // If we get "stuck" (e.g. pet AI/physics fighting us, odd collisions), warp near the target.
+            if (!_lastTargetTile.HasValue || _lastTargetTile.Value != _targetTile.Value)
+            {
+                _lastTargetTile = _targetTile.Value;
+                _lastDistanceToTarget = distance;
+                _noProgressTicks = 0;
+            }
+            else
+            {
+                // Consider it progress only if we got meaningfully closer.
+                if (distance < _lastDistanceToTarget - 1f)
+                {
+                    _lastDistanceToTarget = distance;
+                    _noProgressTicks = 0;
+                }
+                else
+                {
+                    _noProgressTicks++;
+                }
+
+                // After ~2 seconds with no progress, warp to a safe tile adjacent to the target.
+                if (_noProgressTicks >= 120)
+                {
+                    if (TryWarpPetNearTarget(_pet.currentLocation, _targetTile.Value))
+                    {
+                        _noProgressTicks = 0;
+                        _lastDistanceToTarget = float.MaxValue;
+                    }
+                    else
+                    {
+                        // If we can't find a safe adjacent tile, treat as unreachable and bail.
+                        ModEntry.Instance.Monitor.Log($"[WorkingPets] Couldn't warp near target {_targetTile.Value}; marking unreachable.", LogLevel.Debug);
+                        _unreachableTiles.Add(_targetTile.Value);
+                        _targetTile = null;
+                        _pendingAction = null;
+                        return;
+                    }
+                }
+            }
+
             // Arrived!
             if (distance < 55f)
             {
@@ -247,6 +297,10 @@ namespace WorkingPets.Behaviors
                 _pendingAction?.Invoke();
                 _targetTile = null;
                 _pendingAction = null;
+
+                _lastTargetTile = null;
+                _lastDistanceToTarget = float.MaxValue;
+                _noProgressTicks = 0;
                 return;
             }
 
@@ -259,10 +313,24 @@ namespace WorkingPets.Behaviors
             var location = _pet.currentLocation;
             if (IsNearWaterOrBlocked(location, nextPos))
             {
-                ModEntry.Instance.Monitor.Log($"[WorkingPets] Blocked near water/obstacle, skipping target {_targetTile.Value}", LogLevel.Debug);
+                // If we can't take a step toward the target, try the "stuck" warp fallback first.
+                // This matches the expected behavior: if stuck, teleport 1 tile away from the destination.
+                if (TryWarpPetNearTarget(location, _targetTile.Value))
+                {
+                    _lastTargetTile = _targetTile.Value;
+                    _lastDistanceToTarget = float.MaxValue;
+                    _noProgressTicks = 0;
+                    return;
+                }
+
+                ModEntry.Instance.Monitor.Log($"[WorkingPets] Blocked near water/obstacle and couldn't warp; skipping target {_targetTile.Value}", LogLevel.Debug);
                 _unreachableTiles.Add(_targetTile.Value);
                 _targetTile = null;
                 _pendingAction = null;
+
+                _lastTargetTile = null;
+                _lastDistanceToTarget = float.MaxValue;
+                _noProgressTicks = 0;
                 return;
             }
 
@@ -343,6 +411,9 @@ namespace WorkingPets.Behaviors
             {
                 // Close enough, just face the player
                 _pet.Halt();
+
+                _lastDistanceToPlayer = float.MaxValue;
+                _noProgressFollowTicks = 0;
                 return;
             }
 
@@ -351,16 +422,52 @@ namespace WorkingPets.Behaviors
                 // Move toward player
                 Vector2 direction = playerPos - petPos;
                 direction.Normalize();
-                
-                Vector2 nextPos = _pet.Position + direction * _moveSpeed;
+
+                // Catch-up speed scaling: if the player is far, move faster.
+                // This keeps following responsive without permanently changing base speed.
+                float speed = _moveSpeed;
+                if (distance > 512f)
+                    speed *= 2.0f;
+                else if (distance > 256f)
+                    speed *= 1.5f;
+
+                Vector2 nextPos = _pet.Position + direction * speed;
 
                 // Check for water/obstacles using improved detection
                 var location = _pet.currentLocation;
                 
                 if (IsNearWaterOrBlocked(location, nextPos))
                 {
-                    // Don't walk on water, just wait
+                    // If blocked for too long while trying to follow, warp near the player.
+                    _noProgressFollowTicks++;
+                    if (_noProgressFollowTicks >= 120)
+                    {
+                        if (TryWarpPetNearTarget(location, player.Tile))
+                        {
+                            _noProgressFollowTicks = 0;
+                            _lastDistanceToPlayer = float.MaxValue;
+                        }
+                    }
                     return;
+                }
+
+                // Progress tracking: if we aren't getting closer to the player, count it as stuck.
+                if (distance < _lastDistanceToPlayer - 1f)
+                {
+                    _lastDistanceToPlayer = distance;
+                    _noProgressFollowTicks = 0;
+                }
+                else
+                {
+                    _noProgressFollowTicks++;
+                    if (_noProgressFollowTicks >= 120)
+                    {
+                        if (TryWarpPetNearTarget(location, player.Tile))
+                        {
+                            _noProgressFollowTicks = 0;
+                            _lastDistanceToPlayer = float.MaxValue;
+                        }
+                    }
                 }
 
                 _pet.Position = nextPos;
@@ -668,6 +775,57 @@ namespace WorkingPets.Behaviors
             
             _targetTile = tile;
             _pendingAction = action;
+
+            _lastTargetTile = tile;
+            _lastDistanceToTarget = float.MaxValue;
+            _noProgressTicks = 0;
+        }
+
+        private bool TryWarpPetNearTarget(GameLocation location, Vector2 targetTile)
+        {
+            if (_pet == null)
+            {
+                return false;
+            }
+
+            // Try the 8 neighboring tiles around the target (1 tile away).
+            // Prefer tiles that are on-map, passable, and not water.
+            var candidates = new List<Vector2>(8);
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                for (int dy = -1; dy <= 1; dy++)
+                {
+                    if (dx == 0 && dy == 0)
+                        continue;
+                    candidates.Add(targetTile + new Vector2(dx, dy));
+                }
+            }
+
+            // Prefer closer-to-pet tiles.
+            candidates = candidates
+                .Where(t => location.isTileOnMap(t))
+                .OrderBy(t => Vector2.Distance(_pet.Tile, t))
+                .ToList();
+
+            foreach (var tile in candidates)
+            {
+                int x = (int)tile.X;
+                int y = (int)tile.Y;
+
+                if (location.isWaterTile(x, y))
+                    continue;
+
+                if (!location.isTilePassable(new xTile.Dimensions.Location(x, y), Game1.viewport))
+                    continue;
+
+                ModEntry.Instance.Monitor.Log($"[WorkingPets] Stuck detected; warping {_pet.Name} near target {targetTile} -> {tile}", LogLevel.Debug);
+                Game1.warpCharacter(_pet, location.NameOrUniqueName, tile);
+                _pet.Halt();
+                _pet.controller = null;
+                return true;
+            }
+
+            return false;
         }
 
         private void ClearDebrisAt(Farm farm, Vector2 tile, StardewValley.Object obj)
@@ -749,25 +907,21 @@ namespace WorkingPets.Behaviors
 
             if (_objectDamage[tile] >= TREE_HEALTH)
             {
-                // Tree is about to fall - trigger the falling animation!
-                farm.localSound("treecrack");
-                
-                // Set tree to falling state - this triggers the fall animation in Tree.tickUpdate()
+                // IMPORTANT: Don't use the falling-tree animation here.
+                // It causes weird sequencing (stump/top flicker) when we're not letting the game handle drops.
+                // Instead: play a crack + burst, and instantly convert the tree into a stump.
+                // Visual burst (looks like the chop finished)
+                Game1.createRadialDebris(farm, 12, (int)tile.X, (int)tile.Y, Game1.random.Next(12, 18), resource: false);
+                farm.temporarySprites.Add(new TemporaryAnimatedSprite(12, tile * 64f, Color.White, 8, Game1.random.NextDouble() < 0.5, 50f));
+
+                // Force a clean non-falling state and leave a stump behind
+                tree.falling.Value = false;
+                tree.shakeRotation = 0f;
+                tree.maxShake = 0f;
                 tree.stump.Value = true;
-                tree.health.Value = -100f; // Mark for removal after fall
-                tree.falling.Value = true;
-                
-                // Determine fall direction based on pet position
-                Vector2 petPos = _pet?.Position ?? tile * 64f;
-                tree.shakeLeft.Value = petPos.X > (tile.X * 64f);
-                tree.maxShake = 0.0245436928f; // Initial fall rotation speed
-                
-                // Create falling debris - wood chips scatter
-                Game1.createRadialDebris(farm, 12, (int)tile.X + (tree.shakeLeft.Value ? -4 : 4), (int)tile.Y, 
-                    Game1.random.Next(12, 18), resource: false);
-                
-                // The tree will remove itself after the fall animation completes in tickUpdate()
-                // We just need to track the damage and collect drops
+                tree.health.Value = 5f;
+
+                // Reset our hit tracking for the stump phase
                 _objectDamage.Remove(tile);
 
                 // Add drops to pet inventory
@@ -791,13 +945,13 @@ namespace WorkingPets.Behaviors
 
             if (_objectDamage[tile] >= STUMP_HEALTH)
             {
-                // Final destruction - more dramatic debris and sound
-                farm.localSound("treethud");
-                
-                // Create radial wood debris scatter
-                Game1.createRadialDebris(farm, 12, (int)tile.X, (int)tile.Y, Game1.random.Next(8, 14), resource: false);
-                
-                // Wood burst animation
+                // Final destruction - use the same VFX as breaking twigs/wood (universal wood break look)
+                farm.localSound("stumpCrack");
+
+                // Wood chips burst
+                Game1.createRadialDebris(farm, 12, (int)tile.X, (int)tile.Y, Game1.random.Next(10, 16), resource: false);
+
+                // Wood poof (same as twig break)
                 farm.temporarySprites.Add(new TemporaryAnimatedSprite(12, tile * 64f, Color.White, 8, Game1.random.NextDouble() < 0.5, 50f));
                 
                 farm.terrainFeatures.Remove(tile);
@@ -823,19 +977,22 @@ namespace WorkingPets.Behaviors
 
             if (_objectDamage[tile] >= STUMP_HEALTH * 2)
             {
-                // Final destruction - use exact game animations from ResourceClump.destroy()
+                // Final destruction - use the same VFX as breaking twigs/wood (universal wood break look)
                 farm.localSound("stumpCrack");
-                
-                // Smoke/dust poof animation (sprite 23 from game)
-                farm.temporarySprites.Add(new TemporaryAnimatedSprite(23, tile * 64f, Color.White, 4, false, 140f, 0, 128, -1f, 128));
-                
-                // Stump falling dust animation from TileSheets
-                farm.temporarySprites.Add(new TemporaryAnimatedSprite("TileSheets\\animations", 
-                    new Rectangle(385, 1522, 127, 79), 2000f, 1, 1, tile * 64f + new Vector2(0f, 49f), 
-                    false, false, 1E-05f, 0.016f, Color.White, 1f, 0f, 0f, 0f));
-                
-                // Big wood debris scatter (34 = bigWoodDebris from game)
-                Game1.createRadialDebris(farm, 34, (int)tile.X, (int)tile.Y, Game1.random.Next(4, 9), resource: false);
+
+                // Wood chips burst across the clump footprint
+                int bursts = 3;
+                for (int i = 0; i < bursts; i++)
+                {
+                    int x = (int)tile.X + Game1.random.Next(clump.width.Value);
+                    int y = (int)tile.Y + Game1.random.Next(clump.height.Value);
+                    Game1.createRadialDebris(farm, 12, x, y, Game1.random.Next(8, 14), resource: false);
+                }
+
+                // A couple wood poofs to sell the breakup (covers 2x2-ish area)
+                farm.temporarySprites.Add(new TemporaryAnimatedSprite(12, tile * 64f, Color.White, 8, Game1.random.NextDouble() < 0.5, 50f));
+                farm.temporarySprites.Add(new TemporaryAnimatedSprite(12, (tile + new Vector2(1f, 0f)) * 64f, Color.White, 8, Game1.random.NextDouble() < 0.5, 60f));
+                farm.temporarySprites.Add(new TemporaryAnimatedSprite(12, (tile + new Vector2(0f, 1f)) * 64f, Color.White, 8, Game1.random.NextDouble() < 0.5, 70f));
                 
                 farm.resourceClumps.RemoveAt(index);
                 _objectDamage.Remove(tile);
@@ -864,27 +1021,27 @@ namespace WorkingPets.Behaviors
 
             if (_objectDamage[tile] >= BOULDER_HEALTH)
             {
-                // Final destruction - use exact game animations from ResourceClump.destroy()
-                farm.localSound("boulderBreak");
-                
-                // Big stone debris scatter (32 = bigStoneDebris from game)
-                Game1.createRadialDebris(farm, 32, (int)tile.X, (int)tile.Y, Game1.random.Next(6, 12), resource: false);
-                
-                // Get boulder color based on type (from ResourceClump.cs)
-                Color boulderColor = Color.White;
-                switch (clump.parentSheetIndex.Value)
+                // Final destruction - use the normal stone break VFX, just bigger/more of it
+                farm.localSound("hammer");
+
+                // Big burst of regular stone debris across the clump footprint (14 = stoneDebris)
+                int bursts = 4;
+                for (int i = 0; i < bursts; i++)
                 {
-                    case 752: boulderColor = new Color(188, 119, 98); break;  // Copper-tinted
-                    case 754: boulderColor = new Color(168, 120, 95); break;  // Iron-tinted  
-                    case 756:
-                    case 758: boulderColor = new Color(67, 189, 238); break;  // Blue/ice-tinted
+                    int x = (int)tile.X + Game1.random.Next(clump.width.Value);
+                    int y = (int)tile.Y + Game1.random.Next(clump.height.Value);
+                    Game1.createRadialDebris(farm, 14, x, y, Game1.random.Next(6, 12), resource: false);
                 }
-                
-                // Boulder explosion animation (sprite 48 from game) with proper color and alpha fade
-                farm.temporarySprites.Add(new TemporaryAnimatedSprite(48, tile * 64f, boulderColor, 5, false, 180f, 0, 128, -1f, 128)
+
+                // Extra stone break sprites (47) to sell the impact
+                for (int i = 0; i < 3; i++)
                 {
-                    alphaFade = 0.01f
-                });
+                    Vector2 pos = (tile + new Vector2(Game1.random.Next(clump.width.Value), Game1.random.Next(clump.height.Value))) * 64f;
+                    farm.temporarySprites.Add(new TemporaryAnimatedSprite(47, pos, Color.Gray, 8, Game1.random.NextDouble() < 0.5, 50f)
+                    {
+                        scale = 1.25f
+                    });
+                }
                 
                 farm.resourceClumps.RemoveAt(index);
                 _objectDamage.Remove(tile);
