@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\December 2025 OS\\Development\\StardewModding\\Uploaded\\FixMuseumInventory\\FixMuseumInventory.csproj": {}
+    "d:\\December 2025 OS\\Development\\StardewModding\\Uploaded\\FixMuseumInventory\\FixMuseumInventory.csproj": {}
   },
   "projects": {
-    "D:\\December 2025 OS\\Development\\StardewModding\\Uploaded\\FixMuseumInventory\\FixMuseumInventory.csproj": {
+    "d:\\December 2025 OS\\Development\\StardewModding\\Uploaded\\FixMuseumInventory\\FixMuseumInventory.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\December 2025 OS\\Development\\StardewModding\\Uploaded\\FixMuseumInventory\\FixMuseumInventory.csproj",
+        "projectUniqueName": "d:\\December 2025 OS\\Development\\StardewModding\\Uploaded\\FixMuseumInventory\\FixMuseumInventory.csproj",
         "projectName": "FixMuseumInventory",
-        "projectPath": "D:\\December 2025 OS\\Development\\StardewModding\\Uploaded\\FixMuseumInventory\\FixMuseumInventory.csproj",
+        "projectPath": "d:\\December 2025 OS\\Development\\StardewModding\\Uploaded\\FixMuseumInventory\\FixMuseumInventory.csproj",
         "packagesPath": "C:\\Users\\Aikawa\\.nuget\\packages\\",
-        "outputPath": "D:\\December 2025 OS\\Development\\StardewModding\\Uploaded\\FixMuseumInventory\\obj\\",
+        "outputPath": "d:\\December 2025 OS\\Development\\StardewModding\\Uploaded\\FixMuseumInventory\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Aikawa\\AppData\\Roaming\\NuGet\\NuGet.Config"

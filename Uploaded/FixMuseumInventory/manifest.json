@@ -1,7 +1,7 @@
 {
   "Name": "Fix Museum Inventory",
   "Author": "CodeKokeshi",
-  "Version": "1.1.0",
+  "Version": "1.2.0",
   "Description": "Adds a move button to reposition the museum inventory UI anywhere on-screen (toggle-move).",
   "UniqueID": "CodeKokeshi.FixMuseumInventory",
   "EntryDll": "FixMuseumInventory.dll",

@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "aI1ANSmLZ8U=",
+  "dgSpecHash": "iPbsxkZy/NY=",
   "success": true,
-  "projectFilePath": "D:\\December 2025 OS\\Development\\StardewModding\\Uploaded\\FixMuseumInventory\\FixMuseumInventory.csproj",
+  "projectFilePath": "d:\\December 2025 OS\\Development\\StardewModding\\Uploaded\\FixMuseumInventory\\FixMuseumInventory.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Aikawa\\.nuget\\packages\\pathoschild.stardew.modbuildconfig\\4.4.0\\pathoschild.stardew.modbuildconfig.4.4.0.nupkg.sha512"
   ],

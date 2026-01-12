@@ -107,10 +107,16 @@ public class ModEntry : Mod
         if (menu.heldItem != null || Game1.player?.CursorSlotItem != null)
             return;
 
+        int mx = Game1.getMouseX();
+        int my = Game1.getMouseY();
+        bool isHoveringMoveButton = _moveButtonBounds.Contains(mx, my);
+
         SpriteBatch b = e.SpriteBatch;
 
         // Draw button background - highlight if moving
-        Color bgColor = _isMoving ? Color.LightGreen : Color.White;
+        Color bgColor = _isMoving
+            ? new Color(180, 255, 180)
+            : (isHoveringMoveButton ? new Color(255, 255, 220) : Color.White);
         IClickableMenu.drawTextureBox(
             b,
             Game1.mouseCursors,
@@ -124,33 +130,31 @@ public class ModEntry : Mod
             drawShadow: false
         );
 
-        // Draw 4-direction arrow icon
-        Rectangle arrowUp = new Rectangle(421, 459, 11, 12);
-        Rectangle arrowDown = new Rectangle(421, 472, 11, 12);
-        
+        // Draw a single, clear icon (vanilla hand cursor) to indicate "drag/move"
         Vector2 center = new Vector2(
             _moveButtonBounds.X + _moveButtonBounds.Width / 2f,
             _moveButtonBounds.Y + _moveButtonBounds.Height / 2f
         );
 
-        float scale = 2f;
+        Rectangle handSource = Game1.getSourceRectForStandardTileSheet(
+            Game1.mouseCursors,
+            StardewValley.Object.HandCursorIndex,
+            16,
+            16
+        );
+
+        float iconScale = isHoveringMoveButton ? 3.25f : 3f; // 16 * 3 = 48px, fits nicely in a 64px button
         Color iconColor = _isMoving ? Color.DarkGreen : Color.White;
-        
-        // Up
-        b.Draw(Game1.mouseCursors, center + new Vector2(-11f, -18f), arrowUp, iconColor, 0f, Vector2.Zero, scale, SpriteEffects.None, 1f);
-        // Down
-        b.Draw(Game1.mouseCursors, center + new Vector2(-11f, 6f), arrowDown, iconColor, 0f, Vector2.Zero, scale, SpriteEffects.None, 1f);
-        // Left
-        b.Draw(Game1.mouseCursors, center + new Vector2(-20f, -12f), arrowUp, iconColor, -MathHelper.PiOver2, new Vector2(5.5f, 6f), scale, SpriteEffects.None, 1f);
-        // Right
-        b.Draw(Game1.mouseCursors, center + new Vector2(20f, -12f), arrowDown, iconColor, MathHelper.PiOver2, new Vector2(5.5f, 6f), scale, SpriteEffects.None, 1f);
+        Vector2 iconPos = new Vector2(
+            center.X - handSource.Width * iconScale / 2f,
+            center.Y - handSource.Height * iconScale / 2f
+        );
+        Utility.drawWithShadow(b, Game1.mouseCursors, iconPos, handSource, iconColor, 0f, Vector2.Zero, iconScale);
 
         // Tooltip
-        int mx = Game1.getMouseX();
-        int my = Game1.getMouseY();
-        if (_moveButtonBounds.Contains(mx, my) && !_isMoving)
+        if (isHoveringMoveButton && !_isMoving)
         {
-            IClickableMenu.drawHoverText(b, "Click to move inventory", Game1.smallFont);
+            IClickableMenu.drawHoverText(b, "Move this UI (drag)", Game1.smallFont);
         }
         else if (_isMoving)
         {
