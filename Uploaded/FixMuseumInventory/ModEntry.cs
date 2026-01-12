@@ -11,6 +11,7 @@ namespace FixMuseumInventory;
 public class ModEntry : Mod
 {
     private const int MoveButtonComponentId = 19512001;
+    private const int StationaryTicksBeforeShowingMoveTooltip = 6;
 
     // Move button bounds
     private Rectangle _moveButtonBounds;
@@ -20,6 +21,10 @@ public class ModEntry : Mod
     // Toggle move mode: click once to start moving, click again to place
     private bool _isMoving;
     private Point _mouseOffset; // Offset from mouse to menu top-left
+
+    // Used to suppress tooltip while the menu is actively moving.
+    private Point? _lastMenuPosition;
+    private int _ticksSinceMenuMoved = int.MaxValue;
     
     // Saved position for the session
     private Point? _savedMenuOffset;
@@ -36,6 +41,8 @@ public class ModEntry : Mod
     {
         _isMoving = false;
         _moveButtonComponent = null;
+        _lastMenuPosition = null;
+        _ticksSinceMenuMoved = int.MaxValue;
 
         // When museum menu opens, apply saved offset if we have one
         if (e.NewMenu is MuseumMenu menu && _savedMenuOffset.HasValue)
@@ -68,6 +75,8 @@ public class ModEntry : Mod
         if (Game1.activeClickableMenu is not MuseumMenu menu)
         {
             _isMoving = false;
+            _lastMenuPosition = null;
+            _ticksSinceMenuMoved = int.MaxValue;
             return;
         }
 
@@ -78,6 +87,8 @@ public class ModEntry : Mod
             _isMoving = false;
             return;
         }
+
+        Point positionBefore = new Point(menu.xPositionOnScreen, menu.yPositionOnScreen);
 
         // Position the move button relative to okButton
         if (menu.okButton != null)
@@ -120,6 +131,23 @@ public class ModEntry : Mod
                 if (dx != 0 || dy != 0)
                     menu.movePosition(dx, dy);
             }
+        }
+
+        Point positionAfter = new Point(menu.xPositionOnScreen, menu.yPositionOnScreen);
+        if (_lastMenuPosition == null)
+        {
+            _lastMenuPosition = positionAfter;
+            _ticksSinceMenuMoved = int.MaxValue;
+        }
+        else if (positionAfter != positionBefore)
+        {
+            _lastMenuPosition = positionAfter;
+            _ticksSinceMenuMoved = 0;
+        }
+        else
+        {
+            if (_ticksSinceMenuMoved < int.MaxValue)
+                _ticksSinceMenuMoved++;
         }
     }
 
@@ -310,7 +338,7 @@ public class ModEntry : Mod
         {
             IClickableMenu.drawHoverText(b, "Move this UI", Game1.smallFont);
         }
-        else if (_isMoving)
+        else if (_isMoving && _ticksSinceMenuMoved >= StationaryTicksBeforeShowingMoveTooltip)
         {
             IClickableMenu.drawHoverText(b, "Click anywhere (or press A) to place", Game1.smallFont);
         }
@@ -363,6 +391,7 @@ public class ModEntry : Mod
         {
             // Click on button → start moving
             _isMoving = true;
+            _ticksSinceMenuMoved = 0;
             // Store offset for mouse-drag mode.
             _mouseOffset = new Point(mouseX - menu.xPositionOnScreen, mouseY - menu.yPositionOnScreen);
             Game1.playSound("bigSelect");
