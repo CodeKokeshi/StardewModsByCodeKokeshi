@@ -1,9 +1,12 @@
 {
   "Name": "Fix Museum Inventory",
   "Author": "CodeKokeshi",
-  "Version": "1.0.0",
-  "Description": "Adds a button to move the museum inventory position up or down to access any shelves it is covering.",
+  "Version": "1.1.0",
+  "Description": "Adds a move button to reposition the museum inventory UI anywhere on-screen (toggle-move).",
   "UniqueID": "CodeKokeshi.FixMuseumInventory",
   "EntryDll": "FixMuseumInventory.dll",
-  "MinimumApiVersion": "4.0.0"
+  "MinimumApiVersion": "4.0.0",
+  "UpdateKeys": [
+    "Nexus:41132"
+  ]
 }
