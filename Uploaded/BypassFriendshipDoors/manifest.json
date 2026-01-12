@@ -1,0 +1,10 @@
+{
+  "Name": "Bypass Friendship Doors",
+  "Author": "CodeKokeshi",
+  "Version": "1.0.0",
+  "Description": "Bypasses ONLY friendship requirements for doors (NPC bedrooms). Shop hours and festival closures still apply!",
+  "UniqueID": "CodeKokeshi.BypassFriendshipDoors",
+  "EntryDll": "BypassFriendshipDoors.dll",
+  "MinimumApiVersion": "4.0.0",
+  "UpdateKeys": []
+}

@@ -5,7 +5,7 @@ using StardewModdingAPI;
 using StardewValley;
 using xTile.Dimensions;
 
-namespace BypassFriendshipLockedDoors
+namespace BypassAllDoors
 {
     /// <summary>
     /// Bypass ALL Doors Mod - Bypasses ALL door restrictions including:

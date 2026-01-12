@@ -1,0 +1,10 @@
+{
+  "Name": "Bypass All Doors",
+  "Author": "CodeKokeshi",
+  "Version": "1.0.0",
+  "Description": "Bypasses ALL door restrictions - time, friendship, and festival closures. Enter any building at any time!",
+  "UniqueID": "CodeKokeshi.BypassAllDoors",
+  "EntryDll": "BypassAllDoors.dll",
+  "MinimumApiVersion": "4.0.0",
+  "UpdateKeys": []
+}

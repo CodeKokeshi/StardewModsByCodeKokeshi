@@ -1,0 +1,9 @@
+D:\December 2025 OS\Development\StardewModding\Uploaded\BypassAllDoors\bin\Debug\net6.0\BypassAllDoors.deps.json
+D:\December 2025 OS\Development\StardewModding\Uploaded\BypassAllDoors\bin\Debug\net6.0\BypassAllDoors.dll
+D:\December 2025 OS\Development\StardewModding\Uploaded\BypassAllDoors\obj\Debug\net6.0\BypassAllDoors.csproj.AssemblyReference.cache
+D:\December 2025 OS\Development\StardewModding\Uploaded\BypassAllDoors\obj\Debug\net6.0\BypassAllDoors.GeneratedMSBuildEditorConfig.editorconfig
+D:\December 2025 OS\Development\StardewModding\Uploaded\BypassAllDoors\obj\Debug\net6.0\BypassAllDoors.AssemblyInfoInputs.cache
+D:\December 2025 OS\Development\StardewModding\Uploaded\BypassAllDoors\obj\Debug\net6.0\BypassAllDoors.AssemblyInfo.cs
+D:\December 2025 OS\Development\StardewModding\Uploaded\BypassAllDoors\obj\Debug\net6.0\BypassAllDoors.csproj.CoreCompileInputs.cache
+D:\December 2025 OS\Development\StardewModding\Uploaded\BypassAllDoors\obj\Debug\net6.0\BypassAllDoors.sourcelink.json
+D:\December 2025 OS\Development\StardewModding\Uploaded\BypassAllDoors\obj\Debug\net6.0\BypassAllDoors.dll
