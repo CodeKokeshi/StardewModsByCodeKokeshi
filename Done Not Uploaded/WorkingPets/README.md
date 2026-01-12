@@ -111,13 +111,11 @@ Notably:
 
 ## Compatibility notes
 
-- This mod replaces the default “talk to pet” interaction with its own menu.
+- This mod replaces the default "interact with pet” interaction with its own menu.
 - Mods which also heavily patch pet interaction may conflict.
 
 ## Troubleshooting
 
-- **My build/deploy fails with “WorkingPets.dll is being used by another process”**:
-  - Close Stardew Valley/SMAPI (it locks the DLL), then rebuild.
 - **Pet seems stuck**:
   - Try increasing Work Radius and/or Work Interval.
   - Ensure the target types you want are enabled.

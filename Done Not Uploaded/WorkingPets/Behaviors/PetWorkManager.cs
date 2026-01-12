@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewValley;
 using StardewValley.TerrainFeatures;
 using StardewValley.Characters;
+using StardewValley.BellsAndWhistles;
 
 namespace WorkingPets.Behaviors
 {
@@ -678,8 +680,47 @@ namespace WorkingPets.Behaviors
                 return;
             }
 
-            if (obj.Name.Contains("Stone")) farm.localSound("hammer");
-            else farm.localSound("cut");
+            // Play appropriate sound and create destruction animation
+            if (obj.Name.Contains("Stone"))
+            {
+                // Stone destruction - hammer sound + stone debris
+                farm.localSound("hammer");
+                Game1.createRadialDebris(farm, 14, (int)tile.X, (int)tile.Y, Game1.random.Next(2, 5), resource: false);
+                // Stone break animation
+                farm.temporarySprites.Add(new TemporaryAnimatedSprite(47, tile * 64f, Color.Gray, 8, Game1.random.NextDouble() < 0.5, 50f));
+            }
+            else if (obj.Name.Contains("Twig") || obj.ParentSheetIndex == 294 || obj.ParentSheetIndex == 295)
+            {
+                // Twig destruction - axe chop + wood debris animation
+                farm.localSound("axchop");
+                Game1.createRadialDebris(farm, 12, (int)tile.X, (int)tile.Y, Game1.random.Next(4, 10), resource: false);
+                // Wood break animation (sprite 12 = wood poof)
+                farm.temporarySprites.Add(new TemporaryAnimatedSprite(12, tile * 64f, Color.White, 8, Game1.random.NextDouble() < 0.5, 50f));
+            }
+            else if (obj.Name.Contains("Weed"))
+            {
+                // Weed cutting - cut sound + grass/weed animation
+                farm.localSound("weed_cut");
+                // Weed destruction animation (sprite 50 = green poof for weeds)
+                Color weedColor = Color.Green;
+                farm.temporarySprites.Add(new TemporaryAnimatedSprite(50, tile * 64f, weedColor));
+                farm.temporarySprites.Add(new TemporaryAnimatedSprite(50, tile * 64f + new Vector2(Game1.random.Next(-16, 16), Game1.random.Next(-48, 48)), weedColor * 0.75f)
+                {
+                    scale = 0.75f,
+                    flipped = true
+                });
+                farm.temporarySprites.Add(new TemporaryAnimatedSprite(50, tile * 64f + new Vector2(Game1.random.Next(-16, 16), Game1.random.Next(-48, 48)), weedColor * 0.75f)
+                {
+                    scale = 0.75f,
+                    delayBeforeAnimationStart = 50
+                });
+            }
+            else
+            {
+                // Generic debris - cut sound
+                farm.localSound("cut");
+                Game1.createRadialDebris(farm, 12, (int)tile.X, (int)tile.Y, Game1.random.Next(2, 5), resource: false);
+            }
 
             var drops = GetDropsForObject(obj);
             farm.objects.Remove(tile);
@@ -696,15 +737,40 @@ namespace WorkingPets.Behaviors
             if (!_objectDamage.ContainsKey(tile)) _objectDamage[tile] = 0;
             _objectDamage[tile]++;
 
+            // Play axe chop sound and create wood chip debris
             farm.localSound("axchop");
+            
+            // Create wood chip debris flying from the chop point
+            Vector2 debrisOrigin = new Vector2(tile.X * 64f + 32f, tile.Y * 64f);
+            farm.debris.Add(new Debris(12, Game1.random.Next(1, 3), debrisOrigin, debrisOrigin, 0));
+            
+            // Shake the tree
             tree.shake(tile, doEvenIfStillShaking: true);
 
             if (_objectDamage[tile] >= TREE_HEALTH)
             {
-                farm.terrainFeatures.Remove(tile);
-                _objectDamage.Remove(tile);
+                // Tree is about to fall - trigger the falling animation!
                 farm.localSound("treecrack");
+                
+                // Set tree to falling state - this triggers the fall animation in Tree.tickUpdate()
+                tree.stump.Value = true;
+                tree.health.Value = -100f; // Mark for removal after fall
+                tree.falling.Value = true;
+                
+                // Determine fall direction based on pet position
+                Vector2 petPos = _pet?.Position ?? tile * 64f;
+                tree.shakeLeft.Value = petPos.X > (tile.X * 64f);
+                tree.maxShake = 0.0245436928f; // Initial fall rotation speed
+                
+                // Create falling debris - wood chips scatter
+                Game1.createRadialDebris(farm, 12, (int)tile.X + (tree.shakeLeft.Value ? -4 : 4), (int)tile.Y, 
+                    Game1.random.Next(12, 18), resource: false);
+                
+                // The tree will remove itself after the fall animation completes in tickUpdate()
+                // We just need to track the damage and collect drops
+                _objectDamage.Remove(tile);
 
+                // Add drops to pet inventory
                 ModEntry.InventoryManager.AddItem(ItemRegistry.Create("(O)388", _random.Next(8, 15)));
                 if (_random.NextDouble() < 0.5)
                     ModEntry.InventoryManager.AddItem(ItemRegistry.Create("(O)92", _random.Next(1, 3)));
@@ -718,10 +784,22 @@ namespace WorkingPets.Behaviors
             if (!_objectDamage.ContainsKey(tile)) _objectDamage[tile] = 0;
             _objectDamage[tile]++;
 
+            // Play axe chop sound and create wood debris
             farm.localSound("axchop");
+            Vector2 debrisOrigin = new Vector2(tile.X * 64f + 32f, tile.Y * 64f);
+            farm.debris.Add(new Debris(12, Game1.random.Next(1, 3), debrisOrigin, debrisOrigin, 0));
 
             if (_objectDamage[tile] >= STUMP_HEALTH)
             {
+                // Final destruction - more dramatic debris and sound
+                farm.localSound("treethud");
+                
+                // Create radial wood debris scatter
+                Game1.createRadialDebris(farm, 12, (int)tile.X, (int)tile.Y, Game1.random.Next(8, 14), resource: false);
+                
+                // Wood burst animation
+                farm.temporarySprites.Add(new TemporaryAnimatedSprite(12, tile * 64f, Color.White, 8, Game1.random.NextDouble() < 0.5, 50f));
+                
                 farm.terrainFeatures.Remove(tile);
                 _objectDamage.Remove(tile);
 
@@ -738,14 +816,33 @@ namespace WorkingPets.Behaviors
             if (!_objectDamage.ContainsKey(tile)) _objectDamage[tile] = 0;
             _objectDamage[tile]++;
 
+            // Play axe chop sound and create wood debris on each hit
             farm.localSound("axchop");
+            Vector2 debrisOrigin = new Vector2(tile.X * 64f + 32f, tile.Y * 64f + 32f);
+            farm.debris.Add(new Debris(12, Game1.random.Next(1, 3), debrisOrigin, debrisOrigin, 0));
 
             if (_objectDamage[tile] >= STUMP_HEALTH * 2)
             {
+                // Final destruction - use exact game animations from ResourceClump.destroy()
+                farm.localSound("stumpCrack");
+                
+                // Smoke/dust poof animation (sprite 23 from game)
+                farm.temporarySprites.Add(new TemporaryAnimatedSprite(23, tile * 64f, Color.White, 4, false, 140f, 0, 128, -1f, 128));
+                
+                // Stump falling dust animation from TileSheets
+                farm.temporarySprites.Add(new TemporaryAnimatedSprite("TileSheets\\animations", 
+                    new Rectangle(385, 1522, 127, 79), 2000f, 1, 1, tile * 64f + new Vector2(0f, 49f), 
+                    false, false, 1E-05f, 0.016f, Color.White, 1f, 0f, 0f, 0f));
+                
+                // Big wood debris scatter (34 = bigWoodDebris from game)
+                Game1.createRadialDebris(farm, 34, (int)tile.X, (int)tile.Y, Game1.random.Next(4, 9), resource: false);
+                
                 farm.resourceClumps.RemoveAt(index);
                 _objectDamage.Remove(tile);
 
-                ModEntry.InventoryManager.AddItem(ItemRegistry.Create("(O)709", _random.Next(2, 5))); // Hardwood
+                // Hardwood drops (game gives 2-8 for stump, 8-10 for log)
+                int hardwoodAmount = (clump.parentSheetIndex.Value == 602) ? _random.Next(6, 10) : _random.Next(2, 4);
+                ModEntry.InventoryManager.AddItem(ItemRegistry.Create("(O)709", hardwoodAmount));
             }
         }
 
@@ -758,16 +855,45 @@ namespace WorkingPets.Behaviors
             if (!_objectDamage.ContainsKey(tile)) _objectDamage[tile] = 0;
             _objectDamage[tile]++;
 
+            // Play hammer sound and create stone debris on each hit
             farm.localSound("hammer");
+            
+            // Stone chip debris flying from impact (14 = stoneDebris)
+            Game1.createRadialDebris(farm, 14, (int)tile.X + Game1.random.Next(clump.width.Value / 2 + 1), 
+                (int)tile.Y + Game1.random.Next(clump.height.Value / 2 + 1), Game1.random.Next(4, 9), resource: false);
 
             if (_objectDamage[tile] >= BOULDER_HEALTH)
             {
+                // Final destruction - use exact game animations from ResourceClump.destroy()
+                farm.localSound("boulderBreak");
+                
+                // Big stone debris scatter (32 = bigStoneDebris from game)
+                Game1.createRadialDebris(farm, 32, (int)tile.X, (int)tile.Y, Game1.random.Next(6, 12), resource: false);
+                
+                // Get boulder color based on type (from ResourceClump.cs)
+                Color boulderColor = Color.White;
+                switch (clump.parentSheetIndex.Value)
+                {
+                    case 752: boulderColor = new Color(188, 119, 98); break;  // Copper-tinted
+                    case 754: boulderColor = new Color(168, 120, 95); break;  // Iron-tinted  
+                    case 756:
+                    case 758: boulderColor = new Color(67, 189, 238); break;  // Blue/ice-tinted
+                }
+                
+                // Boulder explosion animation (sprite 48 from game) with proper color and alpha fade
+                farm.temporarySprites.Add(new TemporaryAnimatedSprite(48, tile * 64f, boulderColor, 5, false, 180f, 0, 128, -1f, 128)
+                {
+                    alphaFade = 0.01f
+                });
+                
                 farm.resourceClumps.RemoveAt(index);
                 _objectDamage.Remove(tile);
-                farm.localSound("boulderBreak");
 
-                // Drop stone and chance for ores
-                ModEntry.InventoryManager.AddItem(ItemRegistry.Create("(O)390", _random.Next(10, 20))); // Stone
+                // Drop stone - game gives 15 for regular boulder, 10 for mine boulders
+                int stoneAmount = (clump.parentSheetIndex.Value == 672) ? _random.Next(12, 18) : _random.Next(8, 12);
+                ModEntry.InventoryManager.AddItem(ItemRegistry.Create("(O)390", stoneAmount));
+                
+                // Chance for ores
                 if (_random.NextDouble() < 0.25)
                     ModEntry.InventoryManager.AddItem(ItemRegistry.Create("(O)380", _random.Next(1, 3))); // Copper
                 if (_random.NextDouble() < 0.1)
