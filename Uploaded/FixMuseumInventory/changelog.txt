@@ -1,0 +1,9 @@
+FixMuseumInventory 1.1.0 - January 12, 2026
+=============================================
+- museum inventory menu can now be moved anywhere on screen using a toggle-move button (click to move, click again to place)
+- Added sound and tooltip feedback for move mode
+- Updated manifest with Nexus update key
+
+Previous versions:
+------------------
+1.0.0 - Initial release
