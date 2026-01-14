@@ -1011,39 +1011,70 @@ namespace WorkingPets.Behaviors
             if (!_objectDamage.ContainsKey(tile)) _objectDamage[tile] = 0;
             _objectDamage[tile]++;
 
-            // Play axe chop sound and create wood chip debris
+            // Determine tree size based on growth stage
+            int growthStage = tree.growthStage.Value;
+            bool isSmallTree = growthStage < 5; // Stages 1-4 are small trees/saplings
+            
+            // Play axe chop sound
             farm.localSound("axchop");
             
-            // Create wood chip debris flying from the chop point
-            Vector2 debrisOrigin = new Vector2(tile.X * 64f + 32f, tile.Y * 64f);
-            farm.debris.Add(new Debris(12, Game1.random.Next(1, 3), debrisOrigin, debrisOrigin, 0));
-            
-            // Shake the tree
-            tree.shake(tile, doEvenIfStillShaking: true);
-
-            if (_objectDamage[tile] >= TREE_HEALTH)
+            if (isSmallTree)
             {
-                // IMPORTANT: Don't use the falling-tree animation here.
-                // It causes weird sequencing (stump/top flicker) when we're not letting the game handle drops.
-                // Instead: play a crack + burst, and instantly convert the tree into a stump.
-                // Visual burst (looks like the chop finished)
-                Game1.createRadialDebris(farm, 12, (int)tile.X, (int)tile.Y, Game1.random.Next(12, 18), resource: false);
-                farm.temporarySprites.Add(new TemporaryAnimatedSprite(12, tile * 64f, Color.White, 8, Game1.random.NextDouble() < 0.5, 50f));
+                // Small tree/sapling: lighter twig debris
+                Vector2 debrisOrigin = new Vector2(tile.X * 64f + 32f, tile.Y * 64f + 32f);
+                farm.debris.Add(new Debris(12, Game1.random.Next(1, 2), debrisOrigin, debrisOrigin, 0));
+            }
+            else
+            {
+                // Fully grown tree: normal wood chip debris
+                Vector2 debrisOrigin = new Vector2(tile.X * 64f + 32f, tile.Y * 64f);
+                farm.debris.Add(new Debris(12, Game1.random.Next(1, 3), debrisOrigin, debrisOrigin, 0));
+                
+                // Shake the tree
+                tree.shake(tile, doEvenIfStillShaking: true);
+            }
 
-                // Force a clean non-falling state and leave a stump behind
-                tree.falling.Value = false;
-                tree.shakeRotation = 0f;
-                tree.maxShake = 0f;
-                tree.stump.Value = true;
-                tree.health.Value = 5f;
+            // Small trees die in fewer hits
+            int hitsNeeded = isSmallTree ? 2 : TREE_HEALTH;
+            
+            if (_objectDamage[tile] >= hitsNeeded)
+            {
+                if (isSmallTree)
+                {
+                    // Small tree/sapling: simple twig poof, remove completely
+                    farm.localSound("leafrustle");
+                    farm.temporarySprites.Add(new TemporaryAnimatedSprite(12, tile * 64f + new Vector2(32f, 32f), Color.White, 8, Game1.random.NextDouble() < 0.5, 50f)
+                    {
+                        scale = 0.75f
+                    });
+                    
+                    // Remove the small tree completely (no stump)
+                    farm.terrainFeatures.Remove(tile);
+                    
+                    // Small trees give less wood
+                    ModEntry.InventoryManager.AddItem(ItemRegistry.Create("(O)388", _random.Next(1, 3)));
+                }
+                else
+                {
+                    // Fully grown tree: burst effect and leave stump
+                    Game1.createRadialDebris(farm, 12, (int)tile.X, (int)tile.Y, Game1.random.Next(12, 18), resource: false);
+                    farm.temporarySprites.Add(new TemporaryAnimatedSprite(12, tile * 64f, Color.White, 8, Game1.random.NextDouble() < 0.5, 50f));
 
-                // Reset our hit tracking for the stump phase
+                    // Force a clean non-falling state and leave a stump behind
+                    tree.falling.Value = false;
+                    tree.shakeRotation = 0f;
+                    tree.maxShake = 0f;
+                    tree.stump.Value = true;
+                    tree.health.Value = 5f;
+
+                    // Add drops to pet inventory
+                    ModEntry.InventoryManager.AddItem(ItemRegistry.Create("(O)388", _random.Next(8, 15)));
+                    if (_random.NextDouble() < 0.5)
+                        ModEntry.InventoryManager.AddItem(ItemRegistry.Create("(O)92", _random.Next(1, 3)));
+                }
+                
+                // Reset our hit tracking
                 _objectDamage.Remove(tile);
-
-                // Add drops to pet inventory
-                ModEntry.InventoryManager.AddItem(ItemRegistry.Create("(O)388", _random.Next(8, 15)));
-                if (_random.NextDouble() < 0.5)
-                    ModEntry.InventoryManager.AddItem(ItemRegistry.Create("(O)92", _random.Next(1, 3)));
             }
         }
 
