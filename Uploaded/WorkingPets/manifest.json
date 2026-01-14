@@ -1,7 +1,7 @@
 {
   "Name": "Working Pets",
   "Author": "CodeKokeshi",
-  "Version": "1.2.0",
+  "Version": "1.2.1",
   "Description": "Transform your pets into helpful farmhands! Works with multiple pets (Pet Licenses compatible). Your cats, dogs, and turtles can clear debris, chop trees, break boulders, and scavenge for daily loot. Each pet works independently with smart collision avoidance. Features toggleable work/follow modes, priority system, and shared inventory.",
   "UniqueID": "CodeKokeshi.WorkingPets",
   "EntryDll": "WorkingPets.dll",

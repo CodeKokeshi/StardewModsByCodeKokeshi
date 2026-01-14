@@ -87,19 +87,24 @@ Then I thought, hmmm... this is gonna be sick. If I actually make the cat work.
 I only ever use this mod to a single pet and according to my research there's a thing called pet license and there are other type of pets like turtles and dogs. I ain't sure how this mod will work with multiple pets and different types at that.
 
 # **Update Plans**:
-1. Include trees that are not fully grown yet (Stage 1-4) for removal. [DONE]
-2. When talking to it, actually pause, do not move. Instead of continuing to work. Only after stopping talking to it that it will resume to its task. Either working or following. Or any state. [DONE]
-3. Fix the part where it gets stuck trying to unstuck warp. To make it clear it's like this, so when the pet can't reach the target it teleports. But if it teleport to a place where it will get stuck instead. It creates a loop of getting stuck and the only way to unstuck it is make it follow you. So with in mind we need to make it so that it will automatically clear the job where it gets stuck, destroying it after getting a three instance of it getting stuck after warping. We will destroy the target immediately. [DONE]
-4. Add a full fledge follow mechanics around town. Add a foraging mechanics so the player can just walk around and the pet will pick it up for the player.
-5. Daily summary report for what item was collected during the day.
-6. Emotes when working (💧 when watering, ⚡ when chopping, ❤️ when finding good items). Trail particles when moving to targets. Speech bubbles showing what they're collecting. [DOUBTS]
-7. Watering Crops - Pet waters unwatered crops when work mode is on.
-8. Pet collects from Kegs, Preserve Jars, Furnaces, etc. Or even crazier, allow them to put things in them from chests.
-9. Pet automatically harvests ready crops (configurable on/off). Respects crop quality, adds to inventory. Would be HUGELY useful for large farms
+1. Add a full fledge follow mechanics around town. Add a foraging mechanics so the player can just walk around and the pet will pick it up for the player.
+2. Daily summary report for what item was collected during the day.
+3. Emotes when working (💧 when watering, ⚡ when chopping, ❤️ when finding good items). Trail particles when moving to targets. Speech bubbles showing what they're collecting. [DOUBTS]
+4. Watering Crops - Pet waters unwatered crops when work mode is on.
+5. Pet collects from Kegs, Preserve Jars, Furnaces, etc. Or even crazier, allow them to put things in them from chests.
+6. Pet automatically harvests ready crops (configurable on/off). Respects crop quality, adds to inventory. Would be HUGELY useful for large farms
 
 # **Progress**:
+version 1.2.0
+- Multi-pet support! Each pet now works independently (Pet Licenses compatible).
+- Target reservation system prevents pets from targeting the same debris.
+- Collision avoidance keeps pets from stacking on each other.
+- Pets now pause and stop moving when you talk to them.
+- After 3 failed warp attempts, pets destroy target remotely (fixes infinite stuck loops).
+- Trees at all growth stages (1-5) can now be removed, not just fully grown ones.
+
 version 1.1.0
-	- Added proper destruction visuals/FX/SFX when pets clear debris/wood/stone (no more silent disappearing).
-	- Adjusted wood-related destruction to use a consistent twig-style particle/poof effect.
-	- Fixed cases where pets could get stuck while doing work by adding a warp fallback near the target.
-	- Improved follow behavior with catch-up speed scaling and a stuck warp fallback near the player.
+* Added proper destruction visuals/FX/SFX when pets clear debris/wood/stone (no more silent disappearing).
+- Adjusted wood-related destruction to use a consistent twig-style particle/poof effect.
+- Fixed cases where pets could get stuck while doing work by adding a warp fallback near the target.
+- Improved follow behavior with catch-up speed scaling and a stuck warp fallback near the player.

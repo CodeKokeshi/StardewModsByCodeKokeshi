@@ -301,6 +301,7 @@ namespace WorkingPets.Behaviors
                 {
                     _lastDistanceToTarget = distance;
                     _noProgressTicks = 0;
+                    // DO NOT reset _consecutiveWarpAttempts here - only reset on actual arrival
                 }
                 else
                 {
@@ -312,10 +313,12 @@ namespace WorkingPets.Behaviors
                 {
                     _consecutiveWarpAttempts++;
                     
+                    ModEntry.Instance.Monitor.Log($"[WorkingPets] Stuck detected; warp attempt {_consecutiveWarpAttempts}/{MAX_WARP_ATTEMPTS} for target {_targetTile.Value}", LogLevel.Debug);
+                    
                     // After 3 warp attempts, give up on pathfinding and just destroy the target
                     if (_consecutiveWarpAttempts >= MAX_WARP_ATTEMPTS)
                     {
-                        ModEntry.Instance.Monitor.Log($"[WorkingPets] Failed to reach target after {MAX_WARP_ATTEMPTS} warp attempts; destroying target directly at {_targetTile.Value}", LogLevel.Debug);
+                        ModEntry.Instance.Monitor.Log($"[WorkingPets] Failed to reach target after {MAX_WARP_ATTEMPTS} warp attempts; destroying target directly at {_targetTile.Value}", LogLevel.Warn);
                         
                         // Execute the action without moving (destroy target from distance)
                         _pet.Halt();
@@ -340,7 +343,10 @@ namespace WorkingPets.Behaviors
                     if (TryWarpPetNearTarget(_pet.currentLocation, _targetTile.Value))
                     {
                         _noProgressTicks = 0;
-                        _lastDistanceToTarget = float.MaxValue;
+                        // After warp, set a realistic distance instead of MaxValue
+                        // to prevent false "progress" detection on next tick
+                        Vector2 newPos = _pet.Position + new Vector2(32, 32);
+                        _lastDistanceToTarget = Vector2.Distance(newPos, targetPos);
                     }
                     else
                     {
