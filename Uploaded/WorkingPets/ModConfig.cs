@@ -31,6 +31,9 @@ namespace WorkingPets
         /// <summary>Whether the pet can follow you outside the farm.</summary>
         public bool FollowOutsideFarm { get; set; } = false;
 
+        /// <summary>Whether the pet picks up forageable items while following you.</summary>
+        public bool ForageWhileFollowing { get; set; } = true;
+
         /*********
         ** Work Type Toggles
         *********/

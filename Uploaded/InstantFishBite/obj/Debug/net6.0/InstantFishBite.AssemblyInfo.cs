@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("InstantFishBite")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a4203fed34004074fe123625e76c8531f9ff9098")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0a1e7157969002e42366c7e33688fe70c6d893e3")]
 [assembly: System.Reflection.AssemblyProductAttribute("InstantFishBite")]
 [assembly: System.Reflection.AssemblyTitleAttribute("InstantFishBite")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

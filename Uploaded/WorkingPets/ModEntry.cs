@@ -226,6 +226,14 @@ namespace WorkingPets
                 setValue: value => Config.FollowOutsideFarm = value
             );
 
+            configMenu.AddBoolOption(
+                mod: this.ModManifest,
+                name: () => "Forage While Following",
+                tooltip: () => "When following you, your pet will pick up forageable items (spring onions, berries, mushrooms, etc.) and store them in their inventory.",
+                getValue: () => Config.ForageWhileFollowing,
+                setValue: value => Config.ForageWhileFollowing = value
+            );
+
             // === Work Types ===
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,

@@ -321,7 +321,7 @@ public class WhistleMenu : IClickableMenu
                     if (manager?.IsFollowing == true)
                         HoverText = $"{entry.DisplayName} is already following you!";
                     else
-                        HoverText = $"{entry.DisplayName} is too far away!";
+                        HoverText = $"{entry.DisplayName} is not on the same area.";
                 }
                 break;
             }

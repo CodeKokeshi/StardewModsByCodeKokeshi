@@ -29,6 +29,7 @@ namespace WorkingPets.Behaviors
         private const int TREE_HEALTH = 10;
         private const int STUMP_HEALTH = 5;
         private const int BOULDER_HEALTH = 8;
+        private const int FORAGE_DETECTION_RADIUS = 5; // tiles around pet to check for forageable items
 
         /*********
         ** Fields
@@ -43,23 +44,29 @@ namespace WorkingPets.Behaviors
         private Vector2? _targetTile;
         private Action? _pendingAction;
         private readonly float _moveSpeed = 3f;
+        private float _currentSpeed = 3f;  // Current movement speed (may be increased when stuck)
+        private bool _isInFastMode = false; // Whether pet is moving at high speed to bypass obstacles
         
         // Track unreachable targets to avoid trying them repeatedly
         private readonly HashSet<Vector2> _unreachableTiles = new();
         private int _unreachableClearTimer;
 
-        // Stuck detection (fallback warp near target)
+        // Stuck detection (fallback fast-speed bypass instead of warping)
         private float _lastDistanceToTarget = float.MaxValue;
         private int _noProgressTicks;
         private Vector2? _lastTargetTile;
         
-        // Track consecutive warp attempts to same target (infinite loop protection)
-        private int _consecutiveWarpAttempts;
-        private const int MAX_WARP_ATTEMPTS = 3;
+        // Track consecutive fast-speed attempts to same target (infinite loop protection)
+        private int _consecutiveFastAttempts;
+        private const int MAX_FAST_ATTEMPTS = 3;
 
         // Follow-mode stuck detection
         private float _lastDistanceToPlayer = float.MaxValue;
         private int _noProgressFollowTicks;
+        
+        // Foraging mechanics while following
+        private Vector2? _foragingTarget;
+        private int _foragingCooldown = 0;
 
         private readonly Random _random = new();
 
@@ -292,13 +299,15 @@ namespace WorkingPets.Behaviors
             float distance = Vector2.Distance(currentPos, targetPos);
 
             // Detect if we're not making progress toward the target.
-            // If we get "stuck" (e.g. pet AI/physics fighting us, odd collisions), warp near the target.
+            // If we get "stuck", activate fast mode to bypass obstacles.
             if (!_lastTargetTile.HasValue || _lastTargetTile.Value != _targetTile.Value)
             {
                 _lastTargetTile = _targetTile.Value;
                 _lastDistanceToTarget = distance;
                 _noProgressTicks = 0;
-                _consecutiveWarpAttempts = 0; // Reset warp counter for new target
+                _consecutiveFastAttempts = 0; // Reset fast counter for new target
+                _isInFastMode = false;
+                _currentSpeed = _moveSpeed;
             }
             else
             {
@@ -307,24 +316,26 @@ namespace WorkingPets.Behaviors
                 {
                     _lastDistanceToTarget = distance;
                     _noProgressTicks = 0;
-                    // DO NOT reset _consecutiveWarpAttempts here - only reset on actual arrival
+                    // DO NOT reset _consecutiveFastAttempts here - only reset on actual arrival
                 }
                 else
                 {
                     _noProgressTicks++;
                 }
 
-                // After ~2 seconds with no progress, warp to a safe tile adjacent to the target.
-                if (_noProgressTicks >= 120)
+                // After ~2 seconds with no progress, activate fast speed mode to bypass obstacles.
+                if (_noProgressTicks >= 120 && !_isInFastMode)
                 {
-                    _consecutiveWarpAttempts++;
+                    _consecutiveFastAttempts++;
+                    _isInFastMode = true;
+                    _currentSpeed = _moveSpeed * 6f; // Ultra-fast speed to pass through walls
                     
-                    ModEntry.Instance.Monitor.Log($"[WorkingPets] Stuck detected; warp attempt {_consecutiveWarpAttempts}/{MAX_WARP_ATTEMPTS} for target {_targetTile.Value}", LogLevel.Debug);
+                    ModEntry.Instance.Monitor.Log($"[WorkingPets] Stuck detected; activating fast-speed bypass (attempt {_consecutiveFastAttempts}/{MAX_FAST_ATTEMPTS}) for target {_targetTile.Value}", LogLevel.Debug);
                     
-                    // After 3 warp attempts, give up on pathfinding and just destroy the target
-                    if (_consecutiveWarpAttempts >= MAX_WARP_ATTEMPTS)
+                    // After 3 fast attempts, give up on pathfinding and just destroy the target
+                    if (_consecutiveFastAttempts >= MAX_FAST_ATTEMPTS)
                     {
-                        ModEntry.Instance.Monitor.Log($"[WorkingPets] Failed to reach target after {MAX_WARP_ATTEMPTS} warp attempts; destroying target directly at {_targetTile.Value}", LogLevel.Warn);
+                        ModEntry.Instance.Monitor.Log($"[WorkingPets] Failed to reach target after {MAX_FAST_ATTEMPTS} fast-speed attempts; destroying target directly at {_targetTile.Value}", LogLevel.Warn);
                         
                         // Execute the action without moving (destroy target from distance)
                         _pet.Halt();
@@ -339,37 +350,12 @@ namespace WorkingPets.Behaviors
                         
                         _targetTile = null;
                         _pendingAction = null;
-                        _consecutiveWarpAttempts = 0;
+                        _consecutiveFastAttempts = 0;
                         _lastTargetTile = null;
                         _lastDistanceToTarget = float.MaxValue;
                         _noProgressTicks = 0;
-                        return;
-                    }
-                    
-                    if (TryWarpPetNearTarget(_pet.currentLocation, _targetTile.Value))
-                    {
-                        _noProgressTicks = 0;
-                        // After warp, set a realistic distance instead of MaxValue
-                        // to prevent false "progress" detection on next tick
-                        Vector2 newPos = _pet.Position + new Vector2(32, 32);
-                        _lastDistanceToTarget = Vector2.Distance(newPos, targetPos);
-                    }
-                    else
-                    {
-                        // If we can't find a safe adjacent tile, treat as unreachable and bail.
-                        ModEntry.Instance.Monitor.Log($"[WorkingPets] Couldn't warp near target {_targetTile.Value}; marking unreachable.", LogLevel.Debug);
-                        _unreachableTiles.Add(_targetTile.Value);
-                        
-                        // Release the reserved target
-                        if (_reservedTarget.HasValue)
-                        {
-                            MultiPetManager.ReleaseTarget(_pet, _reservedTarget.Value);
-                            _reservedTarget = null;
-                        }
-                        
-                        _targetTile = null;
-                        _pendingAction = null;
-                        _consecutiveWarpAttempts = 0;
+                        _isInFastMode = false;
+                        _currentSpeed = _moveSpeed;
                         return;
                     }
                 }
@@ -395,54 +381,45 @@ namespace WorkingPets.Behaviors
                 _lastTargetTile = null;
                 _lastDistanceToTarget = float.MaxValue;
                 _noProgressTicks = 0;
-                _consecutiveWarpAttempts = 0;
+                _consecutiveFastAttempts = 0;
+                _isInFastMode = false;
+                _currentSpeed = _moveSpeed;
                 return;
             }
 
             // Calculate next position
             Vector2 direction = targetPos - currentPos;
             direction.Normalize();
-            Vector2 nextPos = _pet.Position + direction * _moveSpeed;
+            Vector2 nextPos = _pet.Position + direction * _currentSpeed;
             
-            // Check multiple points around the pet for water/obstacles
+            // When in fast mode, ignore water/obstacles (pass through walls)
+            // Otherwise check for water/obstacles
             var location = _pet.currentLocation;
-            if (IsNearWaterOrBlocked(location, nextPos))
+            if (!_isInFastMode && IsNearWaterOrBlocked(location, nextPos))
             {
-                // If we can't take a step toward the target, try the "stuck" warp fallback first.
-                // This matches the expected behavior: if stuck, teleport 1 tile away from the destination.
-                if (TryWarpPetNearTarget(location, _targetTile.Value))
+                // Not in fast mode and blocked - activate fast mode to bypass
+                _noProgressTicks++;
+                if (_noProgressTicks >= 60)  // Shorter threshold in normal mode
                 {
-                    _lastTargetTile = _targetTile.Value;
-                    _lastDistanceToTarget = float.MaxValue;
-                    _noProgressTicks = 0;
-                    return;
+                    _consecutiveFastAttempts++;
+                    _isInFastMode = true;
+                    _currentSpeed = _moveSpeed * 6f;
+                    ModEntry.Instance.Monitor.Log($"[WorkingPets] Obstacle detected; activating fast-speed bypass for target {_targetTile.Value}", LogLevel.Debug);
                 }
-
-                ModEntry.Instance.Monitor.Log($"[WorkingPets] Blocked near water/obstacle and couldn't warp; skipping target {_targetTile.Value}", LogLevel.Debug);
-                _unreachableTiles.Add(_targetTile.Value);
-                
-                // Release the reserved target
-                if (_reservedTarget.HasValue)
-                {
-                    MultiPetManager.ReleaseTarget(_pet, _reservedTarget.Value);
-                    _reservedTarget = null;
-                }
-                
-                _targetTile = null;
-                _pendingAction = null;
-
-                _lastTargetTile = null;
-                _lastDistanceToTarget = float.MaxValue;
-                _noProgressTicks = 0;
-                _consecutiveWarpAttempts = 0;
                 return;
             }
 
             // Move the pet
-            // Add collision avoidance nudge to prevent pets from stacking on each other
-            var allPets = MultiPetManager.GetAllPets();
-            Vector2 avoidanceNudge = MultiPetManager.GetCollisionAvoidanceNudge(_pet, allPets);
-            _pet.Position = nextPos + avoidanceNudge;
+            // Add collision avoidance nudge to prevent pets from stacking on each other (but skip if in fast mode)
+            Vector2 finalPos = nextPos;
+            if (!_isInFastMode)
+            {
+                var allPets = MultiPetManager.GetAllPets();
+                Vector2 avoidanceNudge = MultiPetManager.GetCollisionAvoidanceNudge(_pet, allPets);
+                finalPos = nextPos + avoidanceNudge;
+            }
+            
+            _pet.Position = finalPos;
 
             // Face the right direction
             if (Math.Abs(direction.X) > Math.Abs(direction.Y))
@@ -510,6 +487,41 @@ namespace WorkingPets.Behaviors
                 return;
             }
 
+            // Handle foraging mechanics (picking up nearby forageable items)
+            // Only if enabled in config
+            var petLocation = _pet.currentLocation;
+            if (ModEntry.Config.ForageWhileFollowing && petLocation != null)
+            {
+                if (_foragingCooldown > 0)
+                    _foragingCooldown--;
+                    
+                // Check if we're at a foraging target
+                if (_foragingTarget.HasValue)
+                {
+                    Vector2 targetPos = _foragingTarget.Value;
+                    Vector2 foragePetPos = _pet.Tile;
+                    float targetDistance = Vector2.Distance(foragePetPos, targetPos);
+                    
+                    if (targetDistance < 2f)
+                    {
+                        // Pick up the item at this location
+                        TryPickupForageableAt(petLocation, _foragingTarget.Value);
+                        _foragingTarget = null;
+                    }
+                }
+                
+                // Periodically scan for nearby forageables
+                if (!_foragingTarget.HasValue && _foragingCooldown == 0)
+                {
+                    var nearbyForage = FindNearbyForageable(petLocation, _pet.Tile);
+                    if (nearbyForage.HasValue)
+                    {
+                        _foragingTarget = nearbyForage.Value;
+                        _foragingCooldown = 120; // 2 second cooldown between foraging attempts
+                    }
+                }
+            }
+
             Vector2 playerPos = player.Position;
             Vector2 petPos = _pet.Position;
             float distance = Vector2.Distance(petPos, playerPos);
@@ -525,39 +537,66 @@ namespace WorkingPets.Behaviors
 
                 _lastDistanceToPlayer = float.MaxValue;
                 _noProgressFollowTicks = 0;
+                
+                // Reset fast mode when we're close enough
+                _isInFastMode = false;
+                _currentSpeed = _moveSpeed;
                 return;
             }
 
             if (distance > followDistance)
             {
-                // Move toward player
-                Vector2 direction = playerPos - petPos;
+                // Decide target: forageable item if nearby, else follow player
+                Vector2 targetPosition;
+                bool isForaging = false;
+                
+                if (_foragingTarget.HasValue && distance < 512f)  // Only forage if player isn't too far
+                {
+                    // Move toward forageable
+                    targetPosition = _foragingTarget.Value * 64f + new Vector2(32, 32);
+                    isForaging = true;
+                }
+                else
+                {
+                    // Move toward player
+                    targetPosition = playerPos;
+                }
+                
+                Vector2 direction = targetPosition - petPos;
                 direction.Normalize();
 
                 // Catch-up speed scaling: if the player is far, move faster.
                 // This keeps following responsive without permanently changing base speed.
                 float speed = _moveSpeed;
-                if (distance > 512f)
-                    speed *= 2.0f;
-                else if (distance > 256f)
-                    speed *= 1.5f;
+                if (!isForaging)
+                {
+                    if (distance > 512f)
+                        speed *= 2.0f;
+                    else if (distance > 256f)
+                        speed *= 1.5f;
+                }
+
+                // Use fast speed if stuck
+                if (_isInFastMode)
+                    speed = _moveSpeed * 6f;
 
                 Vector2 nextPos = _pet.Position + direction * speed;
 
                 // Check for water/obstacles using improved detection
-                var location = _pet.currentLocation;
+                var currentLocation = _pet.currentLocation;
                 
-                if (IsNearWaterOrBlocked(location, nextPos))
+                // When in fast mode, ignore obstacles (pass through walls)
+                // Otherwise check for water/obstacles
+                if (!_isInFastMode && IsNearWaterOrBlocked(currentLocation, nextPos))
                 {
-                    // If blocked for too long while trying to follow, warp near the player.
+                    // If blocked for too long while trying to follow, activate fast mode.
                     _noProgressFollowTicks++;
                     if (_noProgressFollowTicks >= 120)
                     {
-                        if (TryWarpPetNearTarget(location, player.Tile))
-                        {
-                            _noProgressFollowTicks = 0;
-                            _lastDistanceToPlayer = float.MaxValue;
-                        }
+                        _isInFastMode = true;
+                        ModEntry.Instance.Monitor.Log($"[WorkingPets] {_pet.Name} stuck following player; activating fast-speed bypass", LogLevel.Debug);
+                        _noProgressFollowTicks = 0;
+                        _lastDistanceToPlayer = float.MaxValue;
                     }
                     return;
                 }
@@ -567,17 +606,23 @@ namespace WorkingPets.Behaviors
                 {
                     _lastDistanceToPlayer = distance;
                     _noProgressFollowTicks = 0;
+                    
+                    // Reset fast mode when we're making good progress again
+                    if (_isInFastMode)
+                    {
+                        _isInFastMode = false;
+                        _currentSpeed = _moveSpeed;
+                    }
                 }
                 else
                 {
                     _noProgressFollowTicks++;
-                    if (_noProgressFollowTicks >= 120)
+                    if (_noProgressFollowTicks >= 120 && !_isInFastMode)
                     {
-                        if (TryWarpPetNearTarget(location, player.Tile))
-                        {
-                            _noProgressFollowTicks = 0;
-                            _lastDistanceToPlayer = float.MaxValue;
-                        }
+                        _isInFastMode = true;
+                        ModEntry.Instance.Monitor.Log($"[WorkingPets] {_pet.Name} stuck following player; activating fast-speed bypass", LogLevel.Debug);
+                        _noProgressFollowTicks = 0;
+                        _lastDistanceToPlayer = float.MaxValue;
                     }
                 }
 
@@ -591,6 +636,96 @@ namespace WorkingPets.Behaviors
 
                 _pet.animateInFacingDirection(Game1.currentGameTime);
             }
+        }
+
+        /// <summary>Find a nearby forageable item within detection radius.</summary>
+        private Vector2? FindNearbyForageable(GameLocation location, Vector2 petTile)
+        {
+            if (location == null) return null;
+            
+            float nearestDist = float.MaxValue;
+            Vector2? nearestForage = null;
+            
+            // Check objects in the location for forageable items
+            foreach (var pair in location.Objects.Pairs)
+            {
+                if (!IsForageable(pair.Value))
+                    continue;
+                    
+                float dist = Vector2.Distance(petTile, pair.Key);
+                if (dist <= FORAGE_DETECTION_RADIUS && dist < nearestDist)
+                {
+                    nearestDist = dist;
+                    nearestForage = pair.Key;
+                }
+            }
+            
+            return nearestForage;
+        }
+        
+        /// <summary>Check if an object is a forageable item.</summary>
+        private bool IsForageable(StardewValley.Object obj)
+        {
+            if (obj == null) return false;
+            
+            // Check if it's a forage item (category -81 and -80 are forage categories)
+            // Also check isForage flag
+            if (obj.isForage())
+                return true;
+                
+            // Additional forageable categories
+            if (obj.Category == StardewValley.Object.GreensCategory || 
+                obj.Category == StardewValley.Object.flowersCategory)
+                return true;
+                
+            return false;
+        }
+        
+        /// <summary>Try to pick up a forageable item at the specified location.</summary>
+        private void TryPickupForageableAt(GameLocation location, Vector2 tile)
+        {
+            if (_pet == null || location == null) return;
+            
+            // Check if there's still an object at this location
+            if (!location.Objects.TryGetValue(tile, out StardewValley.Object obj))
+                return;
+                
+            if (!IsForageable(obj))
+                return;
+                
+            // Create a copy of the item to add to inventory
+            Item itemToAdd = obj.getOne();
+            itemToAdd.Stack = obj.Stack;
+            
+            // Try to add to pet inventory
+            if (ModEntry.InventoryManager.AddItem(itemToAdd))
+            {
+                // Remove the object from the world
+                location.Objects.Remove(tile);
+                
+                // Play pickup sound
+                Game1.playSound("pickUpItem");
+                
+                // Show notification
+                ShowForagePickupNotification(obj.DisplayName);
+                
+                ModEntry.Instance.Monitor.Log($"[WorkingPets] {_pet.Name} picked up {obj.DisplayName} at {tile}", LogLevel.Info);
+            }
+            else
+            {
+                ModEntry.Instance.Monitor.Log($"[WorkingPets] {_pet.Name}'s inventory is full, couldn't pick up {obj.DisplayName}", LogLevel.Debug);
+            }
+        }
+        
+        /// <summary>Show a HUD notification when the pet picks up a forageable item.</summary>
+        private void ShowForagePickupNotification(string itemName)
+        {
+            if (_pet == null) return;
+            
+            // Use HUDMessage with an icon-like display
+            string message = $"{_pet.Name} found: {itemName}";
+            HUDMessage hudMessage = new HUDMessage(message, HUDMessage.newQuest_type);
+            Game1.addHUDMessage(hudMessage);
         }
 
         private void ScanForWork(Farm farm)

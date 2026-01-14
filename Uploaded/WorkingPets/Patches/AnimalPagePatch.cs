@@ -76,7 +76,7 @@ public static class AnimalPagePatch
         if (pet.currentLocation != player.currentLocation)
         {
             // Pet is in a different location - show message
-            Game1.showRedMessage($"{pet.displayName} is too far away to hear!");
+            Game1.showRedMessage($"{pet.displayName} is not on the same area.");
             Game1.playSound("cancel");
             return;
         }
