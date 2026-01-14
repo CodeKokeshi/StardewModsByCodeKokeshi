@@ -80,11 +80,19 @@ namespace WorkingPets
             if (!Context.IsWorldReady || Game1.activeClickableMenu != null)
                 return;
 
-            // Open whistle menu
+            // Toggle whistle menu
             if (Config.WhistleKey.JustPressed())
             {
-                Game1.activeClickableMenu = new WhistleMenu();
-                Game1.playSound("bigSelect");
+                if (Game1.activeClickableMenu is WhistleMenu)
+                {
+                    Game1.activeClickableMenu.exitThisMenu();
+                    Game1.playSound("bigDeSelect");
+                }
+                else
+                {
+                    Game1.activeClickableMenu = new WhistleMenu();
+                    Game1.playSound("bigSelect");
+                }
             }
         }
         /// <summary>Raised after the game is launched, right before the first update tick.</summary>

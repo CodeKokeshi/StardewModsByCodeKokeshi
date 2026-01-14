@@ -309,7 +309,10 @@ public class WhistleMenu : IClickableMenu
         for (int i = SlotPosition; i < SlotPosition + SlotsPerPage && i < PetSlots.Count; i++)
         {
             if (PetSlots[i].bounds.Contains(x, y))
-            {{
+            {
+                var entry = PetEntries[i];
+                if (entry.IsEnabled)
+                {
                     HoverText = $"Whistle {entry.DisplayName} to follow you";
                 }
                 else
@@ -320,9 +323,6 @@ public class WhistleMenu : IClickableMenu
                     else
                         HoverText = $"{entry.DisplayName} is too far away!";
                 }
-                    HoverText = $"Whistle {entry.DisplayName} to follow you";
-                else
-                    HoverText = $"{entry.DisplayName} is too far away!";
                 break;
             }
         }
@@ -361,16 +361,30 @@ public class WhistleMenu : IClickableMenu
             true
         );
         
-        // Title
+        // Title with background container
         string title = "Whistle Pet";
         Vector2 titleSize = Game1.dialogueFont.MeasureString(title);
+        int titleX = xPositionOnScreen + width / 2 - (int)titleSize.X / 2;
+        int titleY = yPositionOnScreen + IClickableMenu.borderWidth + 12;
+        
+        // Draw title background box
+        drawTextureBox(
+            b,
+            Game1.menuTexture,
+            new Rectangle(0, 256, 60, 60),
+            titleX - 24,
+            titleY - 8,
+            (int)titleSize.X + 48,
+            (int)titleSize.Y + 16,
+            Color.White,
+            1f,
+            false
+        );
+        
         b.DrawString(
             Game1.dialogueFont,
             title,
-            new Vector2(
-                xPositionOnScreen + width / 2 - titleSize.X / 2,
-                yPositionOnScreen + IClickableMenu.borderWidth + 12
-            ),
+            new Vector2(titleX, titleY),
             Game1.textColor
         );
         
@@ -458,39 +472,35 @@ public class WhistleMenu : IClickableMenu
             textColor
         );
         
-        // Draw work status indicator
+        // Draw status text instead of icons
         var manager = ModEntry.PetManager?.GetManagerForPet(entry.Pet);
-        if (manager != null && manager.IsWorking)
+        string statusText = "Idle";
+        Color statusColor = Color.Gray;
+        
+        if (manager != null)
         {
-            // Draw wrench icon
-            b.Draw(
-                Game1.mouseCursors,
-                new Vector2(xPositionOnScreen + width - 64, sprite.bounds.Y + 24),
-                new Rectangle(280, 428, 10, 10),
-                entry.IsEnabled ? Color.White : Color.Gray * 0.5f,
-                0f,
-                Vector2.Zero,
-                3f,
-                SpriteEffects.None,
-                0.9f
-            );
+            if (manager.IsFollowing)
+            {
+                statusText = "Following";
+                statusColor = Color.LightBlue;
+            }
+            else if (manager.IsWorking)
+            {
+                statusText = "Working";
+                statusColor = Color.LightGreen;
+            }
         }
         
-        // Draw location indicator (check mark if same location)
-        if (entry.IsEnabled)
-        {
-            b.Draw(
-                Game1.mouseCursors,
-                new Vector2(xPositionOnScreen + width - 120, sprite.bounds.Y + 24),
-                new Rectangle(310, 490, 16, 16), // checkmark
-                Color.LightGreen,
-                0f,
-                Vector2.Zero,
-                2f,
-                SpriteEffects.None,
-                0.9f
-            );
-        }
+        Vector2 statusSize = Game1.smallFont.MeasureString(statusText);
+        b.DrawString(
+            Game1.smallFont,
+            statusText,
+            new Vector2(
+                xPositionOnScreen + width - IClickableMenu.borderWidth - statusSize.X - 16,
+                sprite.bounds.Y + 40
+            ),
+            entry.IsEnabled ? statusColor : statusColor * 0.5f
+        );
     }
     
     private class PetEntry
