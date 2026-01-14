@@ -475,19 +475,19 @@ public class WhistleMenu : IClickableMenu
         // Draw status text instead of icons
         var manager = ModEntry.PetManager?.GetManagerForPet(entry.Pet);
         string statusText = "Idle";
-        Color statusColor = Color.Gray;
+        Color statusColor = Game1.textColor;
         
         if (manager != null)
         {
             if (manager.IsFollowing)
             {
                 statusText = "Following";
-                statusColor = Color.LightBlue;
+                statusColor = Game1.textColor;
             }
             else if (manager.IsWorking)
             {
                 statusText = "Working";
-                statusColor = Color.LightGreen;
+                statusColor = Game1.textColor;
             }
         }
         
