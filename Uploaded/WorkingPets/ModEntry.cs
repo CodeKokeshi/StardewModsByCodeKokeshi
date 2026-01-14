@@ -23,7 +23,11 @@ namespace WorkingPets
         public static ModConfig Config { get; private set; } = null!;
 
         /// <summary>Manages pet work behavior.</summary>
+        [Obsolete("Use PetManager.GetManagerForPet() instead for multi-pet support")]
         public static PetWorkManager WorkManager { get; private set; } = null!;
+        
+        /// <summary>Manages multiple pets and coordinates their work.</summary>
+        public static MultiPetManager PetManager { get; private set; } = null!;
 
         /// <summary>Manages pet inventory.</summary>
         public static PetInventoryManager InventoryManager { get; private set; } = null!;
@@ -42,7 +46,10 @@ namespace WorkingPets
             Config = helper.ReadConfig<ModConfig>();
 
             // Initialize managers
-            WorkManager = new PetWorkManager();
+            #pragma warning disable CS0618 // Intentionally using legacy WorkManager for backwards compat
+            WorkManager = new PetWorkManager(); // Legacy, kept for backwards compatibility
+            #pragma warning restore CS0618
+            PetManager = new MultiPetManager();
             InventoryManager = new PetInventoryManager();
             ScavengeManager = new PetScavengeManager();
 
@@ -56,6 +63,7 @@ namespace WorkingPets
             helper.Events.GameLoop.Saving += OnSaving;
             helper.Events.GameLoop.UpdateTicked += OnUpdateTicked;
             helper.Events.GameLoop.DayStarted += OnDayStarted;
+            helper.Events.Display.MenuChanged += OnMenuChanged;
 
             this.Monitor.Log("Working Pets mod loaded! Talk to your pet to toggle work mode.", LogLevel.Info);
         }
@@ -273,28 +281,45 @@ namespace WorkingPets
         /// <summary>Raised after the save file is loaded.</summary>
         private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
         {
-            // Find the player's pet and initialize
-            Pet? pet = GetPlayerPet();
-            if (pet != null)
+            // Initialize all pets in the game
+            PetManager.InitializeAllPets();
+            
+            // Load inventory (shared across all pets)
+            var allPets = MultiPetManager.GetAllPets();
+            if (allPets.Count > 0)
             {
-                WorkManager.Initialize(pet);
-                InventoryManager.Load(pet);
-                this.Monitor.Log($"Found pet: {pet.Name}. Working Pets initialized!", LogLevel.Info);
+                InventoryManager.Load(allPets[0]); // Load from first pet's modData
+                this.Monitor.Log($"Found {allPets.Count} pet(s). Working Pets initialized!", LogLevel.Info);
+                foreach (var pet in allPets)
+                {
+                    this.Monitor.Log($"  - {pet.Name} ({pet.petType.Value}, {pet.whichBreed.Value})", LogLevel.Info);
+                }
             }
             else
             {
-                this.Monitor.Log("No pet found. Get a pet to use Working Pets!", LogLevel.Info);
+                this.Monitor.Log("No pets found. Get a pet to use Working Pets!", LogLevel.Info);
+            }
+            
+            // Legacy: keep WorkManager synced with first pet for backwards compat
+            if (allPets.Count > 0)
+            {
+                #pragma warning disable CS0618 // Intentionally using legacy WorkManager
+                WorkManager.Initialize(allPets[0]);
+                #pragma warning restore CS0618
             }
         }
 
         /// <summary>Raised before the game saves.</summary>
         private void OnSaving(object? sender, SavingEventArgs e)
         {
-            Pet? pet = GetPlayerPet();
-            if (pet != null)
+            // Save state for all pets
+            PetManager.SaveAllStates();
+            
+            // Save inventory (shared across all pets, stored in first pet's modData)
+            var allPets = MultiPetManager.GetAllPets();
+            if (allPets.Count > 0)
             {
-                InventoryManager.Save(pet);
-                WorkManager.SaveState(pet);
+                InventoryManager.Save(allPets[0]);
             }
         }
 
@@ -304,25 +329,37 @@ namespace WorkingPets
             if (!Context.IsWorldReady || !Config.ModEnabled)
                 return;
 
-            WorkManager.Update();
+            // Update all pets
+            PetManager.UpdateAll();
         }
 
         /// <summary>Raised when a new day starts.</summary>
         private void OnDayStarted(object? sender, DayStartedEventArgs e)
         {
-            Pet? pet = GetPlayerPet();
-            if (pet == null)
-                return;
-
-            // Trigger daily scavengehunt
-            ScavengeManager.PerformDailyScavenge(pet);
-
-            // Ensure pet is on the farm
-            if (pet.currentLocation?.Name != "Farm")
+            var allPets = MultiPetManager.GetAllPets();
+            
+            // Trigger daily scavenge for each pet
+            foreach (var pet in allPets)
             {
-                // Warp pet to farm
-                Game1.warpCharacter(pet, "Farm", new Microsoft.Xna.Framework.Vector2(54, 8));
-                this.Monitor.Log($"Warped {pet.Name} back to the farm.", LogLevel.Debug);
+                ScavengeManager.PerformDailyScavenge(pet);
+                
+                // Ensure pet is on the farm if it was working
+                var manager = PetManager.GetManagerForPet(pet);
+                if (manager?.IsWorking == true && pet.currentLocation?.Name != "Farm")
+                {
+                    Game1.warpCharacter(pet, "Farm", new Microsoft.Xna.Framework.Vector2(54, 8));
+                    this.Monitor.Log($"Warped {pet.Name} back to the farm.", LogLevel.Debug);
+                }
+            }
+        }
+
+        /// <summary>Raised when the active menu changes (detect menu close to resume pet).</summary>
+        private void OnMenuChanged(object? sender, MenuChangedEventArgs e)
+        {
+            // When any menu closes, resume all pets
+            if (e.NewMenu == null && e.OldMenu != null)
+            {
+                PetManager.ResumeAllFromDialogue();
             }
         }
 

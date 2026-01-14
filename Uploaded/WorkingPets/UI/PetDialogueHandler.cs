@@ -5,6 +5,7 @@ using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Characters;
 using StardewValley.Menus;
+using WorkingPets.Behaviors;
 
 namespace WorkingPets.UI
 {
@@ -15,6 +16,12 @@ namespace WorkingPets.UI
         ** Constants
         *********/
         private const string RENAME_USED_KEY = "WorkingPets.RenameUsed";
+        
+        /*********
+        ** Fields
+        *********/
+        /// <summary>The pet currently being interacted with (for dialogue callbacks).</summary>
+        private static Pet? _currentDialoguePet;
 
         /*********
         ** Public methods
@@ -22,9 +29,18 @@ namespace WorkingPets.UI
         /// <summary>Show the custom pet interaction menu.</summary>
         public static void ShowPetMenu(Pet pet, Farmer who, GameLocation location)
         {
+            // Track which pet we're talking to
+            _currentDialoguePet = pet;
+            
+            // Get this pet's work manager
+            var manager = ModEntry.PetManager.GetManagerForPet(pet);
+            
+            // Pause THIS pet's movement while dialogue is open
+            manager?.PauseForDialogue();
+            
             string petName = pet.Name ?? "Your pet";
-            bool isWorking = ModEntry.WorkManager.IsWorking;
-            bool isFollowing = ModEntry.WorkManager.IsFollowing;
+            bool isWorking = manager?.IsWorking ?? false;
+            bool isFollowing = manager?.IsFollowing ?? false;
             int totalItems = ModEntry.InventoryManager.TotalItemCount;
 
             // Build response options - natural dialogue style
@@ -90,16 +106,18 @@ namespace WorkingPets.UI
         *********/
         private static void HandlePetResponse(Farmer who, string answer)
         {
-            Pet? pet = ModEntry.GetPlayerPet();
+            // Use the pet we were talking to, not just the first pet
+            Pet? pet = _currentDialoguePet ?? ModEntry.GetPlayerPet();
+            var manager = pet != null ? ModEntry.PetManager.GetManagerForPet(pet) : null;
 
             switch (answer)
             {
                 case "ToggleFollow":
-                    HandleToggleFollow(pet);
+                    HandleToggleFollow(pet, manager);
                     break;
 
                 case "ToggleWork":
-                    HandleToggleWork(pet);
+                    HandleToggleWork(pet, manager);
                     break;
 
                 case "OpenInventory":
@@ -119,15 +137,20 @@ namespace WorkingPets.UI
                     // Do nothing
                     break;
             }
+            
+            // Clear the tracked pet after handling response
+            _currentDialoguePet = null;
         }
 
-        private static void HandleToggleFollow(Pet? pet)
+        private static void HandleToggleFollow(Pet? pet, PetWorkManager? manager)
         {
-            ModEntry.WorkManager.ToggleFollow();
+            if (manager == null) return;
+            
+            manager.ToggleFollow();
 
             string petName = pet?.Name ?? "Your pet";
 
-            if (ModEntry.WorkManager.IsFollowing)
+            if (manager.IsFollowing)
             {
                 Game1.playSound("dog_pant");
                 Game1.addHUDMessage(new HUDMessage($"{petName} is now following you!", HUDMessage.newQuest_type));
@@ -139,20 +162,22 @@ namespace WorkingPets.UI
             }
         }
 
-        private static void HandleToggleWork(Pet? pet)
+        private static void HandleToggleWork(Pet? pet, PetWorkManager? manager)
         {
+            if (manager == null) return;
+            
             // If currently following, stop following first
-            if (ModEntry.WorkManager.IsFollowing)
+            if (manager.IsFollowing)
             {
-                ModEntry.WorkManager.StopFollowing();
+                manager.StopFollowing();
             }
             
-            ModEntry.WorkManager.ToggleWork();
+            manager.ToggleWork();
 
             string petName = pet?.Name ?? "Your pet";
 
             // Play sound and show message
-            if (ModEntry.WorkManager.IsWorking)
+            if (manager.IsWorking)
             {
                 Game1.playSound("questcomplete");
                 Game1.addHUDMessage(new HUDMessage($"{petName} is now helping on the farm!", HUDMessage.newQuest_type));

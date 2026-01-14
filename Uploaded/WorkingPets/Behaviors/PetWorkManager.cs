@@ -37,6 +37,7 @@ namespace WorkingPets.Behaviors
         private bool _isWorking;
         private bool _isFollowing;
         private int _tickCounter;
+        private bool _isPausedForDialogue;
         
         // Movement & Action State
         private Vector2? _targetTile;
@@ -51,6 +52,10 @@ namespace WorkingPets.Behaviors
         private float _lastDistanceToTarget = float.MaxValue;
         private int _noProgressTicks;
         private Vector2? _lastTargetTile;
+        
+        // Track consecutive warp attempts to same target (infinite loop protection)
+        private int _consecutiveWarpAttempts;
+        private const int MAX_WARP_ATTEMPTS = 3;
 
         // Follow-mode stuck detection
         private float _lastDistanceToPlayer = float.MaxValue;
@@ -60,6 +65,9 @@ namespace WorkingPets.Behaviors
 
         // Track damage for multi-hit objects
         private readonly Dictionary<Vector2, int> _objectDamage = new();
+        
+        // Current reserved target (for multi-pet coordination)
+        private Vector2? _reservedTarget;
 
         /*********
         ** Properties
@@ -123,9 +131,30 @@ namespace WorkingPets.Behaviors
             }
         }
 
+        public void PauseForDialogue()
+        {
+            _isPausedForDialogue = true;
+            if (_pet != null)
+            {
+                _pet.Halt();
+                _pet.controller = null;
+            }
+        }
+
+        public void ResumeFromDialogue()
+        {
+            _isPausedForDialogue = false;
+        }
+
         public void Update()
         {
             if (_pet == null)
+            {
+                return;
+            }
+
+            // Pause all movement and actions while dialogue is active
+            if (_isPausedForDialogue)
             {
                 return;
             }
@@ -207,6 +236,14 @@ namespace WorkingPets.Behaviors
 
             _pet.Halt();
             _pet.controller = null;
+            
+            // Release any reserved target
+            if (_reservedTarget.HasValue)
+            {
+                MultiPetManager.ReleaseTarget(_pet, _reservedTarget.Value);
+                _reservedTarget = null;
+            }
+            
             _targetTile = null;
             _pendingAction = null;
         }
@@ -255,6 +292,7 @@ namespace WorkingPets.Behaviors
                 _lastTargetTile = _targetTile.Value;
                 _lastDistanceToTarget = distance;
                 _noProgressTicks = 0;
+                _consecutiveWarpAttempts = 0; // Reset warp counter for new target
             }
             else
             {
@@ -272,6 +310,33 @@ namespace WorkingPets.Behaviors
                 // After ~2 seconds with no progress, warp to a safe tile adjacent to the target.
                 if (_noProgressTicks >= 120)
                 {
+                    _consecutiveWarpAttempts++;
+                    
+                    // After 3 warp attempts, give up on pathfinding and just destroy the target
+                    if (_consecutiveWarpAttempts >= MAX_WARP_ATTEMPTS)
+                    {
+                        ModEntry.Instance.Monitor.Log($"[WorkingPets] Failed to reach target after {MAX_WARP_ATTEMPTS} warp attempts; destroying target directly at {_targetTile.Value}", LogLevel.Debug);
+                        
+                        // Execute the action without moving (destroy target from distance)
+                        _pet.Halt();
+                        _pendingAction?.Invoke();
+                        
+                        // Release the reserved target
+                        if (_reservedTarget.HasValue)
+                        {
+                            MultiPetManager.ReleaseTarget(_pet, _reservedTarget.Value);
+                            _reservedTarget = null;
+                        }
+                        
+                        _targetTile = null;
+                        _pendingAction = null;
+                        _consecutiveWarpAttempts = 0;
+                        _lastTargetTile = null;
+                        _lastDistanceToTarget = float.MaxValue;
+                        _noProgressTicks = 0;
+                        return;
+                    }
+                    
                     if (TryWarpPetNearTarget(_pet.currentLocation, _targetTile.Value))
                     {
                         _noProgressTicks = 0;
@@ -282,8 +347,17 @@ namespace WorkingPets.Behaviors
                         // If we can't find a safe adjacent tile, treat as unreachable and bail.
                         ModEntry.Instance.Monitor.Log($"[WorkingPets] Couldn't warp near target {_targetTile.Value}; marking unreachable.", LogLevel.Debug);
                         _unreachableTiles.Add(_targetTile.Value);
+                        
+                        // Release the reserved target
+                        if (_reservedTarget.HasValue)
+                        {
+                            MultiPetManager.ReleaseTarget(_pet, _reservedTarget.Value);
+                            _reservedTarget = null;
+                        }
+                        
                         _targetTile = null;
                         _pendingAction = null;
+                        _consecutiveWarpAttempts = 0;
                         return;
                     }
                 }
@@ -295,12 +369,21 @@ namespace WorkingPets.Behaviors
                 ModEntry.Instance.Monitor.Log($"[WorkingPets] ARRIVED at {_targetTile.Value}! Executing action.", LogLevel.Info);
                 _pet.Halt();
                 _pendingAction?.Invoke();
+                
+                // Release the reserved target
+                if (_reservedTarget.HasValue)
+                {
+                    MultiPetManager.ReleaseTarget(_pet, _reservedTarget.Value);
+                    _reservedTarget = null;
+                }
+                
                 _targetTile = null;
                 _pendingAction = null;
 
                 _lastTargetTile = null;
                 _lastDistanceToTarget = float.MaxValue;
                 _noProgressTicks = 0;
+                _consecutiveWarpAttempts = 0;
                 return;
             }
 
@@ -325,17 +408,29 @@ namespace WorkingPets.Behaviors
 
                 ModEntry.Instance.Monitor.Log($"[WorkingPets] Blocked near water/obstacle and couldn't warp; skipping target {_targetTile.Value}", LogLevel.Debug);
                 _unreachableTiles.Add(_targetTile.Value);
+                
+                // Release the reserved target
+                if (_reservedTarget.HasValue)
+                {
+                    MultiPetManager.ReleaseTarget(_pet, _reservedTarget.Value);
+                    _reservedTarget = null;
+                }
+                
                 _targetTile = null;
                 _pendingAction = null;
 
                 _lastTargetTile = null;
                 _lastDistanceToTarget = float.MaxValue;
                 _noProgressTicks = 0;
+                _consecutiveWarpAttempts = 0;
                 return;
             }
 
             // Move the pet
-            _pet.Position = nextPos;
+            // Add collision avoidance nudge to prevent pets from stacking on each other
+            var allPets = MultiPetManager.GetAllPets();
+            Vector2 avoidanceNudge = MultiPetManager.GetCollisionAvoidanceNudge(_pet, allPets);
+            _pet.Position = nextPos + avoidanceNudge;
 
             // Face the right direction
             if (Math.Abs(direction.X) > Math.Abs(direction.Y))
@@ -557,7 +652,7 @@ namespace WorkingPets.Behaviors
             {
                 foreach (var pair in farm.terrainFeatures.Pairs)
                 {
-                    if (pair.Value is Tree tree && tree.growthStage.Value >= 5 && !tree.stump.Value)
+                    if (pair.Value is Tree tree && tree.growthStage.Value >= 1 && !tree.stump.Value)
                     {
                         float dist = Vector2.Distance(petTile, pair.Key);
                         if (dist <= workRadius)
@@ -696,7 +791,7 @@ namespace WorkingPets.Behaviors
             foreach (var pair in farm.terrainFeatures.Pairs)
             {
                 if (pair.Value is not Tree tree) continue;
-                if (tree.growthStage.Value < 5 || tree.stump.Value) continue;
+                if (tree.growthStage.Value < 1 || tree.stump.Value) continue;
 
                 float dist = Vector2.Distance(petTile, pair.Key);
                 if (dist > ModEntry.Config.WorkRadius) continue;
@@ -770,8 +865,29 @@ namespace WorkingPets.Behaviors
             {
                 return; // Silently skip, don't spam logs
             }
+            
+            // Skip if another pet already reserved this target
+            if (_pet != null && MultiPetManager.IsTargetReservedByOther(_pet, tile))
+            {
+                ModEntry.Instance.Monitor.Log($"[WorkingPets] {_pet.Name}: Target {tile} already reserved by another pet, skipping.", LogLevel.Trace);
+                return;
+            }
+            
+            // Try to reserve this target
+            if (_pet != null && !MultiPetManager.TryReserveTarget(_pet, tile))
+            {
+                ModEntry.Instance.Monitor.Log($"[WorkingPets] {_pet.Name}: Failed to reserve target {tile}.", LogLevel.Trace);
+                return;
+            }
+            
+            // Release previous reservation if we had one
+            if (_reservedTarget.HasValue && _pet != null)
+            {
+                MultiPetManager.ReleaseTarget(_pet, _reservedTarget.Value);
+            }
+            _reservedTarget = tile;
 
-            ModEntry.Instance.Monitor.Log($"[WorkingPets] SetJob: Moving to tile {tile}", LogLevel.Debug);
+            ModEntry.Instance.Monitor.Log($"[WorkingPets] SetJob: {_pet?.Name} moving to tile {tile}", LogLevel.Debug);
             
             _targetTile = tile;
             _pendingAction = action;

@@ -22,9 +22,9 @@ namespace WorkingPets.Behaviors
 
         public void PerformDailyScavenge(Pet pet)
         {
-            // Only scavenge if the pet was "working" (or just enabled?)
-            // Assuming "Working Mode" enables this behavior.
-            if (!ModEntry.WorkManager.IsWorking)
+            // Only scavenge if the pet was "working"
+            var manager = ModEntry.PetManager.GetManagerForPet(pet);
+            if (manager == null || !manager.IsWorking)
                 return;
 
             // Limit to max 5 items per day as requested
