@@ -1,10 +1,11 @@
 1.3.0
-- Pet off-screen tracking! Arrows at screen edges show where pets are (with pet icons).
-- Whistle button in Animals page! Click pets to call them to you (visible button with tooltip).
-- NPC Map Locations integration! Pets now appear on the map mod with their custom names.
-- Small trees (stages 1-4) now use appropriate twig effects instead of full tree effects.
+- Whistle keybind system! Press V (default) to open a menu and select which pet to call.
+- Menu shows all pets with their names - enabled if same location, disabled if too far.
+- Pet tracking arrows now show pet icons next to them (separated with space, larger, biased toward player).
+- Trees at ALL growth stages (0-5) can now be removed, including seeds (stage 0).
+- Small trees (stages 0-4) use appropriate twig effects instead of full tree effects.
 - Fixed stuck loop counter not accumulating properly after warps.
-- Removed buggy floating icons above pets (kept only off-screen indicators).
+- Whistle key can be configured in config.json (default: V key).
 
 1.2.0
 - Multi-pet support! Each pet now works independently (Pet Licenses compatible).

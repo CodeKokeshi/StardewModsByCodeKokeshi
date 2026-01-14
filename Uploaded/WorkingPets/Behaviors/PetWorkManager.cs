@@ -653,12 +653,12 @@ namespace WorkingPets.Behaviors
                 }
             }
 
-            // Trees
+            // Trees (includes seeds at stage 0)
             if (config.ChopTrees)
             {
                 foreach (var pair in farm.terrainFeatures.Pairs)
                 {
-                    if (pair.Value is Tree tree && tree.growthStage.Value >= 1 && !tree.stump.Value)
+                    if (pair.Value is Tree tree && tree.growthStage.Value >= 0 && !tree.stump.Value) // Stage 0 = seed, 1-4 = growing, 5 = full
                     {
                         float dist = Vector2.Distance(petTile, pair.Key);
                         if (dist <= workRadius)
@@ -1019,7 +1019,7 @@ namespace WorkingPets.Behaviors
 
             // Determine tree size based on growth stage
             int growthStage = tree.growthStage.Value;
-            bool isSmallTree = growthStage < 5; // Stages 1-4 are small trees/saplings
+            bool isSmallTree = growthStage < 5; // Stages 0-4 are seeds/small trees/saplings (stage 0 = seed, 1-4 = growing)
             
             // Play axe chop sound
             farm.localSound("axchop");

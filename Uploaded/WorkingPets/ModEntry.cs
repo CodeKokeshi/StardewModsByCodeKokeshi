@@ -6,7 +6,6 @@ using StardewModdingAPI.Events;
 using StardewValley;
 using StardewValley.Characters;
 using WorkingPets.Behaviors;
-using WorkingPets.Integrations;
 using WorkingPets.Patches;
 using WorkingPets.UI;
 
@@ -37,9 +36,6 @@ namespace WorkingPets
         /// <summary>Manages daily scavenging.</summary>
         public static PetScavengeManager ScavengeManager { get; private set; } = null!;
 
-        /// <summary>Integration with NPC Map Locations.</summary>
-        public static NpcMapLocationsIntegration? NpcMapIntegration { get; private set; } = null;
-
         /*********
         ** Public methods
         *********/
@@ -57,12 +53,10 @@ namespace WorkingPets
             PetManager = new MultiPetManager();
             InventoryManager = new PetInventoryManager();
             ScavengeManager = new PetScavengeManager();
-            NpcMapIntegration = new NpcMapLocationsIntegration(helper, this.Monitor);
 
             // Apply Harmony patches
             var harmony = new Harmony(this.ModManifest.UniqueID);
             PetPatches.Apply(harmony, this.Monitor);
-            harmony.PatchAll(typeof(AnimalPagePatch).Assembly); // Apply AnimalPage whistle patch
 
             // Register events
             helper.Events.GameLoop.GameLaunched += OnGameLaunched;
@@ -72,19 +66,30 @@ namespace WorkingPets
             helper.Events.GameLoop.DayStarted += OnDayStarted;
             helper.Events.Display.MenuChanged += OnMenuChanged;
             helper.Events.Display.RenderingHud += OnRenderingHud; // Draw pet map icons
+            helper.Events.Input.ButtonPressed += OnButtonPressed;
 
-            this.Monitor.Log("Working Pets mod loaded! Talk to your pet to toggle work mode, or whistle from Animals page!", LogLevel.Info);
+            this.Monitor.Log("Working Pets mod loaded! Talk to your pet to toggle work mode, or press V to whistle!", LogLevel.Info);
         }
 
         /*********
         ** Private methods
         *********/
+        /// <summary>Raised when a button is pressed.</summary>
+        private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
+        {
+            if (!Context.IsWorldReady || Game1.activeClickableMenu != null)
+                return;
+
+            // Open whistle menu
+            if (Config.WhistleKey.JustPressed())
+            {
+                Game1.activeClickableMenu = new WhistleMenu();
+                Game1.playSound("bigSelect");
+            }
+        }
         /// <summary>Raised after the game is launched, right before the first update tick.</summary>
         private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
         {
-            // Initialize NPC Map Locations integration
-            NpcMapIntegration?.Initialize();
-
             // Get Generic Mod Config Menu's API (if it's installed)
             var configMenu = this.Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
             if (configMenu is null)
@@ -110,6 +115,19 @@ namespace WorkingPets
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,
                 text: () => "General Settings"
+            );
+
+            configMenu.AddBoolOption(
+                mod: this.ModManifest,
+                name: () => "Mod Enabled",
+                tooltip: () => "Turn the entire mod on or off.",
+                getValue: () => Config.ModEnabled,
+                setValue: value => Config.ModEnabled = value
+            );
+
+            configMenu.AddParagraph(
+                mod: this.ModManifest,
+                text: () => $"Whistle Key: {Config.WhistleKey}\n(Edit in config.json to change)"
             );
 
             configMenu.AddBoolOption(

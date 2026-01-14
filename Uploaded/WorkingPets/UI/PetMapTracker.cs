@@ -128,20 +128,58 @@ public class PetMapTracker
             arrowColor = Color.LightGreen;
         }
 
-        // Draw pet icon first (behind arrow)
+        // Calculate offset for icon (separated from arrow, biased toward center/player)
+        Vector2 iconOffset = Vector2.Zero;
+        float iconDistance = 48f; // Distance from arrow
+        
+        // Bias toward center of screen (player area)
+        Vector2 screenCenter = new Vector2(screenBounds.Width / 2f, screenBounds.Height / 2f);
+        Vector2 directionToCenter = screenCenter - onScreenPosition;
+        if (directionToCenter != Vector2.Zero)
+            directionToCenter.Normalize();
+        
+        // Calculate icon position based on arrow direction, biased toward center
+        if (onScreenPosition.X >= screenBounds.Right - 16) // right edge
+        {
+            iconOffset = new Vector2(-iconDistance, 0);
+            iconOffset += directionToCenter * 8f; // bias toward center
+        }
+        else if (onScreenPosition.X <= 16) // left edge
+        {
+            iconOffset = new Vector2(iconDistance, 0);
+            iconOffset += directionToCenter * 8f;
+        }
+        else if (onScreenPosition.Y >= screenBounds.Bottom - 16) // bottom edge
+        {
+            iconOffset = new Vector2(0, -iconDistance);
+            iconOffset += directionToCenter * 8f;
+        }
+        else if (onScreenPosition.Y <= 16) // top edge
+        {
+            iconOffset = new Vector2(0, iconDistance);
+            iconOffset += directionToCenter * 8f;
+        }
+
+        // Draw pet icon (bigger and separated from arrow)
+        float iconScale = 2.5f; // Larger icon
+        Vector2 iconPos = onScreenPosition + iconOffset - new Vector2(
+            iconSourceRect.Width * iconScale / 2,
+            iconSourceRect.Height * iconScale / 2
+        );
+        
         spriteBatch.Draw(
             petIconTexture,
-            onScreenPosition - new Vector2(iconSourceRect.Width, iconSourceRect.Height),
+            iconPos,
             iconSourceRect,
             Color.White,
             0f,
             Vector2.Zero,
-            2f, // icon scale
+            iconScale,
             SpriteEffects.None,
             0.94f
         );
 
-        // Draw arrow pointing to pet
+        // Draw arrow pointing to pet (on top)
         spriteBatch.Draw(
             Game1.mouseCursors,
             onScreenPosition,

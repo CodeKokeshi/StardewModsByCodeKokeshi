@@ -1,3 +1,6 @@
+using StardewModdingAPI;
+using StardewModdingAPI.Utilities;
+
 namespace WorkingPets
 {
     /// <summary>Configuration settings for Working Pets mod.</summary>
@@ -9,6 +12,9 @@ namespace WorkingPets
 
         /// <summary>Whether the mod is enabled.</summary>
         public bool ModEnabled { get; set; } = true;
+
+        /// <summary>Keybind to open the whistle menu to call pets.</summary>
+        public KeybindList WhistleKey { get; set; } = KeybindList.Parse("V");
 
         /// <summary>Number of game ticks between each work action (~60 ticks = 1 second).</summary>
         public int TicksBetweenActions { get; set; } = 60;
