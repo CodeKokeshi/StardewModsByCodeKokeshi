@@ -114,10 +114,14 @@ namespace WorkingPets.Behaviors
                 _isWorking = false;
                 _targetTile = null;
                 _pendingAction = null;
+                if (_pet != null)
+                    _pet.farmerPassesThrough = true; // Make passable when following
                 ModEntry.Instance.Monitor.Log($"[WorkingPets] === {_pet?.Name} FOLLOWING PLAYER ===", LogLevel.Info);
             }
             else
             {
+                if (_pet != null)
+                    _pet.farmerPassesThrough = false; // Restore collision when not following
                 ModEntry.Instance.Monitor.Log($"[WorkingPets] === {_pet?.Name} STOPPED FOLLOWING ===", LogLevel.Info);
             }
         }
@@ -127,6 +131,8 @@ namespace WorkingPets.Behaviors
             if (_isFollowing)
             {
                 _isFollowing = false;
+                if (_pet != null)
+                    _pet.farmerPassesThrough = false; // Restore collision
                 ModEntry.Instance.Monitor.Log($"[WorkingPets] === {_pet?.Name} STOPPED FOLLOWING ===", LogLevel.Info);
             }
         }
@@ -481,11 +487,15 @@ namespace WorkingPets.Behaviors
 
             Farmer player = Game1.player;
             
+            // Make pet passable while following so player can walk through
+            _pet.farmerPassesThrough = true;
+            
             // Check if player left the farm and following outside is disabled
             if (player.currentLocation?.Name != "Farm" && !ModEntry.Config.FollowOutsideFarm)
             {
                 // Stop following and return pet to idle
                 _isFollowing = false;
+                _pet.farmerPassesThrough = false; // Restore collision
                 ModEntry.Instance.Monitor.Log($"[WorkingPets] Player left farm, {_pet.Name} stopped following.", LogLevel.Debug);
                 return;
             }

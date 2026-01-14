@@ -67,6 +67,7 @@ namespace WorkingPets
             helper.Events.Display.MenuChanged += OnMenuChanged;
             helper.Events.Display.RenderingHud += OnRenderingHud; // Draw pet map icons
             helper.Events.Input.ButtonPressed += OnButtonPressed;
+            helper.Events.Player.Warped += OnPlayerWarped; // Exit resting on location change
 
             this.Monitor.Log("Working Pets mod loaded! Talk to your pet to toggle work mode, or press V to whistle!", LogLevel.Info);
         }
@@ -94,6 +95,48 @@ namespace WorkingPets
                     Game1.playSound("bigSelect");
                 }
             }
+        }
+
+        /// <summary>Raised after a player warps to a new location.</summary>
+        private void OnPlayerWarped(object? sender, WarpedEventArgs e)
+        {
+            if (!e.IsLocalPlayer)
+                return;
+
+            // Exit resting state for all pets when player changes location
+            Utility.ForEachLocation(location =>
+            {
+                foreach (var character in location.characters)
+                {
+                    if (character is Pet pet)
+                    {
+                        var manager = PetManager?.GetManagerForPet(pet);
+                        if (manager != null && manager.IsFollowing)
+                        {
+                            // Wake up pet if sleeping on bed
+                            if (pet.isSleepingOnFarmerBed?.Value == true)
+                            {
+                                pet.isSleepingOnFarmerBed.Value = false;
+                                pet.CurrentBehavior = "Walk";
+                            }
+                            
+                            // Clear sleep emote by setting doingEndOfRouteAnimation to false
+                            if (pet.IsEmoting && (pet.CurrentEmote == Character.sleepEmote || pet.CurrentEmote == Character.sadEmote))
+                            {
+                                pet.doingEndOfRouteAnimation.Value = false;
+                                pet.IsEmoting = false;
+                            }
+                            
+                            // Exit sleep behavior
+                            if (string.Equals(pet.CurrentBehavior, Pet.behavior_Sleep, StringComparison.Ordinal))
+                            {
+                                pet.CurrentBehavior = "Walk";
+                            }
+                        }
+                    }
+                }
+                return true;
+            });
         }
         /// <summary>Raised after the game is launched, right before the first update tick.</summary>
         private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)

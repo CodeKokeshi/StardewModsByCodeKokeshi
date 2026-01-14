@@ -1,11 +1,13 @@
 1.3.0
-- Whistle keybind system! Press V (default) to open a menu and select which pet to call.
-- Menu shows all pets with their names - enabled if same location, disabled if too far.
-- Pet tracking arrows now show pet icons next to them (separated with space, larger, biased toward player).
-- Trees at ALL growth stages (0-5) can now be removed, including seeds (stage 0).
-- Small trees (stages 0-4) use appropriate twig effects instead of full tree effects.
+- Whistle keybind system! Press V (default, configurable in config.json) to open/close a pet selection menu.
+- Whistle menu features full-body pet sprites (like Animals page), scrolling for many pets, and clear status indicators.
+- Menu shows pet name, current status (Idle/Working/Following), and disables pets already following or too far away.
+- Pet tracking arrows now display pet icons next to them (separated, larger scale, biased toward center).
+- Pets in follow mode are now passable - you can walk through them to get through doors easily.
+- Pets automatically exit resting/sleeping state when you change locations while following.
+- Trees at ALL growth stages (0-5) can now be removed by working pets, including seeds (stage 0).
+- Small trees (stages 0-4) use appropriate twig effects instead of full tree chopping effects.
 - Fixed stuck loop counter not accumulating properly after warps.
-- Whistle key can be configured in config.json (default: V key).
 
 1.2.0
 - Multi-pet support! Each pet now works independently (Pet Licenses compatible).
