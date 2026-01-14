@@ -1,8 +1,8 @@
 {
   "Name": "Working Pets",
   "Author": "CodeKokeshi",
-  "Version": "1.1.0",
-  "Description": "Transform your pet into a helpful farmhand! Your cat or dog can clear debris (weeds, stones, twigs), chop trees, break boulders, and scavenge for daily loot. Features a toggleable work mode by talking to your pet, priority system for work types, and a dedicated inventory for their gatherings.",
+  "Version": "1.2.0",
+  "Description": "Transform your pets into helpful farmhands! Works with multiple pets (Pet Licenses compatible). Your cats, dogs, and turtles can clear debris, chop trees, break boulders, and scavenge for daily loot. Each pet works independently with smart collision avoidance. Features toggleable work/follow modes, priority system, and shared inventory.",
   "UniqueID": "CodeKokeshi.WorkingPets",
   "EntryDll": "WorkingPets.dll",
   "MinimumApiVersion": "3.0.0",

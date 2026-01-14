@@ -1,3 +1,11 @@
+1.2.0
+- Multi-pet support! Each pet now works independently (Pet Licenses compatible).
+- Target reservation system prevents pets from targeting the same debris.
+- Collision avoidance keeps pets from stacking on each other.
+- Pets now pause and stop moving when you talk to them.
+- After 3 failed warp attempts, pets destroy target remotely (fixes infinite stuck loops).
+- Trees at all growth stages (1-5) can now be removed, not just fully grown ones.
+
 1.1.0
 - Added proper destruction visuals/FX/SFX when pets clear debris/wood/stone (no more silent disappearing).
 - Adjusted wood-related destruction to use a consistent twig-style particle/poof effect.
