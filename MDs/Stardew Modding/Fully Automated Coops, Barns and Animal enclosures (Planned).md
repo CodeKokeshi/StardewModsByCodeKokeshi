@@ -1,0 +1,2 @@
+# **Plans**
+1. Fully automated animal related buildings, automatic doors, auto-feeding, just ensure that there's enough feed for them, else you can just turn on the cheat mode in GMCM to auto-feed without actual food in store.

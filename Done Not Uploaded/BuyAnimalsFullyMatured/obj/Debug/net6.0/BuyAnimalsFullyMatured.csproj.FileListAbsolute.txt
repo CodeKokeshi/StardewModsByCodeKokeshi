@@ -1,0 +1,9 @@
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\BuyAnimalsFullyMatured\bin\Debug\net6.0\BuyAnimalsFullyMatured.deps.json
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\BuyAnimalsFullyMatured\bin\Debug\net6.0\BuyAnimalsFullyMatured.dll
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\BuyAnimalsFullyMatured\obj\Debug\net6.0\BuyAnimalsFullyMatured.csproj.AssemblyReference.cache
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\BuyAnimalsFullyMatured\obj\Debug\net6.0\BuyAnimalsFullyMatured.GeneratedMSBuildEditorConfig.editorconfig
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\BuyAnimalsFullyMatured\obj\Debug\net6.0\BuyAnimalsFullyMatured.AssemblyInfoInputs.cache
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\BuyAnimalsFullyMatured\obj\Debug\net6.0\BuyAnimalsFullyMatured.AssemblyInfo.cs
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\BuyAnimalsFullyMatured\obj\Debug\net6.0\BuyAnimalsFullyMatured.csproj.CoreCompileInputs.cache
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\BuyAnimalsFullyMatured\obj\Debug\net6.0\BuyAnimalsFullyMatured.sourcelink.json
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\BuyAnimalsFullyMatured\obj\Debug\net6.0\BuyAnimalsFullyMatured.dll

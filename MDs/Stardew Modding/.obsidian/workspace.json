@@ -22,17 +22,17 @@
             }
           },
           {
-            "id": "330c29e1f11efa91",
+            "id": "1519027746908f98",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Infinite Stamina (Done).md",
+                "file": "Helpful Pets (Done + Update Plans).md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Infinite Stamina (Done)"
+              "title": "Helpful Pets (Done + Update Plans)"
             }
           }
         ],
@@ -198,11 +198,14 @@
       "bases:Create new base": false
     }
   },
-  "active": "330c29e1f11efa91",
+  "active": "1519027746908f98",
   "lastOpenFiles": [
-    "Infinite Stamina (Done).md",
+    "Fully Automated Coops, Barns and Animal enclosures (Planned).md",
     "Mod Plans - Conceptualized While Playing.md",
-    "Buy Animals Fully Matured or Production Ready (Planned).md",
+    "Buy Animals Fully Matured or Production Ready (In Progress).md",
+    "Larger Pickup Radius (Planned).md",
+    "Infinite Stamina (Done).md",
+    "Helpful Pets (Done + Update Plans).md",
     "WORKING_PETS_PLAN.md",
     "MOD_IDEAS.md",
     "CHANGELOG.md",

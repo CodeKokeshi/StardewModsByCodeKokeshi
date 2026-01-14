@@ -1,4 +1,0 @@
-You know when you bomb the mines, walk too fast, or your pet gives you item but it doesn't get pickup?
-
-I'm here to fix that problem by making the range larger. And picking up everything.
-

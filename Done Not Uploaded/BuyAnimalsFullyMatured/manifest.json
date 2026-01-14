@@ -1,0 +1,9 @@
+{
+  "Name": "Buy Animals Fully Matured",
+  "Author": "CodeKokeshi",
+  "Version": "1.0.0",
+  "Description": "Purchased barn/coop animals are instantly fully matured and ready to produce.",
+  "UniqueID": "CodeKokeshi.BuyAnimalsFullyMatured",
+  "EntryDll": "BuyAnimalsFullyMatured.dll",
+  "MinimumApiVersion": "4.0.0"
+}

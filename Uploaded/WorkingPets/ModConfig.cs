@@ -59,5 +59,20 @@ namespace WorkingPets
 
         /// <summary>If true, ignores priority and attacks nearest target regardless of type.</summary>
         public bool IgnorePriority { get; set; } = false;
+
+        /*********
+        ** Stuck Handling
+        *********/
+
+        /// <summary>
+        /// If true, when the pet gets stuck trying to reach a work target and has to warp near it repeatedly,
+        /// the mod will force-destroy that target after a few retries to avoid infinite stuck/warp loops.
+        /// </summary>
+        public bool ForceDestroyOnStuckLoop { get; set; } = true;
+
+        /// <summary>
+        /// How many consecutive "warp near target" retries are allowed for the same target before forcing destruction.
+        /// </summary>
+        public int StuckWarpRetriesBeforeForceDestroy { get; set; } = 3;
     }
 }
