@@ -6,7 +6,9 @@ using StardewModdingAPI.Events;
 using StardewValley;
 using StardewValley.Characters;
 using WorkingPets.Behaviors;
+using WorkingPets.Integrations;
 using WorkingPets.Patches;
+using WorkingPets.UI;
 
 namespace WorkingPets
 {
@@ -35,6 +37,9 @@ namespace WorkingPets
         /// <summary>Manages daily scavenging.</summary>
         public static PetScavengeManager ScavengeManager { get; private set; } = null!;
 
+        /// <summary>Integration with NPC Map Locations.</summary>
+        public static NpcMapLocationsIntegration? NpcMapIntegration { get; private set; } = null;
+
         /*********
         ** Public methods
         *********/
@@ -52,10 +57,12 @@ namespace WorkingPets
             PetManager = new MultiPetManager();
             InventoryManager = new PetInventoryManager();
             ScavengeManager = new PetScavengeManager();
+            NpcMapIntegration = new NpcMapLocationsIntegration(helper, this.Monitor);
 
             // Apply Harmony patches
             var harmony = new Harmony(this.ModManifest.UniqueID);
             PetPatches.Apply(harmony, this.Monitor);
+            harmony.PatchAll(typeof(AnimalPagePatch).Assembly); // Apply AnimalPage whistle patch
 
             // Register events
             helper.Events.GameLoop.GameLaunched += OnGameLaunched;
@@ -64,8 +71,9 @@ namespace WorkingPets
             helper.Events.GameLoop.UpdateTicked += OnUpdateTicked;
             helper.Events.GameLoop.DayStarted += OnDayStarted;
             helper.Events.Display.MenuChanged += OnMenuChanged;
+            helper.Events.Display.RenderingHud += OnRenderingHud; // Draw pet map icons
 
-            this.Monitor.Log("Working Pets mod loaded! Talk to your pet to toggle work mode.", LogLevel.Info);
+            this.Monitor.Log("Working Pets mod loaded! Talk to your pet to toggle work mode, or whistle from Animals page!", LogLevel.Info);
         }
 
         /*********
@@ -74,6 +82,9 @@ namespace WorkingPets
         /// <summary>Raised after the game is launched, right before the first update tick.</summary>
         private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
         {
+            // Initialize NPC Map Locations integration
+            NpcMapIntegration?.Initialize();
+
             // Get Generic Mod Config Menu's API (if it's installed)
             var configMenu = this.Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
             if (configMenu is null)
@@ -361,6 +372,12 @@ namespace WorkingPets
             {
                 PetManager.ResumeAllFromDialogue();
             }
+        }
+
+        /// <summary>Raised before the HUD is drawn to screen - draw pet map icons.</summary>
+        private void OnRenderingHud(object? sender, RenderingHudEventArgs e)
+        {
+            UI.PetMapTracker.DrawPetIcons(e.SpriteBatch);
         }
 
         /// <summary>Gets the player's pet.</summary>
