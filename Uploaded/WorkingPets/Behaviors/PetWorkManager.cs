@@ -538,9 +538,12 @@ namespace WorkingPets.Behaviors
                 _lastDistanceToPlayer = float.MaxValue;
                 _noProgressFollowTicks = 0;
                 
-                // Reset fast mode when we're close enough
-                _isInFastMode = false;
-                _currentSpeed = _moveSpeed;
+                // Only reset fast mode when we've actually reached the player
+                if (_isInFastMode)
+                {
+                    _isInFastMode = false;
+                    ModEntry.Instance.Monitor.Log($"[WorkingPets] {_pet.Name} reached player; exiting wall-pass mode", LogLevel.Debug);
+                }
                 return;
             }
 
@@ -576,27 +579,38 @@ namespace WorkingPets.Behaviors
                         speed *= 1.5f;
                 }
 
-                // Use fast speed if stuck
-                if (_isInFastMode)
-                    speed = _moveSpeed * 6f;
-
                 Vector2 nextPos = _pet.Position + direction * speed;
 
                 // Check for water/obstacles using improved detection
                 var currentLocation = _pet.currentLocation;
                 
-                // When in fast mode, ignore obstacles (pass through walls)
-                // Otherwise check for water/obstacles
-                if (!_isInFastMode && IsNearWaterOrBlocked(currentLocation, nextPos))
+                // When in fast mode: use ultra-fast speed and IGNORE all collisions (pass through walls)
+                if (_isInFastMode)
+                {
+                    // Move directly toward player at very high speed, ignoring all obstacles
+                    nextPos = _pet.Position + direction * (_moveSpeed * 8f);
+                    _pet.Position = nextPos;
+                    
+                    // Face the right direction
+                    if (Math.Abs(direction.X) > Math.Abs(direction.Y))
+                        _pet.faceDirection(direction.X > 0 ? 1 : 3);
+                    else
+                        _pet.faceDirection(direction.Y > 0 ? 2 : 0);
+                    
+                    _pet.animateInFacingDirection(Game1.currentGameTime);
+                    return; // Skip all other checks when in fast mode
+                }
+                
+                // Normal mode: check for water/obstacles
+                if (IsNearWaterOrBlocked(currentLocation, nextPos))
                 {
                     // If blocked for too long while trying to follow, activate fast mode.
                     _noProgressFollowTicks++;
-                    if (_noProgressFollowTicks >= 120)
+                    if (_noProgressFollowTicks >= 60) // 1 second before activating fast mode
                     {
                         _isInFastMode = true;
-                        ModEntry.Instance.Monitor.Log($"[WorkingPets] {_pet.Name} stuck following player; activating fast-speed bypass", LogLevel.Debug);
+                        ModEntry.Instance.Monitor.Log($"[WorkingPets] {_pet.Name} stuck; activating wall-pass mode", LogLevel.Debug);
                         _noProgressFollowTicks = 0;
-                        _lastDistanceToPlayer = float.MaxValue;
                     }
                     return;
                 }
@@ -606,23 +620,15 @@ namespace WorkingPets.Behaviors
                 {
                     _lastDistanceToPlayer = distance;
                     _noProgressFollowTicks = 0;
-                    
-                    // Reset fast mode when we're making good progress again
-                    if (_isInFastMode)
-                    {
-                        _isInFastMode = false;
-                        _currentSpeed = _moveSpeed;
-                    }
                 }
                 else
                 {
                     _noProgressFollowTicks++;
-                    if (_noProgressFollowTicks >= 120 && !_isInFastMode)
+                    if (_noProgressFollowTicks >= 120) // 2 seconds no progress
                     {
                         _isInFastMode = true;
-                        ModEntry.Instance.Monitor.Log($"[WorkingPets] {_pet.Name} stuck following player; activating fast-speed bypass", LogLevel.Debug);
+                        ModEntry.Instance.Monitor.Log($"[WorkingPets] {_pet.Name} stuck; activating wall-pass mode", LogLevel.Debug);
                         _noProgressFollowTicks = 0;
-                        _lastDistanceToPlayer = float.MaxValue;
                     }
                 }
 
