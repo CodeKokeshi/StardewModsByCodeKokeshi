@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using HarmonyLib;
 using Microsoft.Xna.Framework;
 using StardewModdingAPI;
@@ -15,51 +14,167 @@ namespace BountifulForaging;
 
 public class ModEntry : Mod
 {
+    // ============================================
+    // CONFIGURATION - CHANGE THESE VALUES!
+    // ============================================
+    
+    /// <summary>
+    /// Multiplier for how much forage to spawn beyond the game's default max.
+    /// 1 = game default, 2 = double, 5 = 5x more, 10 = 10x more
+    /// </summary>
+    public const int FORAGE_MULTIPLIER = 5;
+    
+    /// <summary>
+    /// Minimum forage to spawn per location regardless of game data.
+    /// This ensures even "empty" areas get forage.
+    /// </summary>
+    public const int MINIMUM_FORAGE_PER_LOCATION = 10;
+    
+    /// <summary>
+    /// Maximum forage per location (to prevent lag in huge areas)
+    /// </summary>
+    public const int ABSOLUTE_MAX_FORAGE = 100;
+    
+    // ============================================
+
     public override void Entry(IModHelper helper)
     {
+        
         var harmony = new Harmony(this.ModManifest.UniqueID);
         harmony.PatchAll();
         
-        // Also run foraging spawn after day starts to ensure all locations are filled
+        // Run our aggressive forage spawn after the day starts
         helper.Events.GameLoop.DayStarted += OnDayStarted;
     }
 
     private void OnDayStarted(object? sender, DayStartedEventArgs e)
     {
-        // Force spawn forage in all outdoor locations at maximum capacity
+        if (!Context.IsWorldReady)
+            return;
+            
+        Monitor?.Log($"Bountiful Foraging: Spawning forage with {FORAGE_MULTIPLIER}x multiplier...", LogLevel.Info);
+        
+        int totalSpawned = 0;
+        
+        // Process ALL locations
         foreach (GameLocation location in Game1.locations)
         {
-            ForceMaxForageSpawn(location);
+            totalSpawned += ForceSpawnForage(location);
             
-            // Also handle buildings within locations (like farm buildings)
+            // Also handle buildings within locations
             foreach (var building in location.buildings)
             {
                 if (building.indoors.Value != null)
                 {
-                    ForceMaxForageSpawn(building.indoors.Value);
+                    totalSpawned += ForceSpawnForage(building.indoors.Value);
                 }
             }
         }
+        
+        Monitor?.Log($"Bountiful Foraging: Spawned {totalSpawned} total forage items!", LogLevel.Info);
     }
 
     /// <summary>
-    /// Forces a location to spawn forage at maximum capacity
+    /// Aggressively spawns forage in a location, ignoring game limits
     /// </summary>
-    private static void ForceMaxForageSpawn(GameLocation location)
+    public static int ForceSpawnForage(GameLocation location)
     {
         if (location?.map == null)
-            return;
+            return 0;
             
-        // Only process outdoor locations or those with ForceSpawnForageables property
+        // Only process outdoor locations or those with ForceSpawnForageables
         if (!location.IsOutdoors && !location.map.Properties.ContainsKey("ForceSpawnForageables"))
-            return;
-            
-        var data = location.GetData();
-        if (data == null || data.MaxSpawnedForageAtOnce <= 0)
-            return;
+            return 0;
 
-        // Clear existing spawned forage objects to make room for new ones
+        var data = location.GetData();
+        
+        // Get possible forage for this location
+        List<SpawnForageData> possibleForage = GetPossibleForage(location, data);
+        
+        if (possibleForage.Count == 0)
+            return 0;
+
+        // Clear ALL existing spawned forage first
+        ClearExistingForage(location);
+        
+        // Calculate how much to spawn
+        int gameMax = data?.MaxSpawnedForageAtOnce ?? 6;
+        int targetAmount = Math.Max(gameMax * FORAGE_MULTIPLIER, MINIMUM_FORAGE_PER_LOCATION);
+        targetAmount = Math.Min(targetAmount, ABSOLUTE_MAX_FORAGE);
+        
+        // Spawn the forage!
+        int spawned = SpawnForageItems(location, possibleForage, targetAmount);
+        
+        return spawned;
+    }
+
+    /// <summary>
+    /// Gets all valid forage items for the current location and season
+    /// </summary>
+    private static List<SpawnForageData> GetPossibleForage(GameLocation location, LocationData? data)
+    {
+        List<SpawnForageData> possibleForage = new List<SpawnForageData>();
+        Random r = Utility.CreateDaySaveRandom();
+        Season season = location.GetSeason();
+        
+        // Get default forage (applies to all locations)
+        var defaultData = GameLocation.GetData("Default");
+        if (defaultData?.Forage != null)
+        {
+            foreach (SpawnForageData spawn in defaultData.Forage)
+            {
+                if (IsForageValid(spawn, location, season, r))
+                {
+                    possibleForage.Add(spawn);
+                }
+            }
+        }
+        
+        // Get location-specific forage
+        if (data?.Forage != null)
+        {
+            foreach (SpawnForageData spawn in data.Forage)
+            {
+                if (IsForageValid(spawn, location, season, r))
+                {
+                    possibleForage.Add(spawn);
+                }
+            }
+        }
+        
+        return possibleForage;
+    }
+
+    private static bool IsForageValid(SpawnForageData spawn, GameLocation location, Season season, Random r)
+    {
+        // Check season
+        if (spawn.Season.HasValue && spawn.Season != season)
+            return false;
+            
+        // Check condition (but be lenient)
+        if (spawn.Condition != null)
+        {
+            try
+            {
+                if (!GameStateQuery.CheckConditions(spawn.Condition, location, null, null, null, r))
+                    return false;
+            }
+            catch
+            {
+                // If condition check fails, allow it anyway
+            }
+        }
+        
+        return true;
+    }
+
+    /// <summary>
+    /// Removes all existing spawned forage from a location
+    /// </summary>
+    private static void ClearExistingForage(GameLocation location)
+    {
         var keysToRemove = new List<Vector2>();
+        
         foreach (var kvp in location.objects.Pairs)
         {
             if (kvp.Value.IsSpawnedObject && kvp.Value.isForage())
@@ -73,241 +188,175 @@ public class ModEntry : Mod
             location.objects.Remove(key);
         }
         
-        // Reset the counter
         location.numberOfSpawnedObjectsOnMap = 0;
-        
-        // Force spawn maximum forage by calling spawnObjects multiple times
-        // Each call spawns between MinDailyForageSpawn and MaxDailyForageSpawn
-        // We call it enough times to reach MaxSpawnedForageAtOnce
-        int maxAttempts = 20; // Prevent infinite loop
-        int attempts = 0;
-        
-        while (location.numberOfSpawnedObjectsOnMap < data.MaxSpawnedForageAtOnce && attempts < maxAttempts)
-        {
-            int beforeCount = location.numberOfSpawnedObjectsOnMap;
-            SpawnForageMaximized(location, data);
-            attempts++;
-            
-            // If no new objects were spawned, there might not be valid spawn tiles
-            if (location.numberOfSpawnedObjectsOnMap == beforeCount)
-                break;
-        }
     }
 
     /// <summary>
-    /// Custom forage spawning that ignores chance checks and spawns at max capacity
+    /// Spawns forage items in valid locations
     /// </summary>
-    private static void SpawnForageMaximized(GameLocation location, LocationData data)
+    private static int SpawnForageItems(GameLocation location, List<SpawnForageData> possibleForage, int targetAmount)
     {
-        if (data == null || location.numberOfSpawnedObjectsOnMap >= data.MaxSpawnedForageAtOnce)
-            return;
-            
-        Random r = Utility.CreateDaySaveRandom(Game1.uniqueIDForThisGame, Game1.stats.DaysPlayed, location.numberOfSpawnedObjectsOnMap);
-        Season season = location.GetSeason();
+        Random r = new Random((int)(Game1.uniqueIDForThisGame + (ulong)Game1.stats.DaysPlayed + (ulong)location.NameOrUniqueName.GetHashCode()));
+        ItemQueryContext itemQueryContext = new ItemQueryContext(location, null, r, "BountifulForaging");
         
-        // Get all possible forage for this location and season
-        List<SpawnForageData> possibleForage = new List<SpawnForageData>();
+        int spawned = 0;
+        int mapWidth = location.map.DisplayWidth / 64;
+        int mapHeight = location.map.DisplayHeight / 64;
         
-        var defaultData = GameLocation.GetData("Default");
-        if (defaultData?.Forage != null)
+        // Collect all valid spawn tiles first for better distribution
+        List<Vector2> validTiles = GetValidSpawnTiles(location, mapWidth, mapHeight);
+        
+        if (validTiles.Count == 0)
+            return 0;
+        
+        // Shuffle for random distribution
+        ShuffleList(validTiles, r);
+        
+        int tileIndex = 0;
+        int maxAttempts = targetAmount * 3; // Allow extra attempts
+        int attempts = 0;
+        
+        while (spawned < targetAmount && attempts < maxAttempts && tileIndex < validTiles.Count)
         {
-            foreach (SpawnForageData spawn in defaultData.Forage)
+            attempts++;
+            Vector2 tile = validTiles[tileIndex % validTiles.Count];
+            tileIndex++;
+            
+            // Skip if something is already there
+            if (location.objects.ContainsKey(tile))
+                continue;
+            
+            // Pick a random forage type
+            SpawnForageData forage = possibleForage[r.Next(possibleForage.Count)];
+            
+            // Create the forage item
+            Item? forageItem = null;
+            try
             {
-                if ((spawn.Condition == null || GameStateQuery.CheckConditions(spawn.Condition, location, null, null, null, r)) 
-                    && (!spawn.Season.HasValue || spawn.Season == season))
+                forageItem = ItemQueryResolver.TryResolveRandomItem(forage, itemQueryContext, avoidRepeat: false, null, null, null, delegate { });
+            }
+            catch
+            {
+                continue;
+            }
+            
+            if (forageItem is not StardewValley.Object forageObj)
+                continue;
+            
+            forageObj.IsSpawnedObject = true;
+            
+            // Place the forage
+            if (location.dropObject(forageObj, tile * 64f, Game1.viewport, initialPlacement: true))
+            {
+                location.numberOfSpawnedObjectsOnMap++;
+                spawned++;
+            }
+        }
+        
+        return spawned;
+    }
+
+    /// <summary>
+    /// Gets all tiles that are valid for forage spawning
+    /// </summary>
+    private static List<Vector2> GetValidSpawnTiles(GameLocation location, int mapWidth, int mapHeight)
+    {
+        List<Vector2> validTiles = new List<Vector2>();
+        
+        for (int x = 0; x < mapWidth; x++)
+        {
+            for (int y = 0; y < mapHeight; y++)
+            {
+                Vector2 tile = new Vector2(x, y);
+                
+                if (IsTileValidForForage(location, x, y, tile))
                 {
-                    possibleForage.Add(spawn);
+                    validTiles.Add(tile);
                 }
             }
         }
         
-        if (data.Forage != null)
+        return validTiles;
+    }
+
+    /// <summary>
+    /// Checks if a tile is valid for forage spawning (more lenient than vanilla)
+    /// </summary>
+    private static bool IsTileValidForForage(GameLocation location, int x, int y, Vector2 tile)
+    {
+        // Already has object
+        if (location.objects.ContainsKey(tile))
+            return false;
+        
+        // No spawn tile
+        if (location.IsNoSpawnTile(tile))
+            return false;
+        
+        // Check for spawnable OR diggable property (more lenient)
+        bool isSpawnable = location.doesTileHaveProperty(x, y, "Spawnable", "Back") != null;
+        bool isDiggable = location.doesTileHaveProperty(x, y, "Diggable", "Back") != null;
+        bool isGrass = location.doesTileHaveProperty(x, y, "Type", "Back") == "Grass";
+        
+        if (!isSpawnable && !isDiggable && !isGrass)
+            return false;
+        
+        // Explicitly marked as not spawnable
+        if (location.doesEitherTileOrTileIndexPropertyEqual(x, y, "Spawnable", "Back", "F"))
+            return false;
+        
+        // Can't place items here
+        if (!location.CanItemBePlacedHere(tile))
+            return false;
+        
+        // Behind bush (skip this check to allow more spawns)
+        // if (location.isBehindBush(tile))
+        //     return false;
+        
+        // Has front layer tile (building, etc)
+        if (location.isTileOnMap(tile))
         {
-            foreach (SpawnForageData spawn in data.Forage)
+            // Be more lenient - only skip if there's actually something blocking
+            try
             {
-                if ((spawn.Condition == null || GameStateQuery.CheckConditions(spawn.Condition, location, null, null, null, r)) 
-                    && (!spawn.Season.HasValue || spawn.Season == season))
-                {
-                    possibleForage.Add(spawn);
-                }
+                if (location.IsTileBlockedBy(tile))
+                    return false;
+            }
+            catch
+            {
+                // Ignore errors
             }
         }
         
-        if (!possibleForage.Any())
-            return;
-            
-        // Spawn as many as possible up to max
-        int numberToSpawn = data.MaxSpawnedForageAtOnce - location.numberOfSpawnedObjectsOnMap;
-        ItemQueryContext itemQueryContext = new ItemQueryContext(location, null, r, "location '" + location.NameOrUniqueName + "' > forage");
-        
-        for (int i = 0; i < numberToSpawn; i++)
+        return true;
+    }
+
+    private static void ShuffleList<T>(List<T> list, Random r)
+    {
+        int n = list.Count;
+        while (n > 1)
         {
-            bool spawned = false;
-            
-            // More attempts per object to ensure we find a valid spot
-            for (int attempt = 0; attempt < 50; attempt++)
-            {
-                int xCoord = r.Next(location.map.DisplayWidth / 64);
-                int yCoord = r.Next(location.map.DisplayHeight / 64);
-                Vector2 tileLocation = new Vector2(xCoord, yCoord);
-                
-                // Check if tile is valid for spawning (simplified checks for more spawning)
-                if (location.objects.ContainsKey(tileLocation))
-                    continue;
-                    
-                if (location.IsNoSpawnTile(tileLocation))
-                    continue;
-                    
-                // Check if spawnable tile (but also allow diggable tiles as fallback)
-                bool isSpawnable = location.doesTileHaveProperty(xCoord, yCoord, "Spawnable", "Back") != null;
-                bool isDiggable = location.doesTileHaveProperty(xCoord, yCoord, "Diggable", "Back") != null;
-                
-                if (!isSpawnable && !isDiggable)
-                    continue;
-                    
-                if (location.doesEitherTileOrTileIndexPropertyEqual(xCoord, yCoord, "Spawnable", "Back", "F"))
-                    continue;
-                    
-                if (!location.CanItemBePlacedHere(tileLocation))
-                    continue;
-                    
-                // Skip front layer checks for more spawn opportunities
-                if (location.isBehindBush(tileLocation))
-                    continue;
-                
-                // Choose a random forage from possibilities (skip chance check for guaranteed spawn)
-                SpawnForageData forage = r.ChooseFrom(possibleForage);
-                
-                Item? forageItem = ItemQueryResolver.TryResolveRandomItem(forage, itemQueryContext, avoidRepeat: false, null, null, null, delegate(string query, string error)
-                {
-                    // Silent error handling
-                });
-                
-                if (forageItem == null)
-                    continue;
-                    
-                if (forageItem is not StardewValley.Object forageObj)
-                    continue;
-                    
-                forageObj.IsSpawnedObject = true;
-                
-                if (location.dropObject(forageObj, tileLocation * 64f, Game1.viewport, initialPlacement: true))
-                {
-                    location.numberOfSpawnedObjectsOnMap++;
-                    spawned = true;
-                    break;
-                }
-            }
-            
-            // If we couldn't spawn after many attempts, there might not be enough valid tiles
-            if (!spawned)
-                break;
+            n--;
+            int k = r.Next(n + 1);
+            T value = list[k];
+            list[k] = list[n];
+            list[n] = value;
         }
     }
 }
 
 /// <summary>
-/// Harmony patch to make spawnObjects() always spawn maximum forage
-/// This patches the random number generation for number to spawn
+/// Patch to prevent vanilla spawn from interfering (we handle everything ourselves)
 /// </summary>
 [HarmonyPatch(typeof(GameLocation), nameof(GameLocation.spawnObjects))]
 public static class GameLocationSpawnObjectsPatch
 {
     /// <summary>
-    /// Prefix: Reset numberOfSpawnedObjectsOnMap to 0 before spawning to ensure max spawns
+    /// Skip vanilla spawn logic - we handle forage spawning entirely in DayStarted
     /// </summary>
-    public static void Prefix(GameLocation __instance)
+    public static bool Prefix(GameLocation __instance)
     {
-        // Clear existing forage to make room for fresh spawns
-        if (__instance?.map == null)
-            return;
-            
-        if (!__instance.IsOutdoors && !__instance.map.Properties.ContainsKey("ForceSpawnForageables"))
-            return;
-            
-        var data = __instance.GetData();
-        if (data == null)
-            return;
-            
-        // Remove existing spawned forage objects
-        var keysToRemove = new List<Vector2>();
-        foreach (var kvp in __instance.objects.Pairs)
-        {
-            if (kvp.Value.IsSpawnedObject && kvp.Value.isForage())
-            {
-                keysToRemove.Add(kvp.Key);
-            }
-        }
-        
-        foreach (var key in keysToRemove)
-        {
-            __instance.objects.Remove(key);
-        }
-        
-        // Reset counter so new spawns can fill up to max
-        __instance.numberOfSpawnedObjectsOnMap = 0;
-    }
-}
-
-/// <summary>
-/// Harmony patch to override the random spawn count to always use maximum
-/// </summary>
-[HarmonyPatch(typeof(Random), nameof(Random.Next), typeof(int), typeof(int))]
-public static class RandomNextPatch
-{
-    private static bool inSpawnObjects = false;
-    
-    public static void SetInSpawnObjects(bool value) => inSpawnObjects = value;
-    
-    /// <summary>
-    /// When called from spawnObjects for determining number to spawn,
-    /// always return the maximum value
-    /// </summary>
-    public static void Postfix(int minValue, int maxValue, ref int __result)
-    {
-        // This is a broad patch, so we only modify when we know it's for spawn count
-        // The spawn count call uses minValue=MinDailyForageSpawn, maxValue=MaxDailyForageSpawn+1
-        // We want to always return maxValue-1 (the maximum spawn count)
-        if (inSpawnObjects && minValue >= 0 && maxValue > minValue)
-        {
-            __result = maxValue - 1;
-        }
-    }
-}
-
-/// <summary>
-/// Alternative approach: Patch DayUpdate to call spawnObjects multiple times
-/// </summary>
-[HarmonyPatch(typeof(GameLocation), nameof(GameLocation.DayUpdate))]
-public static class GameLocationDayUpdatePatch
-{
-    /// <summary>
-    /// After DayUpdate, ensure all locations have maximum forage
-    /// </summary>
-    public static void Postfix(GameLocation __instance)
-    {
-        if (__instance?.map == null)
-            return;
-            
-        if (!__instance.IsOutdoors && !__instance.map.Properties.ContainsKey("ForceSpawnForageables"))
-            return;
-            
-        var data = __instance.GetData();
-        if (data == null || data.MaxSpawnedForageAtOnce <= 0)
-            return;
-            
-        // Keep spawning until we reach max capacity
-        int maxAttempts = 10;
-        int attempts = 0;
-        
-        while (__instance.numberOfSpawnedObjectsOnMap < data.MaxSpawnedForageAtOnce && attempts < maxAttempts)
-        {
-            int beforeCount = __instance.numberOfSpawnedObjectsOnMap;
-            __instance.spawnObjects();
-            attempts++;
-            
-            if (__instance.numberOfSpawnedObjectsOnMap == beforeCount)
-                break;
-        }
+        // Return false to skip the original method entirely
+        // Our DayStarted handler will spawn all the forage we need
+        return false;
     }
 }
