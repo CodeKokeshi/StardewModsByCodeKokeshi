@@ -7,3 +7,12 @@ D:\December 2025 OS\Development\StardewModding\InstantBuildings\bin\Debug\net6.0
 D:\December 2025 OS\Development\StardewModding\InstantBuildings\bin\Debug\net6.0\InstantBuildings.dll
 D:\December 2025 OS\Development\StardewModding\InstantBuildings\obj\Debug\net6.0\InstantBuildings.dll
 D:\December 2025 OS\Development\StardewModding\InstantBuildings\obj\Debug\net6.0\InstantBuildings.sourcelink.json
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\InstantBuildings\bin\Debug\net6.0\InstantBuildings.deps.json
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\InstantBuildings\bin\Debug\net6.0\InstantBuildings.dll
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\InstantBuildings\obj\Debug\net6.0\InstantBuildings.csproj.AssemblyReference.cache
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\InstantBuildings\obj\Debug\net6.0\InstantBuildings.GeneratedMSBuildEditorConfig.editorconfig
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\InstantBuildings\obj\Debug\net6.0\InstantBuildings.AssemblyInfoInputs.cache
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\InstantBuildings\obj\Debug\net6.0\InstantBuildings.AssemblyInfo.cs
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\InstantBuildings\obj\Debug\net6.0\InstantBuildings.csproj.CoreCompileInputs.cache
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\InstantBuildings\obj\Debug\net6.0\InstantBuildings.sourcelink.json
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\InstantBuildings\obj\Debug\net6.0\InstantBuildings.dll

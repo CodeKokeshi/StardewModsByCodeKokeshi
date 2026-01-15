@@ -27,6 +27,13 @@ namespace InstantBuildings
 
             helper.Events.GameLoop.DayStarted += OnDayStarted;
             helper.Events.World.BuildingListChanged += OnBuildingListChanged;
+            helper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
+        }
+
+        private void OnSaveLoaded(object sender, SaveLoadedEventArgs e)
+        {
+            // Complete house upgrades and community upgrades on save load
+            CompleteHouseUpgrades();
         }
 
         private static bool MarkUnderConstructionPrefix(string builderName, Building building)
@@ -68,6 +75,9 @@ namespace InstantBuildings
         {
             // Complete any buildings currently under construction
             CompleteAllBuildingsStatic();
+            
+            // Complete house and community upgrades
+            CompleteHouseUpgrades();
         }
 
         private void OnBuildingListChanged(object sender, BuildingListChangedEventArgs e)
@@ -108,6 +118,55 @@ namespace InstantBuildings
                     Game1.player.team.buildLock.ReleaseLock();
                 }
                 
+                FreeBuilder("Robin");
+            }
+        }
+
+        private static void CompleteHouseUpgrades()
+        {
+            // Complete house upgrades for all players
+            foreach (Farmer farmer in Game1.getAllFarmers())
+            {
+                if (farmer.daysUntilHouseUpgrade.Value > 0)
+                {
+                    // Complete the house upgrade instantly
+                    FarmHouse homeOfFarmer = Utility.getHomeOfFarmer(farmer);
+                    if (homeOfFarmer != null)
+                    {
+                        homeOfFarmer.moveObjectsForHouseUpgrade(farmer.HouseUpgradeLevel + 1);
+                        farmer.HouseUpgradeLevel++;
+                        farmer.daysUntilHouseUpgrade.Value = -1;
+                        homeOfFarmer.setMapForUpgradeLevel(farmer.HouseUpgradeLevel);
+                        Game1.stats.checkForBuildingUpgradeAchievements();
+                        farmer.autoGenerateActiveDialogueEvent("houseUpgrade_" + farmer.HouseUpgradeLevel);
+                        
+                        SMonitor?.Log($"Completed house upgrade for {farmer.Name} to level {farmer.HouseUpgradeLevel}!", LogLevel.Info);
+                        
+                        // Free Robin after completing the upgrade
+                        FreeBuilder("Robin");
+                    }
+                }
+            }
+            
+            // Complete community upgrades
+            Town town = Game1.getLocationFromName("Town") as Town;
+            if (town != null && town.daysUntilCommunityUpgrade.Value > 0)
+            {
+                // Complete community upgrade instantly
+                if (town.daysUntilCommunityUpgrade.Value == 3 && !Game1.MasterPlayer.mailReceived.Contains("pamHouseUpgrade"))
+                {
+                    Game1.MasterPlayer.mailReceived.Add("pamHouseUpgrade");
+                    Game1.MasterPlayer.mailReceived.Add("pamHouseUpgradeAnonymous");
+                }
+                else if (town.daysUntilCommunityUpgrade.Value == 3 && !Game1.MasterPlayer.mailReceived.Contains("communityUpgradeShortcuts"))
+                {
+                    Game1.MasterPlayer.mailReceived.Add("communityUpgradeShortcuts");
+                }
+                
+                town.daysUntilCommunityUpgrade.Value = 0;
+                SMonitor?.Log($"Completed community upgrade!", LogLevel.Info);
+                
+                // Free Robin after completing the upgrade
                 FreeBuilder("Robin");
             }
         }

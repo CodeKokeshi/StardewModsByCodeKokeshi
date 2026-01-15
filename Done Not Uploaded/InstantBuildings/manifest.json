@@ -1,8 +1,8 @@
 {
   "Name": "Instant Buildings",
   "Author": "CodeKokeshi",
-  "Version": "1.0.0",
-  "Description": "Buildings complete instantly, no waiting for Robin!",
+  "Version": "1.1.0",
+  "Description": "Buildings, house upgrades, and community upgrades complete instantly, no waiting for Robin!",
   "UniqueID": "CodeKokeshi.InstantBuildings",
   "UpdateKeys": [],
   "MinimumApiVersion": "3.0.0",
