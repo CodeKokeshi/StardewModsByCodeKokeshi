@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("BountifulForaging")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3c74c7f12287c62541a65e2b950f345b1aa6da61")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d2ffdbf80c173763eaa533c6f92c134ffc610425")]
 [assembly: System.Reflection.AssemblyProductAttribute("BountifulForaging")]
 [assembly: System.Reflection.AssemblyTitleAttribute("BountifulForaging")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

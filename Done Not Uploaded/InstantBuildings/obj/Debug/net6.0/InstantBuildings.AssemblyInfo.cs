@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("InstantBuildings")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9b6a2bc7c578957be0f67a1981ffcddc66e4bbb6")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d2ffdbf80c173763eaa533c6f92c134ffc610425")]
 [assembly: System.Reflection.AssemblyProductAttribute("InstantBuildings")]
 [assembly: System.Reflection.AssemblyTitleAttribute("InstantBuildings")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -28,6 +28,17 @@ namespace InstantBuildings
             helper.Events.GameLoop.DayStarted += OnDayStarted;
             helper.Events.World.BuildingListChanged += OnBuildingListChanged;
             helper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
+            helper.Events.GameLoop.UpdateTicked += OnUpdateTicked;
+        }
+
+        private void OnUpdateTicked(object sender, UpdateTickedEventArgs e)
+        {
+            // Check every quarter second (15 ticks) for house/community upgrades
+            if (!e.IsMultipleOf(15))
+                return;
+
+            // Complete house upgrades immediately after purchase
+            CompleteHouseUpgrades();
         }
 
         private void OnSaveLoaded(object sender, SaveLoadedEventArgs e)
