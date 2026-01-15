@@ -22,7 +22,7 @@ public class ModEntry : Mod
     /// Multiplier for how much forage to spawn beyond the game's default max.
     /// 1 = game default, 2 = double, 5 = 5x more, 10 = 10x more
     /// </summary>
-    public const int FORAGE_MULTIPLIER = 5;
+    public const int FORAGE_MULTIPLIER = 10;
     
     /// <summary>
     /// Minimum forage to spawn per location regardless of game data.
