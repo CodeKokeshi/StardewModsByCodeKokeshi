@@ -29,7 +29,7 @@ namespace WorkingPets
         public bool ShowWorkingMessages { get; set; } = true;
 
         /// <summary>Whether the pet can follow you outside the farm.</summary>
-        public bool FollowOutsideFarm { get; set; } = false;
+        public bool FollowOutsideFarm { get; set; } = true;
 
         /// <summary>Whether the pet picks up forageable items while following you.</summary>
         public bool ForageWhileFollowing { get; set; } = true;

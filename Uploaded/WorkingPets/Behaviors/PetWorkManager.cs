@@ -50,6 +50,9 @@ namespace WorkingPets.Behaviors
         // Track unreachable targets to avoid trying them repeatedly
         private readonly HashSet<Vector2> _unreachableTiles = new();
         private int _unreachableClearTimer;
+        
+        // Track when we've notified about no work available (to avoid spam)
+        private bool _noWorkNotificationShown = false;
 
         // Stuck detection (fallback fast-speed bypass instead of warping)
         private float _lastDistanceToTarget = float.MaxValue;
@@ -98,6 +101,7 @@ namespace WorkingPets.Behaviors
             _tickCounter = 0;
             _targetTile = null;
             _pendingAction = null;
+            _noWorkNotificationShown = false; // Reset notification flag when toggling
 
             if (_isWorking)
             {
@@ -786,17 +790,31 @@ namespace WorkingPets.Behaviors
             ModEntry.Instance.Monitor.Log($"[WorkingPets] ScanForWork at tile {petTile}", LogLevel.Debug);
             ModEntry.Instance.Monitor.Log($"[WorkingPets] Config - Debris:{config.ClearDebris}, Stumps:{config.ClearStumpsAndLogs}, Trees:{config.ChopTrees}, Boulders:{config.BreakBoulders}", LogLevel.Debug);
 
+            bool foundWork;
             if (config.IgnorePriority)
             {
-                ScanForNearestTarget(farm, petTile);
+                foundWork = ScanForNearestTarget(farm, petTile);
             }
             else
             {
-                ScanByPriority(farm, petTile);
+                foundWork = ScanByPriority(farm, petTile);
+            }
+            
+            // If work was found, reset the notification flag so we can notify again later
+            if (foundWork)
+            {
+                _noWorkNotificationShown = false;
+            }
+            // Only show "no work" notification once per work session
+            else if (!_noWorkNotificationShown && config.ShowWorkingMessages)
+            {
+                _noWorkNotificationShown = true;
+                string petName = _pet?.Name ?? "Your pet";
+                Game1.addHUDMessage(new HUDMessage($"{petName} found nothing to do.", HUDMessage.newQuest_type));
             }
         }
 
-        private void ScanByPriority(Farm farm, Vector2 petTile)
+        private bool ScanByPriority(Farm farm, Vector2 petTile)
         {
             // Get work types sorted by priority (lower number = higher priority)
             var enabledTypes = GetEnabledWorkTypesByPriority();
@@ -812,11 +830,13 @@ namespace WorkingPets.Behaviors
                     _ => false
                 };
 
-                if (found) return;
+                if (found) return true;
             }
+            
+            return false;
         }
 
-        private void ScanForNearestTarget(Farm farm, Vector2 petTile)
+        private bool ScanForNearestTarget(Farm farm, Vector2 petTile)
         {
             var config = ModEntry.Config;
             var candidates = new List<(Vector2 tile, float distance, Action action)>();
@@ -910,7 +930,10 @@ namespace WorkingPets.Behaviors
             {
                 var nearest = candidates.OrderBy(c => c.distance).First();
                 SetJob(nearest.tile, nearest.action);
+                return true;
             }
+            
+            return false;
         }
 
         private List<WorkType> GetEnabledWorkTypesByPriority()

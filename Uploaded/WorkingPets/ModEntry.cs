@@ -176,17 +176,12 @@ namespace WorkingPets
                 setValue: value => Config.ModEnabled = value
             );
 
-            configMenu.AddParagraph(
+            configMenu.AddKeybindList(
                 mod: this.ModManifest,
-                text: () => $"Whistle Key: {Config.WhistleKey}\n(Edit in config.json to change)"
-            );
-
-            configMenu.AddBoolOption(
-                mod: this.ModManifest,
-                name: () => "Mod Enabled",
-                tooltip: () => "Enable or disable the Working Pets mod entirely.",
-                getValue: () => Config.ModEnabled,
-                setValue: value => Config.ModEnabled = value
+                name: () => "Whistle Key",
+                tooltip: () => "Press this key to open the whistle menu and call your pets.",
+                getValue: () => Config.WhistleKey,
+                setValue: value => Config.WhistleKey = value
             );
 
             configMenu.AddNumberOption(
@@ -220,7 +215,7 @@ namespace WorkingPets
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "Follow Outside Farm (Experimental)",
+                name: () => "Follow Outside Farm",
                 tooltip: () => "Allow your pet to follow you outside the farm. If disabled, pet stops following when you leave the farm.",
                 getValue: () => Config.FollowOutsideFarm,
                 setValue: value => Config.FollowOutsideFarm = value
