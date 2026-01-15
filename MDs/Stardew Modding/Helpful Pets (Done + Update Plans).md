@@ -87,7 +87,7 @@ Then I thought, hmmm... this is gonna be sick. If I actually make the cat work.
 I only ever use this mod to a single pet and according to my research there's a thing called pet license and there are other type of pets like turtles and dogs. I ain't sure how this mod will work with multiple pets and different types at that.
 
 # **Update Plans**:
-1. Add a full fledge follow mechanics around town. Add a foraging mechanics so the player can just walk around and the pet will pick it up for the player.
+1. Add a full fledge follow mechanics around town. Add a foraging mechanics so the player can just walk around and the pet will pick it up for the player. [IN PROGRESS] Current Status: We want to make the follow outside farm mechanics a non experimental option, and on by default.
 2. Daily summary report for what item was collected during the day.
 3. Emotes when working (💧 when watering, ⚡ when chopping, ❤️ when finding good items). Trail particles when moving to targets. Speech bubbles showing what they're collecting. [DOUBTS]
 4. Watering Crops - Pet waters unwatered crops when work mode is on.

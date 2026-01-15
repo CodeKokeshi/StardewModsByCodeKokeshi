@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("BypassFriendshipDoors")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+863b0862149446df4e866d8d2604e4b7c65dc87a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+774fb2f0c2bbb5928819d7b8403b72f4de0d7734")]
 [assembly: System.Reflection.AssemblyProductAttribute("BypassFriendshipDoors")]
 [assembly: System.Reflection.AssemblyTitleAttribute("BypassFriendshipDoors")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

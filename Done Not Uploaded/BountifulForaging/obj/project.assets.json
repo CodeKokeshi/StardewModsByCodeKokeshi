@@ -2,7 +2,7 @@
   "version": 3,
   "targets": {
     "net6.0": {
-      "Pathoschild.Stardew.ModBuildConfig/4.1.1": {
+      "Pathoschild.Stardew.ModBuildConfig/4.4.0": {
         "type": "package",
         "build": {
           "build/Pathoschild.Stardew.ModBuildConfig.targets": {}
@@ -11,10 +11,10 @@
     }
   },
   "libraries": {
-    "Pathoschild.Stardew.ModBuildConfig/4.1.1": {
-      "sha512": "iLEtUWuj+vFTa0HNJmOm0yMIx5ZnED3WHxM1groLUUcFQWV63IMyF5lSQ9d0dteFu7t2dbl/scLwHBdjk0d7AA==",
+    "Pathoschild.Stardew.ModBuildConfig/4.4.0": {
+      "sha512": "Yi7/8bZlLS1bqZxft1yZWxJmIBfIoRxQBFIwWrF0AjC4/j/HmWdDC7dbNzzM4ZtOTtjOAQ8AC7WjP6KHgLPpdg==",
       "type": "package",
-      "path": "pathoschild.stardew.modbuildconfig/4.1.1",
+      "path": "pathoschild.stardew.modbuildconfig/4.4.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -26,14 +26,15 @@
         "build/SMAPI.Toolkit.dll",
         "build/find-game-folder.targets",
         "images/icon.png",
-        "pathoschild.stardew.modbuildconfig.4.1.1.nupkg.sha512",
+        "mod-package.md",
+        "pathoschild.stardew.modbuildconfig.4.4.0.nupkg.sha512",
         "pathoschild.stardew.modbuildconfig.nuspec"
       ]
     }
   },
   "projectFileDependencyGroups": {
     "net6.0": [
-      "Pathoschild.Stardew.ModBuildConfig >= 4.1.1"
+      "Pathoschild.Stardew.ModBuildConfig >= 4.4.0"
     ]
   },
   "packageFolders": {
@@ -42,11 +43,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\December 2025 OS\\Development\\StardewModding\\Done Not Uploaded\\InstantBuildings\\InstantBuildings.csproj",
-      "projectName": "InstantBuildings",
-      "projectPath": "D:\\December 2025 OS\\Development\\StardewModding\\Done Not Uploaded\\InstantBuildings\\InstantBuildings.csproj",
+      "projectUniqueName": "D:\\December 2025 OS\\Development\\StardewModding\\Done Not Uploaded\\BountifulForaging\\BountifulForaging.csproj",
+      "projectName": "BountifulForaging",
+      "projectPath": "D:\\December 2025 OS\\Development\\StardewModding\\Done Not Uploaded\\BountifulForaging\\BountifulForaging.csproj",
       "packagesPath": "C:\\Users\\Aikawa\\.nuget\\packages\\",
-      "outputPath": "D:\\December 2025 OS\\Development\\StardewModding\\Done Not Uploaded\\InstantBuildings\\obj\\",
+      "outputPath": "D:\\December 2025 OS\\Development\\StardewModding\\Done Not Uploaded\\BountifulForaging\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\Aikawa\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -81,7 +82,7 @@
         "dependencies": {
           "Pathoschild.Stardew.ModBuildConfig": {
             "target": "Package",
-            "version": "[4.1.1, )"
+            "version": "[4.4.0, )"
           }
         },
         "imports": [
