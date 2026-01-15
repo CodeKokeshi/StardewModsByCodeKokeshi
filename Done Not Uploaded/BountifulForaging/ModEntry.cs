@@ -14,37 +14,96 @@ namespace BountifulForaging;
 
 public class ModEntry : Mod
 {
-    // ============================================
-    // CONFIGURATION - CHANGE THESE VALUES!
-    // ============================================
+    /// <summary>Static config instance accessible by the whole mod.</summary>
+    internal static ModConfig Config { get; private set; } = null!;
     
-    /// <summary>
-    /// Multiplier for how much forage to spawn beyond the game's default max.
-    /// 1 = game default, 2 = double, 5 = 5x more, 10 = 10x more
-    /// </summary>
-    public const int FORAGE_MULTIPLIER = 10;
-    
-    /// <summary>
-    /// Minimum forage to spawn per location regardless of game data.
-    /// This ensures even "empty" areas get forage.
-    /// </summary>
-    public const int MINIMUM_FORAGE_PER_LOCATION = 10;
-    
-    /// <summary>
-    /// Maximum forage per location (to prevent lag in huge areas)
-    /// </summary>
-    public const int ABSOLUTE_MAX_FORAGE = 100;
-    
-    // ============================================
+    /// <summary>Static monitor for logging from static methods.</summary>
+    internal static IMonitor ModMonitor { get; private set; } = null!;
 
     public override void Entry(IModHelper helper)
     {
+        ModMonitor = this.Monitor;
+        Config = helper.ReadConfig<ModConfig>();
         
         var harmony = new Harmony(this.ModManifest.UniqueID);
         harmony.PatchAll();
         
+        // Register GMCM on game launch
+        helper.Events.GameLoop.GameLaunched += OnGameLaunched;
+        
         // Run our aggressive forage spawn after the day starts
         helper.Events.GameLoop.DayStarted += OnDayStarted;
+        
+        Monitor.Log("[BountifulForaging] Loaded! Forage will spawn bountifuly every day.", LogLevel.Info);
+    }
+
+    private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
+    {
+        // Get Generic Mod Config Menu's API (if it's installed)
+        var configMenu = this.Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
+        if (configMenu is null)
+        {
+            Monitor.Log("Generic Mod Config Menu not found. Config can only be edited via config.json", LogLevel.Info);
+            return;
+        }
+
+        // Register mod - TITLE SCREEN ONLY
+        configMenu.Register(
+            mod: this.ModManifest,
+            reset: () => Config = new ModConfig(),
+            save: () => this.Helper.WriteConfig(Config),
+            titleScreenOnly: true
+        );
+
+        // === Forage Settings ===
+        configMenu.AddSectionTitle(
+            mod: this.ModManifest,
+            text: () => "Forage Bounty Settings"
+        );
+
+        configMenu.AddParagraph(
+            mod: this.ModManifest,
+            text: () => "Configure how much forage spawns in each area every day. Higher values = more forageables!"
+        );
+
+        // Forage Multiplier (1x - 15x, default 4x)
+        configMenu.AddNumberOption(
+            mod: this.ModManifest,
+            name: () => "Forage Multiplier",
+            tooltip: () => "Multiplies the game's default max forage per area. 4x is recommended, 15x is maximum bounty!",
+            getValue: () => Config.ForageMultiplier,
+            setValue: value => Config.ForageMultiplier = value,
+            min: 1,
+            max: 15,
+            interval: 1,
+            formatValue: value => $"{value}x"
+        );
+
+        // Minimum Forage Per Location (1-20, default 4)
+        configMenu.AddNumberOption(
+            mod: this.ModManifest,
+            name: () => "Minimum Per Area",
+            tooltip: () => "Minimum forage to spawn even in areas with no default forage. Ensures no empty areas!",
+            getValue: () => Config.MinimumForagePerLocation,
+            setValue: value => Config.MinimumForagePerLocation = value,
+            min: 1,
+            max: 20,
+            interval: 1
+        );
+
+        // Maximum Forage Per Location (10-50, default 50)
+        configMenu.AddNumberOption(
+            mod: this.ModManifest,
+            name: () => "Maximum Per Area",
+            tooltip: () => "Maximum forage per area to prevent performance issues. Lower this if you experience lag.",
+            getValue: () => Config.MaxForagePerLocation,
+            setValue: value => Config.MaxForagePerLocation = value,
+            min: 10,
+            max: 50,
+            interval: 5
+        );
+
+        Monitor.Log("Generic Mod Config Menu integration complete!", LogLevel.Debug);
     }
 
     private void OnDayStarted(object? sender, DayStartedEventArgs e)
@@ -52,7 +111,7 @@ public class ModEntry : Mod
         if (!Context.IsWorldReady)
             return;
             
-        Monitor?.Log($"Bountiful Foraging: Spawning forage with {FORAGE_MULTIPLIER}x multiplier...", LogLevel.Info);
+        Monitor.Log($"Bountiful Foraging: Spawning forage with {Config.ForageMultiplier}x multiplier...", LogLevel.Debug);
         
         int totalSpawned = 0;
         
@@ -71,7 +130,7 @@ public class ModEntry : Mod
             }
         }
         
-        Monitor?.Log($"Bountiful Foraging: Spawned {totalSpawned} total forage items!", LogLevel.Info);
+        Monitor.Log($"Bountiful Foraging: Spawned {totalSpawned} total forage items!", LogLevel.Debug);
     }
 
     /// <summary>
@@ -97,10 +156,10 @@ public class ModEntry : Mod
         // Clear ALL existing spawned forage first
         ClearExistingForage(location);
         
-        // Calculate how much to spawn
+        // Calculate how much to spawn using config values
         int gameMax = data?.MaxSpawnedForageAtOnce ?? 6;
-        int targetAmount = Math.Max(gameMax * FORAGE_MULTIPLIER, MINIMUM_FORAGE_PER_LOCATION);
-        targetAmount = Math.Min(targetAmount, ABSOLUTE_MAX_FORAGE);
+        int targetAmount = Math.Max(gameMax * Config.ForageMultiplier, Config.MinimumForagePerLocation);
+        targetAmount = Math.Min(targetAmount, Config.MaxForagePerLocation);
         
         // Spawn the forage!
         int spawned = SpawnForageItems(location, possibleForage, targetAmount);
@@ -307,10 +366,6 @@ public class ModEntry : Mod
         // Can't place items here
         if (!location.CanItemBePlacedHere(tile))
             return false;
-        
-        // Behind bush (skip this check to allow more spawns)
-        // if (location.isBehindBush(tile))
-        //     return false;
         
         // Has front layer tile (building, etc)
         if (location.isTileOnMap(tile))
