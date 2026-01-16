@@ -7,3 +7,12 @@ D:\December 2025 OS\Development\StardewModding\InstantFishBite\obj\Debug\net6.0\
 D:\December 2025 OS\Development\StardewModding\InstantFishBite\obj\Debug\net6.0\InstantFishBite.csproj.CoreCompileInputs.cache
 D:\December 2025 OS\Development\StardewModding\InstantFishBite\obj\Debug\net6.0\InstantFishBite.dll
 D:\December 2025 OS\Development\StardewModding\InstantFishBite\obj\Debug\net6.0\InstantFishBite.sourcelink.json
+D:\December 2025 OS\Development\StardewModding\Uploaded\InstantFishBite\bin\Debug\net6.0\InstantFishBite.deps.json
+D:\December 2025 OS\Development\StardewModding\Uploaded\InstantFishBite\bin\Debug\net6.0\InstantFishBite.dll
+D:\December 2025 OS\Development\StardewModding\Uploaded\InstantFishBite\obj\Debug\net6.0\InstantFishBite.csproj.AssemblyReference.cache
+D:\December 2025 OS\Development\StardewModding\Uploaded\InstantFishBite\obj\Debug\net6.0\InstantFishBite.GeneratedMSBuildEditorConfig.editorconfig
+D:\December 2025 OS\Development\StardewModding\Uploaded\InstantFishBite\obj\Debug\net6.0\InstantFishBite.AssemblyInfoInputs.cache
+D:\December 2025 OS\Development\StardewModding\Uploaded\InstantFishBite\obj\Debug\net6.0\InstantFishBite.AssemblyInfo.cs
+D:\December 2025 OS\Development\StardewModding\Uploaded\InstantFishBite\obj\Debug\net6.0\InstantFishBite.csproj.CoreCompileInputs.cache
+D:\December 2025 OS\Development\StardewModding\Uploaded\InstantFishBite\obj\Debug\net6.0\InstantFishBite.sourcelink.json
+D:\December 2025 OS\Development\StardewModding\Uploaded\InstantFishBite\obj\Debug\net6.0\InstantFishBite.dll

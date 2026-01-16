@@ -7,3 +7,12 @@ D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\BountifulForagi
 D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\BountifulForaging\bin\Debug\net6.0\BountifulForaging.deps.json
 D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\BountifulForaging\bin\Debug\net6.0\BountifulForaging.dll
 D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\BountifulForaging\obj\Debug\net6.0\BountifulForaging.dll
+D:\December 2025 OS\Development\StardewModding\Uploaded\BountifulForaging\bin\Debug\net6.0\BountifulForaging.deps.json
+D:\December 2025 OS\Development\StardewModding\Uploaded\BountifulForaging\bin\Debug\net6.0\BountifulForaging.dll
+D:\December 2025 OS\Development\StardewModding\Uploaded\BountifulForaging\obj\Debug\net6.0\BountifulForaging.csproj.AssemblyReference.cache
+D:\December 2025 OS\Development\StardewModding\Uploaded\BountifulForaging\obj\Debug\net6.0\BountifulForaging.GeneratedMSBuildEditorConfig.editorconfig
+D:\December 2025 OS\Development\StardewModding\Uploaded\BountifulForaging\obj\Debug\net6.0\BountifulForaging.AssemblyInfoInputs.cache
+D:\December 2025 OS\Development\StardewModding\Uploaded\BountifulForaging\obj\Debug\net6.0\BountifulForaging.AssemblyInfo.cs
+D:\December 2025 OS\Development\StardewModding\Uploaded\BountifulForaging\obj\Debug\net6.0\BountifulForaging.csproj.CoreCompileInputs.cache
+D:\December 2025 OS\Development\StardewModding\Uploaded\BountifulForaging\obj\Debug\net6.0\BountifulForaging.sourcelink.json
+D:\December 2025 OS\Development\StardewModding\Uploaded\BountifulForaging\obj\Debug\net6.0\BountifulForaging.dll

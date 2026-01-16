@@ -33,6 +33,18 @@ namespace WorkingPets.Patches
                 if (!ModEntry.Config.ModEnabled)
                     return true; // Use original behavior
 
+                // Don't intercept during events (like the naming cutscene)
+                if (Game1.CurrentEvent != null)
+                    return true; // Use original behavior
+
+                // Don't intercept if a menu is already open (prevents loops)
+                if (Game1.activeClickableMenu != null)
+                    return true; // Use original behavior
+
+                // Don't intercept if dialogue is up
+                if (Game1.dialogueUp)
+                    return true; // Use original behavior
+
                 // Show our custom dialogue menu
                 PetDialogueHandler.ShowPetMenu(__instance, who, l);
                 __result = true;

@@ -1,9 +1,0 @@
-D:\December 2025 OS\Development\StardewModding\Uploaded\BypassFriendshipDoors\obj\Debug\net6.0\BypassFriendshipDoors.csproj.AssemblyReference.cache
-D:\December 2025 OS\Development\StardewModding\Uploaded\BypassFriendshipDoors\obj\Debug\net6.0\BypassFriendshipDoors.GeneratedMSBuildEditorConfig.editorconfig
-D:\December 2025 OS\Development\StardewModding\Uploaded\BypassFriendshipDoors\obj\Debug\net6.0\BypassFriendshipDoors.AssemblyInfoInputs.cache
-D:\December 2025 OS\Development\StardewModding\Uploaded\BypassFriendshipDoors\obj\Debug\net6.0\BypassFriendshipDoors.AssemblyInfo.cs
-D:\December 2025 OS\Development\StardewModding\Uploaded\BypassFriendshipDoors\obj\Debug\net6.0\BypassFriendshipDoors.csproj.CoreCompileInputs.cache
-D:\December 2025 OS\Development\StardewModding\Uploaded\BypassFriendshipDoors\obj\Debug\net6.0\BypassFriendshipDoors.sourcelink.json
-D:\December 2025 OS\Development\StardewModding\Uploaded\BypassFriendshipDoors\bin\Debug\net6.0\BypassFriendshipDoors.deps.json
-D:\December 2025 OS\Development\StardewModding\Uploaded\BypassFriendshipDoors\bin\Debug\net6.0\BypassFriendshipDoors.dll
-D:\December 2025 OS\Development\StardewModding\Uploaded\BypassFriendshipDoors\obj\Debug\net6.0\BypassFriendshipDoors.dll

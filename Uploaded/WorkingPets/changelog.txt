@@ -1,3 +1,7 @@
+1.3.1
+- Fixed bug where SMAPI console window would flash repeatedly after naming a new pet during the adoption cutscene.
+- Pets now use vanilla interaction behavior during events, cutscenes, and when menus/dialogues are active to prevent conflicts.
+
 1.3.0
 === Follow Mode - Now Fully Functional! ===
 - MAJOR: Follow mode upgraded from experimental to fully functional!
