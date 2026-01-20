@@ -21,9 +21,19 @@ public class ModEntry : Mod
 [HarmonyPatch(typeof(Item), nameof(Item.Quality), MethodType.Setter)]
 public static class ItemQualityPatch
 {
-    public static void Prefix(ref int value)
+    public static bool Prefix(Item __instance, ref int value)
     {
-        // Always set quality to 4 (iridium)
+        // CRITICAL EDGE CASE: Hat Stand (BC)126 uses quality field to store hat ID, not actual quality
+        // When placing a hat on mannequin: quality = hatItemId + 1
+        // When removing hat: hatItemId = quality - 1
+        // Must NOT patch quality for hat stands to avoid corrupting hat storage
+        if (__instance is StardewValley.Object obj && obj.QualifiedItemId == "(BC)126")
+        {
+            return true; // Use original setter (don't patch hat stand)
+        }
+
+        // All other items: force to iridium quality
         value = 4;
+        return true; // Continue with modified value
     }
 }
