@@ -1,0 +1,9 @@
+{
+  "Name": "Max Quality",
+  "Author": "CodeKokeshi",
+  "Version": "1.0.0",
+  "Description": "Makes all items have maximum (iridium) quality.",
+  "UniqueID": "CodeKokeshi.MaxQuality",
+  "EntryDll": "MaxQuality.dll",
+  "MinimumApiVersion": "4.0.0"
+}

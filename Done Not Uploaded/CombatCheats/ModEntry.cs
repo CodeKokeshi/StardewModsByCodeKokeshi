@@ -145,16 +145,17 @@ namespace CombatCheats
         }
 
         /// <summary>Patch to guarantee 100% crit chance on weapons.</summary>
-        [HarmonyPostfix]
-        [HarmonyPatch(typeof(MeleeWeapon), "get_critChance")]
-        public static void MeleeWeapon_critChance_Postfix(MeleeWeapon __instance, ref float __result)
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(MeleeWeapon), nameof(MeleeWeapon.DoDamage))]
+        public static void MeleeWeapon_DoDamage_Prefix(MeleeWeapon __instance)
         {
             if (!Context.IsWorldReady)
                 return;
 
             if (ModEntry.Config.HundredPercentCrit)
             {
-                __result = 1.0f; // 100% crit chance
+                // Set critChance to 1.0 (100%) before damage calculation
+                __instance.critChance.Value = 1.0f;
                 ModEntry.ModMonitor.LogOnce("100% Crit active - forcing crit chance to 100%", LogLevel.Trace);
             }
         }
