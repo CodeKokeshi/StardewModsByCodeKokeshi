@@ -11,4 +11,6 @@
 11. [[Bountiful Foraging (Planned)]]
 12. [[Fully Automated Coops, Barns and Animal enclosures (Planned)]]
 13. [[Profit Calculator or Resource Monitor (Planned)]]
-14. 
+14. [[Unnamed Mod - Easier Way to Mine (Conceptualizing)]]
+15. [[Unnamed Mod - Easier Farm Design (Conceptualizing)]]
+16. [[Unnamed Mod - Easier Passive Farming (Conceptualizing)]]
