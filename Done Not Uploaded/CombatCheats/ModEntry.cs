@@ -135,12 +135,9 @@ namespace CombatCheats
 
             if (ModEntry.Config.OneHitKill)
             {
-                // Set monster health to 1 so any damage kills it
-                if (__instance.Health > 1)
-                {
-                    __instance.Health = 1;
-                    ModEntry.ModMonitor.LogOnce($"One Hit Kill active - set {__instance.Name} HP to 1", LogLevel.Trace);
-                }
+                // Simply deal 9999 damage - guaranteed one hit kill
+                damage = 9999;
+                ModEntry.ModMonitor.LogOnce($"One Hit Kill active - dealing 9999 damage to {__instance.Name}", LogLevel.Trace);
             }
         }
 
