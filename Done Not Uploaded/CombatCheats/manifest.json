@@ -1,0 +1,10 @@
+{
+  "Name": "Combat Cheats",
+  "Author": "YourName",
+  "Version": "1.0.0",
+  "Description": "Combat cheats with GMCM integration: One-hit kill, Infinite HP, Max drop rates, and 100% crit chance. All features disabled by default.",
+  "UniqueID": "YourName.CombatCheats",
+  "EntryDll": "CombatCheats.dll",
+  "MinimumApiVersion": "4.0.0",
+  "UpdateKeys": []
+}

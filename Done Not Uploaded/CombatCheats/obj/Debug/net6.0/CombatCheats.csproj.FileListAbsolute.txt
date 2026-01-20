@@ -1,0 +1,9 @@
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\CombatCheats\obj\Debug\net6.0\CombatCheats.csproj.AssemblyReference.cache
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\CombatCheats\obj\Debug\net6.0\CombatCheats.GeneratedMSBuildEditorConfig.editorconfig
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\CombatCheats\obj\Debug\net6.0\CombatCheats.AssemblyInfoInputs.cache
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\CombatCheats\obj\Debug\net6.0\CombatCheats.AssemblyInfo.cs
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\CombatCheats\obj\Debug\net6.0\CombatCheats.csproj.CoreCompileInputs.cache
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\CombatCheats\obj\Debug\net6.0\CombatCheats.sourcelink.json
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\CombatCheats\bin\Debug\net6.0\CombatCheats.deps.json
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\CombatCheats\bin\Debug\net6.0\CombatCheats.dll
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\CombatCheats\obj\Debug\net6.0\CombatCheats.dll
