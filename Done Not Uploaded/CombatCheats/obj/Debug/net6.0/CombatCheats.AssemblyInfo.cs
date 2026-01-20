@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CombatCheats")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+845f12990cf598666224812d1495eb6e08eecd0e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a20d62f8884e71bf88ac84abf070b61d93bf4ece")]
 [assembly: System.Reflection.AssemblyProductAttribute("CombatCheats")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CombatCheats")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
