@@ -1,0 +1,15 @@
+﻿// Decompiled with JetBrains decompiler
+// Type: StardewValley.Delegates.ForEachItemDelegate
+// Assembly: Stardew Valley, Version=1.6.15.24356, Culture=neutral, PublicKeyToken=null
+// MVID: AA1F513A-94F0-4EF6-A35F-2D5B4A3721BF
+// Assembly location: D:\SteamLibrary\steamapps\common\Stardew Valley\Stardew Valley.dll
+// XML documentation location: D:\SteamLibrary\steamapps\common\Stardew Valley\Stardew Valley.xml
+
+using StardewValley.Internal;
+
+#nullable disable
+namespace StardewValley.Delegates;
+
+/// <summary>A callback invoked when iterating all items in the game.</summary>
+/// <returns>Returns whether to continue iterating items in the game.</returns>
+public delegate bool ForEachItemDelegate(in ForEachItemContext context);
