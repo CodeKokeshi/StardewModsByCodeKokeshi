@@ -1,0 +1,10 @@
+{
+  "Name": "Instant Upgrade Tools",
+  "Author": "YourName",
+  "Version": "1.0.0",
+  "Description": "Instantly upgrades tools without waiting days. No more queuing at Clint's shop!",
+  "UniqueID": "YourName.InstantUpgradeTools",
+  "EntryDll": "InstantUpgradeTools.dll",
+  "MinimumApiVersion": "4.0.0",
+  "UpdateKeys": []
+}

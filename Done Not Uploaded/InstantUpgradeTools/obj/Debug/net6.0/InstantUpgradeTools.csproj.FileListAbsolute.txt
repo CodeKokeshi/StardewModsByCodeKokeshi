@@ -1,0 +1,9 @@
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\InstantUpgradeTools\bin\Debug\net6.0\InstantUpgradeTools.deps.json
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\InstantUpgradeTools\bin\Debug\net6.0\InstantUpgradeTools.dll
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\InstantUpgradeTools\obj\Debug\net6.0\InstantUpgradeTools.csproj.AssemblyReference.cache
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\InstantUpgradeTools\obj\Debug\net6.0\InstantUpgradeTools.GeneratedMSBuildEditorConfig.editorconfig
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\InstantUpgradeTools\obj\Debug\net6.0\InstantUpgradeTools.AssemblyInfoInputs.cache
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\InstantUpgradeTools\obj\Debug\net6.0\InstantUpgradeTools.AssemblyInfo.cs
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\InstantUpgradeTools\obj\Debug\net6.0\InstantUpgradeTools.csproj.CoreCompileInputs.cache
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\InstantUpgradeTools\obj\Debug\net6.0\InstantUpgradeTools.sourcelink.json
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\InstantUpgradeTools\obj\Debug\net6.0\InstantUpgradeTools.dll
