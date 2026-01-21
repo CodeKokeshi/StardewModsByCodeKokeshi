@@ -5,5 +5,8 @@
   "Description": "Makes all items have maximum (iridium) quality.",
   "UniqueID": "CodeKokeshi.MaxQuality",
   "EntryDll": "MaxQuality.dll",
-  "MinimumApiVersion": "4.0.0"
+  "MinimumApiVersion": "4.0.0",
+    "UpdateKeys": [
+    "Nexus:41507"
+  ]
 }

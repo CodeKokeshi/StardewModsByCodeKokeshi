@@ -23,17 +23,32 @@ public static class ItemQualityPatch
 {
     public static bool Prefix(Item __instance, ref int value)
     {
-        // CRITICAL EDGE CASE: Hat Stand (BC)126 uses quality field to store hat ID, not actual quality
-        // When placing a hat on mannequin: quality = hatItemId + 1
-        // When removing hat: hatItemId = quality - 1
-        // Must NOT patch quality for hat stands to avoid corrupting hat storage
-        if (__instance is StardewValley.Object obj && obj.QualifiedItemId == "(BC)126")
-        {
-            return true; // Use original setter (don't patch hat stand)
-        }
+        // Don't affect non-object items (e.g. tools, rings, hats, weapons, etc).
+        if (__instance is not StardewValley.Object obj)
+            return true;
 
-        // All other items: force to iridium quality
-        value = 4;
-        return true; // Continue with modified value
+        // Never affect big craftables.
+        if (obj.bigCraftable.Value)
+            return true;
+
+        // CRITICAL EDGE CASE: Hat Stand (BC)126 uses the quality field to store hat ID, not actual quality.
+        if (obj.QualifiedItemId == "(BC)126")
+            return true;
+
+        // Only force quality for items which can reasonably have quality in vanilla.
+        // This avoids affecting junk/resources and other non-quality objects.
+        bool shouldForceQuality =
+            obj.isForage()
+            || obj.Category == StardewValley.Object.FishCategory
+            || obj.Category == StardewValley.Object.EggCategory
+            || obj.Category == StardewValley.Object.MilkCategory
+            || obj.Category == StardewValley.Object.artisanGoodsCategory
+            || obj.Category == StardewValley.Object.meatCategory;
+
+        if (!shouldForceQuality)
+            return true;
+
+        value = StardewValley.Object.bestQuality;
+        return true;
     }
 }
