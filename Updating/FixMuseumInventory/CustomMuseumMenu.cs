@@ -47,14 +47,14 @@ public class CustomMuseumMenu : IClickableMenu
     private Rectangle _inventoryBounds;
     private const int InventoryColumns = 6;
     private const int SlotSize = 64;
-    private const int SlotPadding = 4;
+    private const int SlotPadding = 8;
     private Point _inventoryOffset = Point.Zero;
     
     // === Arrange Mode: No Inventory ===
     // (Nothing needed - that's the point!)
     
     // === Draggable Inventory ===
-    private bool _isDraggingInventory;
+    private bool _followModeEnabled; // Toggle mode where panel follows cursor
     private Point _dragMouseOffset;
     private ClickableComponent? _dragHandle;
     
@@ -111,10 +111,12 @@ public class CustomMuseumMenu : IClickableMenu
             }
         }
         
-        // Calculate inventory panel size
+        // Calculate inventory panel size - PROPERLY this time
         int rows = (int)Math.Ceiling(_donatableItems.Count / (double)InventoryColumns);
-        int panelWidth = (InventoryColumns * SlotSize) + ((InventoryColumns + 1) * SlotPadding);
-        int panelHeight = (rows * SlotSize) + ((rows + 1) * SlotPadding) + 40; // +40 for padding only
+        // Width: padding + (columns * (slotSize + padding between))
+        int panelWidth = SlotPadding + (InventoryColumns * SlotSize) + (InventoryColumns * SlotPadding);
+        // Height: padding + (rows * (slotSize + padding between)) + button space
+        int panelHeight = SlotPadding + (rows * SlotSize) + (rows * SlotPadding) + 40; // +40 for drag button
         
         // Position at bottom center (default)
         int panelX = (Game1.uiViewport.Width - panelWidth) / 2;
@@ -122,9 +124,12 @@ public class CustomMuseumMenu : IClickableMenu
         
         _inventoryBounds = new Rectangle(panelX, panelY, panelWidth, panelHeight);
         
-        // Create drag handle at top of panel
+        // Create drag handle button at top-right corner of panel
+        int dragButtonSize = 32;
+        int dragButtonX = panelX + panelWidth - dragButtonSize - SlotPadding;
+        int dragButtonY = panelY + SlotPadding;
         _dragHandle = new ClickableComponent(
-            bounds: new Rectangle(panelX, panelY, panelWidth, 40),
+            bounds: new Rectangle(dragButtonX, dragButtonY, dragButtonSize, dragButtonSize),
             name: "dragHandle"
         );
         
@@ -134,6 +139,7 @@ public class CustomMuseumMenu : IClickableMenu
             int col = i % InventoryColumns;
             int row = i / InventoryColumns;
             
+            // Position with consistent spacing
             int slotX = panelX + SlotPadding + (col * (SlotSize + SlotPadding));
             int slotY = panelY + SlotPadding + (row * (SlotSize + SlotPadding));
             
@@ -148,28 +154,47 @@ public class CustomMuseumMenu : IClickableMenu
     {
         base.receiveLeftClick(x, y, playSound);
         
+        // Block input during fade
+        if (_fadeTimer > 0)
+            return;
+        
         // OK button
         if (_okButton != null && _okButton.containsPoint(x, y) && ReadyToClose())
         {
-            exitThisMenu();
+            // Start exit fade sequence
+            _state = 2;
+            _fadeTimer = 500;
+            _fadeIntoBlack = true;
             Game1.playSound("bigDeSelect");
             return;
         }
         
-        // Start dragging inventory panel
+        // Toggle follow mode for inventory panel
         if (!IsArrangeMode && _dragHandle != null && _dragHandle.containsPoint(x, y))
         {
-            _isDraggingInventory = true;
-            _dragMouseOffset = new Point(x - _inventoryBounds.X, y - _inventoryBounds.Y);
+            _followModeEnabled = !_followModeEnabled;
+            if (_followModeEnabled)
+            {
+                _dragMouseOffset = new Point(x - (_inventoryBounds.X + _inventoryOffset.X), y - (_inventoryBounds.Y + _inventoryOffset.Y));
+                Game1.playSound("bigSelect");
+            }
+            else
+            {
+                Game1.playSound("bigDeSelect");
+            }
             return;
         }
         
         // Handle inventory clicks (donation mode only)
-        if (!IsArrangeMode && HeldItem == null)
+        if (!IsArrangeMode && HeldItem == null && _donatableItems.Count > 0)
         {
+            // Adjust for offset
+            int adjustedX = x - _inventoryOffset.X;
+            int adjustedY = y - _inventoryOffset.Y;
+            
             for (int i = 0; i < _inventorySlots.Count; i++)
             {
-                if (_inventorySlots[i].containsPoint(x, y) && i < _donatableItems.Count)
+                if (_inventorySlots[i].containsPoint(adjustedX, adjustedY) && i < _donatableItems.Count)
                 {
                     Item item = _donatableItems[i];
                     
@@ -202,6 +227,19 @@ public class CustomMuseumMenu : IClickableMenu
     
     private void HandleMuseumTileClick(int x, int y)
     {
+        // In donation mode, don't handle tile clicks if clicking inventory area
+        if (!IsArrangeMode && _donatableItems.Count > 0)
+        {
+            Rectangle inventoryArea = new Rectangle(
+                _inventoryBounds.X + _inventoryOffset.X,
+                _inventoryBounds.Y + _inventoryOffset.Y,
+                _inventoryBounds.Width,
+                _inventoryBounds.Height
+            );
+            if (inventoryArea.Contains(x, y))
+                return;
+        }
+        
         // Convert screen coords to tile coords
         int tileX = (int)(Utility.ModifyCoordinateFromUIScale((float)x) + Game1.viewport.X) / 64;
         int tileY = (int)(Utility.ModifyCoordinateFromUIScale((float)y) + Game1.viewport.Y) / 64;
@@ -317,7 +355,24 @@ public class CustomMuseumMenu : IClickableMenu
     public override void releaseLeftClick(int x, int y)
     {
         base.releaseLeftClick(x, y);
-        _isDraggingInventory = false;
+        // Follow mode is toggle-based, not drag-based
+    }
+    
+    public override void receiveKeyPress(Keys key)
+    {
+        // Block input during fade
+        if (_fadeTimer > 0)
+            return;
+        
+        // Handle ESC key
+        if (key == Keys.Escape && ReadyToClose())
+        {
+            // Start exit fade sequence
+            _state = 2;
+            _fadeTimer = 500;
+            _fadeIntoBlack = true;
+            Game1.playSound("bigDeSelect");
+        }
     }
     
     public override void update(GameTime time)
@@ -341,8 +396,10 @@ public class CustomMuseumMenu : IClickableMenu
                         _fadeTimer = 800;
                         _fadeIntoBlack = false;
                         break;
-                    case 2: // Exit fade started
+                    case 2: // Exit fade started - return camera to player
                         Game1.viewportFreeze = false;
+                        Game1.viewport.X = (int)Game1.player.Position.X - Game1.viewport.Width / 2;
+                        Game1.viewport.Y = (int)Game1.player.Position.Y - Game1.viewport.Height / 2;
                         _fadeIntoBlack = false;
                         _fadeTimer = 800;
                         _state = 3;
@@ -356,15 +413,17 @@ public class CustomMuseumMenu : IClickableMenu
         
         SparkleText?.update(time);
         
-        // Update inventory panel position while dragging
-        if (_isDraggingInventory)
+        // Update inventory panel position in follow mode
+        if (_followModeEnabled && !IsArrangeMode)
         {
-            int newX = Game1.getMouseX() - _dragMouseOffset.X;
-            int newY = Game1.getMouseY() - _dragMouseOffset.Y;
+            int mouseX = Game1.getMouseX();
+            int mouseY = Game1.getMouseY();
+            int newX = mouseX - _dragMouseOffset.X;
+            int newY = mouseY - _dragMouseOffset.Y;
             
             _inventoryOffset = new Point(
-                newX - (_inventoryBounds.X - _inventoryOffset.X),
-                newY - (_inventoryBounds.Y - _inventoryOffset.Y)
+                newX - _inventoryBounds.X,
+                newY - _inventoryBounds.Y
             );
         }
     }
@@ -379,8 +438,8 @@ public class CustomMuseumMenu : IClickableMenu
             return; // Don't draw anything else during fade
         }
         
-        // Draw semi-transparent background overlay
-        b.Draw(Game1.fadeToBlackRect, Game1.graphics.GraphicsDevice.Viewport.Bounds, Color.Black * 0.5f);
+        // Draw semi-transparent background overlay (less dim)
+        b.Draw(Game1.fadeToBlackRect, Game1.graphics.GraphicsDevice.Viewport.Bounds, Color.Black * 0.25f);
         
         // Draw valid placement tiles when holding item
         if (HeldItem != null)
@@ -404,12 +463,26 @@ public class CustomMuseumMenu : IClickableMenu
             Game1.EndWorldDrawInUI(b);
         }
         
-        // Draw inventory panel (donation mode only)
-        if (!IsArrangeMode)
+        // Draw instruction text at top center
+        string instructionText = IsArrangeMode 
+            ? (HeldItem != null ? "Place item on a shelf" : "Click a museum piece to rearrange it")
+            : (_donatableItems.Count > 0 ? "Donate artifacts and minerals to the museum" : "No donatable items in inventory");
+        
+        Vector2 textSize = Game1.dialogueFont.MeasureString(instructionText);
+        Vector2 textPos = new Vector2(
+            (Game1.uiViewport.Width - textSize.X) / 2,
+            32
+        );
+        
+        // Draw text with shadow
+        b.DrawString(Game1.dialogueFont, instructionText, textPos + new Vector2(2, 2), Color.Black);
+        b.DrawString(Game1.dialogueFont, instructionText, textPos, Color.White);
+        
+        // Draw inventory panel (donation mode only, and only if has items)
+        if (!IsArrangeMode && _donatableItems.Count > 0)
         {
             DrawDonationInventory(b);
         }
-        // No text overlay in arrange mode - keep it clean
         
         // Draw OK button
         _okButton?.draw(b);
@@ -455,23 +528,66 @@ public class CustomMuseumMenu : IClickableMenu
             false
         );
         
-        // No title needed - inventory is self-explanatory
-        
-        // Draw drag handle hint
+        // Draw drag button with follow mode indicator
         int mouseX = Game1.getMouseX();
         int mouseY = Game1.getMouseY();
-        if (_dragHandle != null && _dragHandle.containsPoint(mouseX, mouseY))
+        string dragTooltip = "";
+        
+        if (_dragHandle != null)
         {
+            Rectangle dragBounds = new Rectangle(
+                _dragHandle.bounds.X + _inventoryOffset.X,
+                _dragHandle.bounds.Y + _inventoryOffset.Y,
+                _dragHandle.bounds.Width,
+                _dragHandle.bounds.Height
+            );
+            
+            bool hovering = dragBounds.Contains(mouseX, mouseY);
+            
+            // Visual feedback: Yellow when active, white when hovering, gray otherwise
+            Color dragColor = _followModeEnabled ? Color.Yellow : (hovering ? Color.White : (Color.White * 0.7f));
+            
             b.Draw(
                 Game1.mouseCursors,
-                new Rectangle(panelX + panelWidth / 2 - 16, panelY + 4, 32, 32),
+                dragBounds,
                 new Rectangle(80, 0, 16, 16),
-                Color.White * 0.5f
+                dragColor
             );
+            
+            // Tooltip for drag button
+            if (hovering)
+            {
+                dragTooltip = _followModeEnabled ? "Click to lock position" : "Click to follow cursor";
+            }
+            
+            // Active indicator - draw pulsing border when following
+            if (_followModeEnabled)
+            {
+                float pulse = (float)Math.Abs(Math.Sin(Game1.currentGameTime.TotalGameTime.TotalSeconds * 3));
+                Color borderColor = Color.Yellow * (0.5f + pulse * 0.5f);
+                
+                // Draw border around entire panel
+                int borderThickness = 3;
+                Rectangle panelRect = new Rectangle(
+                    panelX + _inventoryOffset.X,
+                    panelY + _inventoryOffset.Y,
+                    panelWidth,
+                    panelHeight
+                );
+                
+                // Top
+                b.Draw(Game1.staminaRect, new Rectangle(panelRect.X, panelRect.Y, panelRect.Width, borderThickness), borderColor);
+                // Bottom
+                b.Draw(Game1.staminaRect, new Rectangle(panelRect.X, panelRect.Bottom - borderThickness, panelRect.Width, borderThickness), borderColor);
+                // Left
+                b.Draw(Game1.staminaRect, new Rectangle(panelRect.X, panelRect.Y, borderThickness, panelRect.Height), borderColor);
+                // Right
+                b.Draw(Game1.staminaRect, new Rectangle(panelRect.Right - borderThickness, panelRect.Y, borderThickness, panelRect.Height), borderColor);
+            }
         }
         
         // Draw inventory slots
-        _hoverText = "";
+        _hoverText = dragTooltip; // Start with drag tooltip, can be overwritten by item hover
         for (int i = 0; i < _inventorySlots.Count && i < _donatableItems.Count; i++)
         {
             var slot = _inventorySlots[i];
@@ -519,7 +635,7 @@ public class CustomMuseumMenu : IClickableMenu
     
     public bool ReadyToClose()
     {
-        return HeldItem == null && !_holdingMuseumPiece && !_isDraggingInventory;
+        return HeldItem == null && !_holdingMuseumPiece && !_followModeEnabled;
     }
     
     public override void emergencyShutDown()
