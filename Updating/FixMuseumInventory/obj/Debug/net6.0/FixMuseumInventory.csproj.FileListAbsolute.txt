@@ -16,3 +16,12 @@ D:\December 2025 OS\Development\StardewModding\Uploaded\FixMuseumInventory\obj\D
 D:\December 2025 OS\Development\StardewModding\Uploaded\FixMuseumInventory\obj\Debug\net6.0\FixMuseumInventory.csproj.CoreCompileInputs.cache
 D:\December 2025 OS\Development\StardewModding\Uploaded\FixMuseumInventory\obj\Debug\net6.0\FixMuseumInventory.sourcelink.json
 D:\December 2025 OS\Development\StardewModding\Uploaded\FixMuseumInventory\obj\Debug\net6.0\FixMuseumInventory.dll
+D:\December 2025 OS\Development\StardewModding\Updating\FixMuseumInventory\bin\Debug\net6.0\FixMuseumInventory.deps.json
+D:\December 2025 OS\Development\StardewModding\Updating\FixMuseumInventory\bin\Debug\net6.0\FixMuseumInventory.dll
+D:\December 2025 OS\Development\StardewModding\Updating\FixMuseumInventory\obj\Debug\net6.0\FixMuseumInventory.csproj.AssemblyReference.cache
+D:\December 2025 OS\Development\StardewModding\Updating\FixMuseumInventory\obj\Debug\net6.0\FixMuseumInventory.GeneratedMSBuildEditorConfig.editorconfig
+D:\December 2025 OS\Development\StardewModding\Updating\FixMuseumInventory\obj\Debug\net6.0\FixMuseumInventory.AssemblyInfoInputs.cache
+D:\December 2025 OS\Development\StardewModding\Updating\FixMuseumInventory\obj\Debug\net6.0\FixMuseumInventory.AssemblyInfo.cs
+D:\December 2025 OS\Development\StardewModding\Updating\FixMuseumInventory\obj\Debug\net6.0\FixMuseumInventory.csproj.CoreCompileInputs.cache
+D:\December 2025 OS\Development\StardewModding\Updating\FixMuseumInventory\obj\Debug\net6.0\FixMuseumInventory.sourcelink.json
+D:\December 2025 OS\Development\StardewModding\Updating\FixMuseumInventory\obj\Debug\net6.0\FixMuseumInventory.dll
