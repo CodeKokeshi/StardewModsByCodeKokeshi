@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FixMuseumInventory")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+15db57d0720b1d1fbc1ed586dbe50c1d6b6400e2")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6d1a5fefe51f72a5864613e441a44a06254e4978")]
 [assembly: System.Reflection.AssemblyProductAttribute("FixMuseumInventory")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FixMuseumInventory")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -4,46 +4,56 @@ using Microsoft.Xna.Framework.Input;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
+using StardewValley.Locations;
 using StardewValley.Menus;
 
 namespace FixMuseumInventory;
 
 /// <summary>
-/// Complete overhaul of the museum inventory UI:
-/// 1. Removes the annoying sliding animation when opening/interacting
-/// 2. Adds a Hide/Show button to toggle inventory visibility
-/// 3. Retains the Move button to reposition the inventory
-/// 4. Full controller support for all buttons
-/// 5. Better overall UX for donating artifacts
+/// Museum inventory improvements:
+/// 1. Movable inventory (drag to reposition)
+/// 2. Compact mode (only shows donatable items in a smaller grid)
 /// </summary>
 public class ModEntry : Mod
 {
-    // Component IDs for snappy menu navigation
     private const int MoveButtonComponentId = 19512001;
-    private const int HideButtonComponentId = 19512002;
+    private const int CompactButtonComponentId = 19512002;
     private const int StationaryTicksBeforeShowingMoveTooltip = 6;
 
-    // Button bounds - Hide button stays visible, Move button hides with inventory
+    // Button bounds
     private Rectangle _moveButtonBounds;
-    private Rectangle _hideButtonBounds;
+    private Rectangle _compactButtonBounds;
 
-    // Clickable components for controller navigation
     private ClickableComponent? _moveButtonComponent;
-    private ClickableComponent? _hideButtonComponent;
+    private ClickableComponent? _compactButtonComponent;
 
     // Move mode state
     private bool _isMoving;
     private Point _mouseOffset;
 
-    // Hide state - inventory is hidden but Hide button remains visible
-    private bool _isInventoryHidden;
+    // Compact mode state
+    private bool _isCompactMode;
+    private List<int> _donatableSlotIndices = new();
+    private List<Rectangle> _compactSlotBounds = new();
+    private int _compactColumns = 6;
 
-    // Track menu position changes for tooltip timing
+    // Compact panel dimensions (calculated each frame)
+    private Rectangle _compactPanelBounds;
+
+    // Tooltip timing
     private Point? _lastMenuPosition;
     private int _ticksSinceMenuMoved = int.MaxValue;
 
-    // Saved position persists across menu opens within the same game session
+    // Saved position for session
     private Point? _savedMenuOffset;
+
+    // Original menu dimensions
+    private int _originalMenuWidth;
+    private int _originalMenuHeight;
+    private bool _dimensionsSaved;
+
+    // Original OK button position (to restore when exiting compact mode)
+    private Point _originalOkButtonPosition;
 
     public override void Entry(IModHelper helper)
     {
@@ -55,38 +65,26 @@ public class ModEntry : Mod
 
     private void OnMenuChanged(object? sender, MenuChangedEventArgs e)
     {
-        // Reset all state when menu changes
         _isMoving = false;
-        _isInventoryHidden = false;
         _moveButtonComponent = null;
-        _hideButtonComponent = null;
+        _compactButtonComponent = null;
         _lastMenuPosition = null;
         _ticksSinceMenuMoved = int.MaxValue;
+        _isCompactMode = false;
+        _dimensionsSaved = false;
+        _donatableSlotIndices.Clear();
+        _compactSlotBounds.Clear();
+        _originalOkButtonPosition = Point.Zero;
 
         if (e.NewMenu is MuseumMenu menu)
         {
-            // === REMOVE THE FADE-IN ANIMATION ===
-            // Skip directly to the "placing" state with no fade
-            menu.fadeTimer = 0;
-            menu.fadeIntoBlack = false;
-            menu.blackFadeAlpha = 0f;
-
-            // Set state to 1 (placingInMuseumState) - this is what happens after fade completes
-            var stateField = typeof(MuseumMenu).GetField("state", 
-                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-            stateField?.SetValue(menu, 1);
-
-            // Set up the viewport as the game would after the fade
-            Game1.viewportFreeze = true;
-            Game1.viewport.Location = new xTile.Dimensions.Location(1152, 128);
-            Game1.clampViewportToGameMap();
-
-            // Pre-calculate button bounds
-            UpdateButtonBounds(menu);
-
-            // Apply saved position if available
+            // Initial update of donatable items
+            UpdateDonatableItems(menu);
+            
             if (_savedMenuOffset.HasValue)
             {
+                UpdateAllBounds(menu);
+
                 Point clamped = ClampMenuPosition(menu, _savedMenuOffset.Value);
                 int dx = clamped.X - menu.xPositionOnScreen;
                 int dy = clamped.Y - menu.yPositionOnScreen;
@@ -107,28 +105,34 @@ public class ModEntry : Mod
             return;
         }
 
-        // Allow interaction during normal exit fade (state 2/3) but not during it
-        bool isExiting = menu.fadeTimer > 0 && menu.fadeIntoBlack;
-        if (isExiting)
+        bool isFading = menu.fadeTimer > 0 || menu.blackFadeAlpha > 0f;
+        if (isFading)
         {
             _isMoving = false;
             return;
         }
 
-        // === PREVENT SLIDING ANIMATION ===
-        // The vanilla game slides the menu down when menuMovingDown is true
-        // We forcefully counteract this every tick
-        PreventSlidingAnimation(menu);
+        // Save original dimensions once
+        if (!_dimensionsSaved)
+        {
+            _originalMenuWidth = menu.width;
+            _originalMenuHeight = menu.height;
+            _dimensionsSaved = true;
+        }
 
         Point positionBefore = new(menu.xPositionOnScreen, menu.yPositionOnScreen);
 
-        // Update button positions
-        UpdateButtonBounds(menu);
+        // Update donatable items periodically
+        if (e.IsMultipleOf(30))
+        {
+            UpdateDonatableItems(menu);
+        }
 
-        // Register buttons for controller navigation
+        // Update ALL bounds every frame (fixes lag issue)
+        UpdateAllBounds(menu);
         TryAddButtonsToSnappyMenu(menu);
 
-        // Handle move mode - menu follows input
+        // Handle move mode
         if (_isMoving)
         {
             if (Game1.options.gamepadControls)
@@ -152,7 +156,6 @@ public class ModEntry : Mod
             }
         }
 
-        // Track position changes for tooltip timing
         Point positionAfter = new(menu.xPositionOnScreen, menu.yPositionOnScreen);
         if (_lastMenuPosition == null)
         {
@@ -172,107 +175,166 @@ public class ModEntry : Mod
     }
 
     /// <summary>
-    /// Prevents the vanilla sliding animation by resetting menuPositionOffset
-    /// and undoing any movement the game applied.
+    /// Finds all inventory slots that contain donatable items.
     /// </summary>
-    private void PreventSlidingAnimation(MuseumMenu menu)
+    private void UpdateDonatableItems(MuseumMenu menu)
     {
-        // The game's update() does: if (menuMovingDown && menuPositionOffset < height/3) 
-        // { menuPositionOffset += 8; movePosition(0, 8); }
-        // We counteract by moving back and resetting the offset
+        _donatableSlotIndices.Clear();
 
-        if (menu.menuPositionOffset != 0)
+        var museum = menu.Museum;
+        if (museum == null) return;
+
+        var inventory = Game1.player?.Items;
+        if (inventory == null) return;
+
+        for (int i = 0; i < inventory.Count && i < 36; i++)
         {
-            int undoY = -menu.menuPositionOffset;
-            menu.menuPositionOffset = 0;
-
-            // Only undo if we're not actively moving (avoid fighting user input)
-            if (!_isMoving && undoY != 0)
+            Item? item = inventory[i];
+            if (item != null && museum.isItemSuitableForDonation(item))
             {
-                menu.movePosition(0, undoY);
+                _donatableSlotIndices.Add(i);
             }
         }
-
-        // Also prevent the flag from triggering more movement
-        // We need reflection since menuMovingDown is public but we want to be careful
-        menu.menuMovingDown = false;
     }
 
     /// <summary>
-    /// Updates button bounds based on current menu position.
-    /// Hide button is positioned to the left of Move button.
-    /// Both are above the OK button.
+    /// Updates all bounds (compact slots, panel, buttons) based on current menu position.
+    /// Called every frame to keep everything in sync.
     /// </summary>
+    private void UpdateAllBounds(MuseumMenu menu)
+    {
+        // Calculate compact panel dimensions
+        int padding = 16;
+        int slotSize = 64;
+        int slotPadding = 4;
+
+        int itemCount = _donatableSlotIndices.Count;
+        if (itemCount == 0)
+        {
+            _compactColumns = 1;
+        }
+        else
+        {
+            _compactColumns = itemCount switch
+            {
+                <= 3 => Math.Max(1, itemCount),
+                <= 6 => 3,
+                <= 12 => 4,
+                <= 20 => 5,
+                _ => 6
+            };
+        }
+
+        int rows = itemCount > 0 ? (int)Math.Ceiling((double)itemCount / _compactColumns) : 1;
+
+        int panelWidth = _compactColumns * (slotSize + slotPadding) + padding * 2;
+        int panelHeight = rows * (slotSize + slotPadding) + padding * 2 + 40;
+
+        // Panel position at the inventory's location
+        int panelX = menu.inventory.xPositionOnScreen - padding;
+        int panelY = menu.inventory.yPositionOnScreen - padding - 40;
+
+        _compactPanelBounds = new Rectangle(panelX, panelY, panelWidth, panelHeight);
+
+        // Update compact slot bounds
+        _compactSlotBounds.Clear();
+        int startX = menu.inventory.xPositionOnScreen;
+        int startY = menu.inventory.yPositionOnScreen;
+
+        for (int i = 0; i < itemCount; i++)
+        {
+            int col = i % _compactColumns;
+            int row = i / _compactColumns;
+
+            Rectangle bounds = new(
+                startX + col * (slotSize + slotPadding),
+                startY + row * (slotSize + slotPadding),
+                slotSize,
+                slotSize
+            );
+
+            _compactSlotBounds.Add(bounds);
+        }
+
+        // Update button positions based on mode
+        UpdateButtonBounds(menu);
+    }
+
     private void UpdateButtonBounds(MuseumMenu menu)
     {
         if (menu.okButton == null)
             return;
 
-        // Move button: directly above OK button
-        _moveButtonBounds = new Rectangle(
-            menu.okButton.bounds.X,
-            menu.okButton.bounds.Y - 80,
-            64,
-            64
-        );
+        if (_isCompactMode)
+        {
+            // Store original OK button position before moving it
+            if (_originalOkButtonPosition == Point.Zero)
+            {
+                _originalOkButtonPosition = new Point(menu.okButton.bounds.X, menu.okButton.bounds.Y);
+            }
 
-        // Hide button: to the left of Move button
-        _hideButtonBounds = new Rectangle(
-            _moveButtonBounds.X - 72,
-            _moveButtonBounds.Y,
-            64,
-            64
-        );
+            // In compact mode, position buttons to the right of the compact panel
+            int buttonX = _compactPanelBounds.Right + 8;
+            int buttonY = _compactPanelBounds.Y + 8;
+
+            // Compact button at top
+            _compactButtonBounds = new Rectangle(buttonX, buttonY, 64, 64);
+
+            // Move button below compact
+            _moveButtonBounds = new Rectangle(buttonX, buttonY + 72, 64, 64);
+
+            // Also move the OK button to be below Move button
+            menu.okButton.bounds.X = buttonX;
+            menu.okButton.bounds.Y = buttonY + 144;
+        }
+        else
+        {
+            // Restore original OK button position
+            if (_originalOkButtonPosition != Point.Zero)
+            {
+                menu.okButton.bounds.X = _originalOkButtonPosition.X;
+                menu.okButton.bounds.Y = _originalOkButtonPosition.Y;
+            }
+
+            // Normal mode: buttons to the right of full inventory
+            // Move button: above OK button
+            _moveButtonBounds = new Rectangle(
+                menu.okButton.bounds.X,
+                menu.okButton.bounds.Y - 80,
+                64,
+                64
+            );
+
+            // Compact button: above Move button
+            _compactButtonBounds = new Rectangle(
+                menu.okButton.bounds.X,
+                _moveButtonBounds.Y - 72,
+                64,
+                64
+            );
+        }
     }
 
-    /// <summary>
-    /// Registers both buttons as clickable components for controller/snappy navigation.
-    /// </summary>
     private void TryAddButtonsToSnappyMenu(MuseumMenu menu)
     {
         if (!Game1.options.SnappyMenus)
             return;
 
         bool holdingItem = menu.heldItem != null || Game1.player?.CursorSlotItem != null;
-
-        // Move button only visible when inventory is visible and not holding item
-        bool showMoveButton = !_isInventoryHidden && !holdingItem;
-
-        // Hide button is ALWAYS visible (except when holding item) - that's the whole point!
-        bool showHideButton = !holdingItem;
+        bool shouldShowButtons = !holdingItem;
 
         menu.allClickableComponents ??= new();
         if (menu.allClickableComponents.Count == 0)
             menu.populateClickableComponentList();
 
-        // === HIDE BUTTON ===
-        if (_hideButtonComponent == null)
+        // === COMPACT BUTTON ===
+        if (_compactButtonComponent == null)
         {
-            _hideButtonComponent = new ClickableComponent(_hideButtonBounds, "Hide/Show Inventory")
+            _compactButtonComponent = new ClickableComponent(_compactButtonBounds, "Compact Mode")
             {
-                myID = HideButtonComponentId,
-                rightNeighborID = showMoveButton ? MoveButtonComponentId : (menu.okButton?.myID ?? 106),
-                downNeighborID = menu.okButton?.myID ?? 106,
+                myID = CompactButtonComponentId,
+                downNeighborID = MoveButtonComponentId,
                 leftNeighborID = ClickableComponent.SNAP_AUTOMATIC,
-                upNeighborID = ClickableComponent.SNAP_AUTOMATIC,
-                region = menu.okButton?.region ?? 0
-            };
-        }
-        else
-        {
-            _hideButtonComponent.bounds = _hideButtonBounds;
-            _hideButtonComponent.visible = showHideButton;
-            _hideButtonComponent.rightNeighborID = showMoveButton ? MoveButtonComponentId : (menu.okButton?.myID ?? 106);
-        }
-
-        // === MOVE BUTTON ===
-        if (_moveButtonComponent == null)
-        {
-            _moveButtonComponent = new ClickableComponent(_moveButtonBounds, "Move Inventory")
-            {
-                myID = MoveButtonComponentId,
-                leftNeighborID = HideButtonComponentId,
-                downNeighborID = menu.okButton?.myID ?? 106,
                 rightNeighborID = ClickableComponent.SNAP_AUTOMATIC,
                 upNeighborID = ClickableComponent.SNAP_AUTOMATIC,
                 region = menu.okButton?.region ?? 0
@@ -280,22 +342,34 @@ public class ModEntry : Mod
         }
         else
         {
-            _moveButtonComponent.bounds = _moveButtonBounds;
-            _moveButtonComponent.visible = showMoveButton;
+            _compactButtonComponent.bounds = _compactButtonBounds;
+            _compactButtonComponent.visible = shouldShowButtons;
         }
 
-        // Add or update in component list
-        AddOrUpdateComponent(menu, _hideButtonComponent, HideButtonComponentId);
+        // === MOVE BUTTON ===
+        if (_moveButtonComponent == null)
+        {
+            _moveButtonComponent = new ClickableComponent(_moveButtonBounds, "Move UI")
+            {
+                myID = MoveButtonComponentId,
+                upNeighborID = CompactButtonComponentId,
+                downNeighborID = menu.okButton?.myID ?? 106,
+                leftNeighborID = ClickableComponent.SNAP_AUTOMATIC,
+                rightNeighborID = ClickableComponent.SNAP_AUTOMATIC,
+                region = menu.okButton?.region ?? 0
+            };
+        }
+        else
+        {
+            _moveButtonComponent.bounds = _moveButtonBounds;
+            _moveButtonComponent.visible = shouldShowButtons;
+        }
+
+        AddOrUpdateComponent(menu, _compactButtonComponent, CompactButtonComponentId);
         AddOrUpdateComponent(menu, _moveButtonComponent, MoveButtonComponentId);
 
-        // Wire up navigation from OK button to our buttons
         if (menu.okButton != null)
-        {
-            if (showMoveButton)
-                menu.okButton.upNeighborID = MoveButtonComponentId;
-            else if (showHideButton)
-                menu.okButton.upNeighborID = HideButtonComponentId;
-        }
+            menu.okButton.upNeighborID = MoveButtonComponentId;
     }
 
     private static void AddOrUpdateComponent(MuseumMenu menu, ClickableComponent component, int componentId)
@@ -315,7 +389,6 @@ public class ModEntry : Mod
     {
         GamePadState state = GamePad.GetState(PlayerIndex.One);
 
-        // Hold shoulder button for faster movement
         int speed = state.IsButtonDown(Buttons.LeftShoulder) || state.IsButtonDown(Buttons.RightShoulder)
             ? 12
             : 6;
@@ -323,14 +396,12 @@ public class ModEntry : Mod
         int dx = 0;
         int dy = 0;
 
-        // Left stick
         Vector2 stick = state.ThumbSticks.Left;
         if (Math.Abs(stick.X) > 0.2f)
             dx += (int)Math.Round(stick.X * speed);
         if (Math.Abs(stick.Y) > 0.2f)
             dy += (int)Math.Round(-stick.Y * speed);
 
-        // D-pad
         if (state.IsButtonDown(Buttons.DPadLeft)) dx -= speed;
         if (state.IsButtonDown(Buttons.DPadRight)) dx += speed;
         if (state.IsButtonDown(Buttons.DPadUp)) dy -= speed;
@@ -349,31 +420,27 @@ public class ModEntry : Mod
 
     private static Point ClampMenuPosition(MuseumMenu menu, Point desiredTopLeft)
     {
-        // Build a union rectangle of all elements that must stay on screen
         Rectangle union = new(menu.xPositionOnScreen, menu.yPositionOnScreen, menu.width, menu.height);
 
         if (menu.okButton != null)
             union = Rectangle.Union(union, menu.okButton.bounds);
 
-        // Find our custom buttons in the component list
         if (menu.allClickableComponents != null)
         {
             foreach (var c in menu.allClickableComponents)
             {
-                if (c != null && (c.myID == MoveButtonComponentId || c.myID == HideButtonComponentId))
+                if (c != null && (c.myID == MoveButtonComponentId || c.myID == CompactButtonComponentId))
                 {
                     union = Rectangle.Union(union, c.bounds);
                 }
             }
         }
 
-        // Calculate offsets from menu position to union edges
         int leftOffset = union.Left - menu.xPositionOnScreen;
         int rightOffset = union.Right - menu.xPositionOnScreen;
         int topOffset = union.Top - menu.yPositionOnScreen;
         int bottomOffset = union.Bottom - menu.yPositionOnScreen;
 
-        // Clamp so union stays within viewport
         int minX = -leftOffset;
         int maxX = Game1.uiViewport.Width - rightOffset;
         int minY = -topOffset;
@@ -389,8 +456,7 @@ public class ModEntry : Mod
         if (Game1.activeClickableMenu is not MuseumMenu menu)
             return;
 
-        // Don't render during exit fade
-        if (menu.fadeTimer > 0 && menu.fadeIntoBlack)
+        if (menu.fadeTimer > 0 || menu.blackFadeAlpha > 0f)
             return;
 
         SpriteBatch b = e.SpriteBatch;
@@ -399,88 +465,153 @@ public class ModEntry : Mod
 
         bool holdingItem = menu.heldItem != null || Game1.player?.CursorSlotItem != null;
 
-        // === DRAW HIDE/SHOW BUTTON (Always visible when not holding item) ===
+        // === DRAW COMPACT INVENTORY (replaces original) ===
+        if (_isCompactMode && !holdingItem)
+        {
+            // First, cover the original inventory area with background
+            // Use the original inventory bounds
+            Rectangle coverArea = new(
+                menu.inventory.xPositionOnScreen - 20,
+                menu.inventory.yPositionOnScreen - 60,
+                menu.inventory.width + 40,
+                menu.inventory.height + 80
+            );
+            b.Draw(Game1.fadeToBlackRect, coverArea, Color.Black * 0.85f);
+
+            // Draw our compact panel on top
+            DrawCompactInventoryOverlay(b, menu, mx, my);
+        }
+
+        // === DRAW BUTTONS ===
         if (!holdingItem)
         {
-            DrawHideButton(b, mx, my);
-        }
-
-        // === DRAW MOVE BUTTON (Only when inventory visible and not holding item) ===
-        if (!_isInventoryHidden && !holdingItem)
-        {
+            DrawCompactButton(b, mx, my);
             DrawMoveButton(b, mx, my);
+            
+            // In compact mode, also redraw the OK button since we repositioned it
+            if (_isCompactMode && menu.okButton != null)
+            {
+                menu.okButton.draw(b);
+            }
         }
 
-        // === COVER INVENTORY IF HIDDEN ===
-        // Draw a semi-transparent overlay over the inventory area when hidden
-        if (_isInventoryHidden && !holdingItem)
-        {
-            // The inventory area bounds
-            Rectangle inventoryBounds = new(
-                menu.xPositionOnScreen,
-                menu.yPositionOnScreen,
-                menu.width,
-                menu.height
-            );
-
-            // Draw dark overlay
-            b.Draw(
-                Game1.fadeToBlackRect,
-                inventoryBounds,
-                Color.Black * 0.75f
-            );
-
-            // Draw "Inventory Hidden" text in center
-            string hiddenText = "Inventory Hidden";
-            Vector2 textSize = Game1.smallFont.MeasureString(hiddenText);
-            Vector2 textPos = new(
-                inventoryBounds.X + (inventoryBounds.Width - textSize.X) / 2,
-                inventoryBounds.Y + (inventoryBounds.Height - textSize.Y) / 2
-            );
-            b.DrawString(Game1.smallFont, hiddenText, textPos + new Vector2(2, 2), Color.Black * 0.5f);
-            b.DrawString(Game1.smallFont, hiddenText, textPos, Color.White);
-        }
-
-        // Always redraw cursor on top
         menu.drawMouse(b);
     }
 
-    private void DrawHideButton(SpriteBatch b, int mx, int my)
+    private void DrawCompactInventoryOverlay(SpriteBatch b, MuseumMenu menu, int mx, int my)
     {
-        bool isHovering = _hideButtonBounds.Contains(mx, my);
+        // First, completely cover the original inventory area
+        Rectangle originalMenuArea = new(
+            menu.xPositionOnScreen,
+            menu.yPositionOnScreen,
+            _originalMenuWidth,
+            _originalMenuHeight
+        );
 
-        // Background color indicates state
-        Color bgColor = _isInventoryHidden
-            ? new Color(255, 180, 180) // Reddish when hidden
+        // Draw black background to hide original inventory
+        b.Draw(Game1.fadeToBlackRect, originalMenuArea, Color.Black);
+
+        // Now draw our compact panel
+        IClickableMenu.drawTextureBox(
+            b,
+            Game1.menuTexture,
+            new Rectangle(0, 256, 60, 60),
+            _compactPanelBounds.X,
+            _compactPanelBounds.Y,
+            _compactPanelBounds.Width,
+            _compactPanelBounds.Height,
+            Color.White,
+            1f,
+            drawShadow: true
+        );
+
+        // Draw title
+        string title = _donatableSlotIndices.Count > 0 
+            ? $"Donatable Items ({_donatableSlotIndices.Count})" 
+            : "No Donatable Items";
+        Vector2 titleSize = Game1.smallFont.MeasureString(title);
+        Vector2 titlePos = new(_compactPanelBounds.X + (_compactPanelBounds.Width - titleSize.X) / 2, _compactPanelBounds.Y + 12);
+        b.DrawString(Game1.smallFont, title, titlePos + new Vector2(2, 2), Color.Black * 0.3f);
+        b.DrawString(Game1.smallFont, title, titlePos, Color.SaddleBrown);
+
+        if (_donatableSlotIndices.Count == 0)
+            return;
+
+        // Draw each donatable item
+        Item? hoveredItem = null;
+        for (int i = 0; i < _donatableSlotIndices.Count && i < _compactSlotBounds.Count; i++)
+        {
+            int slotIndex = _donatableSlotIndices[i];
+            Rectangle bounds = _compactSlotBounds[i];
+
+            var playerItems = Game1.player?.Items;
+            Item? item = playerItems != null && slotIndex < playerItems.Count ? playerItems[slotIndex] : null;
+            if (item == null) continue;
+
+            bool isHovering = bounds.Contains(mx, my);
+
+            // Draw slot background
+            Color slotColor = isHovering ? Color.Yellow : Color.White;
+            b.Draw(
+                Game1.menuTexture,
+                bounds,
+                new Rectangle(128, 128, 64, 64),
+                slotColor
+            );
+
+            // Draw item
+            item.drawInMenu(b, new Vector2(bounds.X, bounds.Y), 1f);
+
+            // Draw stack count if > 1
+            if (item.Stack > 1)
+            {
+                string stackText = item.Stack.ToString();
+                Vector2 stackPos = new(bounds.Right - Game1.tinyFont.MeasureString(stackText).X - 4, bounds.Bottom - 24);
+                b.DrawString(Game1.tinyFont, stackText, stackPos + new Vector2(1, 1), Color.Black * 0.5f);
+                b.DrawString(Game1.tinyFont, stackText, stackPos, Color.White);
+            }
+
+            if (isHovering)
+                hoveredItem = item;
+        }
+
+        // Draw tooltip last (on top of everything)
+        if (hoveredItem != null)
+        {
+            IClickableMenu.drawToolTip(b, hoveredItem.getDescription(), hoveredItem.DisplayName, hoveredItem);
+        }
+    }
+
+    private void DrawCompactButton(SpriteBatch b, int mx, int my)
+    {
+        bool isHovering = _compactButtonBounds.Contains(mx, my);
+
+        Color bgColor = _isCompactMode
+            ? new Color(180, 220, 255) // Blue tint when compact mode is on
             : (isHovering ? new Color(255, 255, 220) : Color.White);
 
         IClickableMenu.drawTextureBox(
             b,
             Game1.menuTexture,
             new Rectangle(0, 256, 60, 60),
-            _hideButtonBounds.X,
-            _hideButtonBounds.Y,
-            _hideButtonBounds.Width,
-            _hideButtonBounds.Height,
+            _compactButtonBounds.X,
+            _compactButtonBounds.Y,
+            _compactButtonBounds.Width,
+            _compactButtonBounds.Height,
             bgColor,
             1f,
             drawShadow: false
         );
 
-        // Draw icon - eye-like symbol from cursors
         Vector2 center = new(
-            _hideButtonBounds.X + _hideButtonBounds.Width / 2f,
-            _hideButtonBounds.Y + _hideButtonBounds.Height / 2f
+            _compactButtonBounds.X + _compactButtonBounds.Width / 2f,
+            _compactButtonBounds.Y + _compactButtonBounds.Height / 2f
         );
 
-        // Different icons for shown/hidden state
-        // Using magnifying glass for "visible" and X for "hidden"
-        Rectangle iconSource = _isInventoryHidden
-            ? new Rectangle(322, 498, 12, 12)  // Small circle/dot
-            : new Rectangle(175, 425, 12, 12); // Eye-like icon
-
-        float iconScale = isHovering ? 4f : 3.5f;
-        Color iconColor = _isInventoryHidden ? new Color(180, 60, 60) : Color.White;
+        // Draw grid icon (4 squares) to represent compact mode
+        Rectangle iconSource = new(227, 425, 9, 9); // Small grid icon from cursors
+        float iconScale = isHovering ? 5f : 4.5f;
+        Color iconColor = _isCompactMode ? new Color(60, 100, 180) : Color.White;
         Vector2 iconPos = new(
             center.X - iconSource.Width * iconScale / 2f,
             center.Y - iconSource.Height * iconScale / 2f
@@ -488,10 +619,11 @@ public class ModEntry : Mod
 
         Utility.drawWithShadow(b, Game1.mouseCursors, iconPos, iconSource, iconColor, 0f, Vector2.Zero, iconScale);
 
-        // Tooltip
         if (isHovering)
         {
-            string tooltip = _isInventoryHidden ? "Show Inventory (click to show)" : "Hide Inventory";
+            string tooltip = _isCompactMode
+                ? $"Full Inventory ({_donatableSlotIndices.Count})"
+                : $"Compact Mode ({_donatableSlotIndices.Count})";
             IClickableMenu.drawHoverText(b, tooltip, Game1.smallFont);
         }
     }
@@ -501,7 +633,7 @@ public class ModEntry : Mod
         bool isHovering = _moveButtonBounds.Contains(mx, my);
 
         Color bgColor = _isMoving
-            ? new Color(180, 255, 180) // Green when moving
+            ? new Color(180, 255, 180)
             : (isHovering ? new Color(255, 255, 220) : Color.White);
 
         IClickableMenu.drawTextureBox(
@@ -522,7 +654,6 @@ public class ModEntry : Mod
             _moveButtonBounds.Y + _moveButtonBounds.Height / 2f
         );
 
-        // Four-way arrow icon
         Rectangle iconSource = new(162, 440, 16, 16);
         float iconScale = isHovering ? 4.25f : 4f;
         Color iconColor = _isMoving ? Color.DarkGreen : Color.White;
@@ -533,7 +664,6 @@ public class ModEntry : Mod
 
         Utility.drawWithShadow(b, Game1.mouseCursors, iconPos, iconSource, iconColor, 0f, Vector2.Zero, iconScale);
 
-        // Tooltip
         if (isHovering && !_isMoving)
         {
             IClickableMenu.drawHoverText(b, "Move Inventory", Game1.smallFont);
@@ -555,18 +685,16 @@ public class ModEntry : Mod
         if (Game1.activeClickableMenu is not MuseumMenu menu)
             return;
 
-        // Don't allow during exit fade
-        if (menu.fadeTimer > 0 && menu.fadeIntoBlack)
+        if (menu.fadeTimer > 0 || menu.blackFadeAlpha > 0f)
             return;
 
-        // Don't allow while holding an item
         if (menu.heldItem != null || Game1.player?.CursorSlotItem != null)
             return;
 
         int mouseX = Game1.getMouseX();
         int mouseY = Game1.getMouseY();
 
-        // Handle cancel while moving
+        // Cancel move mode
         if (_isMoving && isCancel)
         {
             _isMoving = false;
@@ -578,40 +706,65 @@ public class ModEntry : Mod
         if (!isConfirm)
             return;
 
-        // === HIDE BUTTON (always clickable when visible) ===
-        if (_hideButtonBounds.Contains(mouseX, mouseY))
+        // === COMPACT BUTTON ===
+        if (_compactButtonBounds.Contains(mouseX, mouseY))
         {
-            _isInventoryHidden = !_isInventoryHidden;
-            Game1.playSound(_isInventoryHidden ? "breathout" : "breathin");
+            _isCompactMode = !_isCompactMode;
+            Game1.playSound(_isCompactMode ? "smallSelect" : "cancel");
 
-            // Cancel move mode if hiding
-            if (_isInventoryHidden)
-                _isMoving = false;
+            // Force update of donatable items when toggling
+            UpdateDonatableItems(menu);
 
             Helper.Input.Suppress(e.Button);
             return;
         }
 
-        // === MOVE BUTTON (only when inventory visible) ===
-        if (!_isInventoryHidden)
+        // === COMPACT MODE ITEM CLICK ===
+        if (_isCompactMode && isConfirm)
         {
-            if (_isMoving)
+            for (int i = 0; i < _compactSlotBounds.Count && i < _donatableSlotIndices.Count; i++)
             {
-                // Currently moving → click anywhere to place
-                _isMoving = false;
-                _savedMenuOffset = new Point(menu.xPositionOnScreen, menu.yPositionOnScreen);
-                Game1.playSound("stoneStep");
-                Helper.Input.Suppress(e.Button);
+                if (_compactSlotBounds[i].Contains(mouseX, mouseY))
+                {
+                    int slotIndex = _donatableSlotIndices[i];
+                    var playerItems = Game1.player?.Items;
+                    if (playerItems != null && slotIndex < playerItems.Count)
+                    {
+                        Item? item = playerItems[slotIndex];
+                        if (item != null)
+                        {
+                            // Pick up the item (same as clicking in normal inventory)
+                            menu.heldItem = item.getOne();
+                            Item? remaining = item.ConsumeStack(1);
+                            playerItems[slotIndex] = remaining;
+                            Game1.playSound("dwop");
+
+                            // Don't trigger menuMovingDown - keep compact mode visible
+                            // menu.menuMovingDown = true;
+
+                            Helper.Input.Suppress(e.Button);
+                            return;
+                        }
+                    }
+                }
             }
-            else if (_moveButtonBounds.Contains(mouseX, mouseY))
-            {
-                // Click on move button → start moving
-                _isMoving = true;
-                _ticksSinceMenuMoved = 0;
-                _mouseOffset = new Point(mouseX - menu.xPositionOnScreen, mouseY - menu.yPositionOnScreen);
-                Game1.playSound("bigSelect");
-                Helper.Input.Suppress(e.Button);
-            }
+        }
+
+        // === MOVE BUTTON ===
+        if (_isMoving)
+        {
+            _isMoving = false;
+            _savedMenuOffset = new Point(menu.xPositionOnScreen, menu.yPositionOnScreen);
+            Game1.playSound("stoneStep");
+            Helper.Input.Suppress(e.Button);
+        }
+        else if (_moveButtonBounds.Contains(mouseX, mouseY))
+        {
+            _isMoving = true;
+            _ticksSinceMenuMoved = 0;
+            _mouseOffset = new Point(mouseX - menu.xPositionOnScreen, mouseY - menu.yPositionOnScreen);
+            Game1.playSound("bigSelect");
+            Helper.Input.Suppress(e.Button);
         }
     }
 }
