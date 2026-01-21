@@ -54,6 +54,9 @@ public class ModEntry : Mod
 
     // Original OK button position (to restore when exiting compact mode)
     private Point _originalOkButtonPosition;
+    
+    // Original vanilla inventory position (to restore when exiting compact mode)
+    private Point? _originalInventoryPosition;
 
     public override void Entry(IModHelper helper)
     {
@@ -75,6 +78,7 @@ public class ModEntry : Mod
         _donatableSlotIndices.Clear();
         _compactSlotBounds.Clear();
         _originalOkButtonPosition = Point.Zero;
+        _originalInventoryPosition = null;
 
         if (e.NewMenu is MuseumMenu menu)
         {
@@ -126,10 +130,28 @@ public class ModEntry : Mod
         if (e.IsMultipleOf(30))
         {
             UpdateDonatableItems(menu);
+            
+            // Exit compact mode if there are no donatable items
+            if (_isCompactMode && _donatableSlotIndices.Count == 0)
+            {
+                _isCompactMode = false;
+                _originalInventoryPosition = null;
+            }
+        }
+        
+        // Exit compact mode when entering rearrange mode
+        if (_isCompactMode && menu.menuMovingDown)
+        {
+            _isCompactMode = false;
+            _originalInventoryPosition = null;
         }
 
         // Update ALL bounds every frame (fixes lag issue)
         UpdateAllBounds(menu);
+        
+        // Update vanilla inventory visibility based on compact mode
+        UpdateInventoryVisibility(menu);
+        
         TryAddButtonsToSnappyMenu(menu);
 
         // Handle move mode
@@ -171,6 +193,59 @@ public class ModEntry : Mod
         {
             if (_ticksSinceMenuMoved < int.MaxValue)
                 _ticksSinceMenuMoved++;
+        }
+    }
+
+    /// <summary>
+    /// Shows or hides the vanilla inventory based on compact mode state.
+    /// In compact mode: moves vanilla inventory offscreen
+    /// In normal mode: restores vanilla inventory to original position
+    /// </summary>
+    private void UpdateInventoryVisibility(MuseumMenu menu)
+    {
+        if (menu.inventory == null)
+            return;
+
+        // Should show vanilla inventory when:
+        // 1. NOT in compact mode, OR
+        // 2. Holding an item (need to see all slots), OR
+        // 3. In rearranging mode (menuMovingDown), OR
+        // 4. No donatable items to show in compact mode
+        bool shouldShowVanillaInventory = !_isCompactMode 
+            || menu.heldItem != null 
+            || Game1.player?.CursorSlotItem != null
+            || menu.menuMovingDown
+            || _donatableSlotIndices.Count == 0;
+
+        if (shouldShowVanillaInventory)
+        {
+            // Restore vanilla inventory to original position
+            if (_originalInventoryPosition.HasValue)
+            {
+                menu.inventory.xPositionOnScreen = _originalInventoryPosition.Value.X;
+                menu.inventory.yPositionOnScreen = _originalInventoryPosition.Value.Y;
+                
+                // Clear saved position when fully restored to normal mode
+                if (!_isCompactMode)
+                {
+                    _originalInventoryPosition = null;
+                }
+            }
+        }
+        else
+        {
+            // Save original position before hiding (only once)
+            if (!_originalInventoryPosition.HasValue)
+            {
+                _originalInventoryPosition = new Point(
+                    menu.inventory.xPositionOnScreen,
+                    menu.inventory.yPositionOnScreen
+                );
+            }
+
+            // Move vanilla inventory far offscreen so it doesn't render
+            menu.inventory.xPositionOnScreen = -10000;
+            menu.inventory.yPositionOnScreen = -10000;
         }
     }
 
@@ -228,18 +303,21 @@ public class ModEntry : Mod
         int rows = itemCount > 0 ? (int)Math.Ceiling((double)itemCount / _compactColumns) : 1;
 
         int panelWidth = _compactColumns * (slotSize + slotPadding) + padding * 2;
-        int panelHeight = rows * (slotSize + slotPadding) + padding * 2 + 40;
+        int panelHeight = rows * (slotSize + slotPadding) + padding * 2;
 
-        // Panel position at the inventory's location
-        int panelX = menu.inventory.xPositionOnScreen - padding;
-        int panelY = menu.inventory.yPositionOnScreen - padding - 40;
+        // Panel position at the ORIGINAL inventory's location (not current, in case it's offscreen)
+        int invX = _originalInventoryPosition?.X ?? menu.inventory.xPositionOnScreen;
+        int invY = _originalInventoryPosition?.Y ?? menu.inventory.yPositionOnScreen;
+        
+        int panelX = invX - padding;
+        int panelY = invY - padding;
 
         _compactPanelBounds = new Rectangle(panelX, panelY, panelWidth, panelHeight);
 
         // Update compact slot bounds
         _compactSlotBounds.Clear();
-        int startX = menu.inventory.xPositionOnScreen;
-        int startY = menu.inventory.yPositionOnScreen;
+        int startX = invX;
+        int startY = invY;
 
         for (int i = 0; i < itemCount; i++)
         {
@@ -273,19 +351,19 @@ public class ModEntry : Mod
                 _originalOkButtonPosition = new Point(menu.okButton.bounds.X, menu.okButton.bounds.Y);
             }
 
-            // In compact mode, position buttons to the right of the compact panel
-            int buttonX = _compactPanelBounds.Right + 8;
-            int buttonY = _compactPanelBounds.Y + 8;
+            // In compact mode, position buttons below the compact panel
+            int buttonStartY = _compactPanelBounds.Bottom + 8;
+            int buttonX = _compactPanelBounds.X;
 
-            // Compact button at top
-            _compactButtonBounds = new Rectangle(buttonX, buttonY, 64, 64);
+            // Compact button at left
+            _compactButtonBounds = new Rectangle(buttonX, buttonStartY, 64, 64);
 
-            // Move button below compact
-            _moveButtonBounds = new Rectangle(buttonX, buttonY + 72, 64, 64);
+            // Move button next to compact
+            _moveButtonBounds = new Rectangle(buttonX + 72, buttonStartY, 64, 64);
 
-            // Also move the OK button to be below Move button
-            menu.okButton.bounds.X = buttonX;
-            menu.okButton.bounds.Y = buttonY + 144;
+            // OK button next to move button
+            menu.okButton.bounds.X = buttonX + 144;
+            menu.okButton.bounds.Y = buttonStartY;
         }
         else
         {
@@ -465,31 +543,35 @@ public class ModEntry : Mod
 
         bool holdingItem = menu.heldItem != null || Game1.player?.CursorSlotItem != null;
 
-        // === DRAW COMPACT INVENTORY (replaces original) ===
-        if (_isCompactMode && !holdingItem)
+        // === DRAW COMPACT INVENTORY ===
+        // Only show compact mode when:
+        // 1. Compact mode is enabled
+        // 2. Not holding an item
+        // 3. Not in rearranging mode (menuMovingDown)
+        // 4. Has at least one donatable item
+        if (_isCompactMode && !holdingItem && !menu.menuMovingDown && _donatableSlotIndices.Count > 0)
         {
-            // First, cover the original inventory area with background
-            // Use the original inventory bounds
-            Rectangle coverArea = new(
-                menu.inventory.xPositionOnScreen - 20,
-                menu.inventory.yPositionOnScreen - 60,
-                menu.inventory.width + 40,
-                menu.inventory.height + 80
-            );
-            b.Draw(Game1.fadeToBlackRect, coverArea, Color.Black * 0.85f);
-
-            // Draw our compact panel on top
+            // Draw our compact panel
             DrawCompactInventoryOverlay(b, menu, mx, my);
         }
 
         // === DRAW BUTTONS ===
         if (!holdingItem)
         {
-            DrawCompactButton(b, mx, my);
+            // Only show compact button when:
+            // 1. Not rearranging (menuMovingDown)
+            // 2. Has at least one donatable item
+            bool canShowCompactButton = !menu.menuMovingDown && _donatableSlotIndices.Count > 0;
+            
+            if (canShowCompactButton)
+            {
+                DrawCompactButton(b, mx, my);
+            }
+            
             DrawMoveButton(b, mx, my);
             
             // In compact mode, also redraw the OK button since we repositioned it
-            if (_isCompactMode && menu.okButton != null)
+            if (_isCompactMode && menu.okButton != null && canShowCompactButton)
             {
                 menu.okButton.draw(b);
             }
@@ -500,18 +582,7 @@ public class ModEntry : Mod
 
     private void DrawCompactInventoryOverlay(SpriteBatch b, MuseumMenu menu, int mx, int my)
     {
-        // First, completely cover the original inventory area
-        Rectangle originalMenuArea = new(
-            menu.xPositionOnScreen,
-            menu.yPositionOnScreen,
-            _originalMenuWidth,
-            _originalMenuHeight
-        );
-
-        // Draw black background to hide original inventory
-        b.Draw(Game1.fadeToBlackRect, originalMenuArea, Color.Black);
-
-        // Now draw our compact panel
+        // Draw compact panel background
         IClickableMenu.drawTextureBox(
             b,
             Game1.menuTexture,
@@ -524,15 +595,6 @@ public class ModEntry : Mod
             1f,
             drawShadow: true
         );
-
-        // Draw title
-        string title = _donatableSlotIndices.Count > 0 
-            ? $"Donatable Items ({_donatableSlotIndices.Count})" 
-            : "No Donatable Items";
-        Vector2 titleSize = Game1.smallFont.MeasureString(title);
-        Vector2 titlePos = new(_compactPanelBounds.X + (_compactPanelBounds.Width - titleSize.X) / 2, _compactPanelBounds.Y + 12);
-        b.DrawString(Game1.smallFont, title, titlePos + new Vector2(2, 2), Color.Black * 0.3f);
-        b.DrawString(Game1.smallFont, title, titlePos, Color.SaddleBrown);
 
         if (_donatableSlotIndices.Count == 0)
             return;
@@ -710,6 +772,13 @@ public class ModEntry : Mod
         if (_compactButtonBounds.Contains(mouseX, mouseY))
         {
             _isCompactMode = !_isCompactMode;
+            
+            // Reset inventory position tracking so it gets recalculated
+            if (!_isCompactMode)
+            {
+                _originalInventoryPosition = null;
+            }
+            
             Game1.playSound(_isCompactMode ? "smallSelect" : "cancel");
 
             // Force update of donatable items when toggling
