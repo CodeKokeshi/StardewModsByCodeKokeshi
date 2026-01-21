@@ -8,6 +8,9 @@ using StardewValley.Menus;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using xTile.Dimensions;
+
+using Rectangle = Microsoft.Xna.Framework.Rectangle;
 
 namespace FixMuseumInventory;
 
@@ -26,6 +29,9 @@ public class CustomMuseumMenu : IClickableMenu
     // === State ===
     public Item? HeldItem;
     private bool _holdingMuseumPiece; // True when holding a piece FROM the museum
+    private int _fadeTimer;
+    private bool _fadeIntoBlack;
+    private int _state; // 0=starting, 1=active, 2=exiting fade, 3=done
     
     // === UI Components ===
     private ClickableTextureComponent? _okButton;
@@ -57,6 +63,11 @@ public class CustomMuseumMenu : IClickableMenu
     {
         Museum = museum ?? throw new ArgumentNullException(nameof(museum));
         IsArrangeMode = arrangeMode;
+        
+        // Setup fade transition
+        _fadeTimer = 800;
+        _fadeIntoBlack = true;
+        _state = 0;
         
         // Make player movable during menu
         Game1.player.forceCanMove();
@@ -103,7 +114,7 @@ public class CustomMuseumMenu : IClickableMenu
         // Calculate inventory panel size
         int rows = (int)Math.Ceiling(_donatableItems.Count / (double)InventoryColumns);
         int panelWidth = (InventoryColumns * SlotSize) + ((InventoryColumns + 1) * SlotPadding);
-        int panelHeight = (rows * SlotSize) + ((rows + 1) * SlotPadding) + 80; // +80 for title bar
+        int panelHeight = (rows * SlotSize) + ((rows + 1) * SlotPadding) + 40; // +40 for padding only
         
         // Position at bottom center (default)
         int panelX = (Game1.uiViewport.Width - panelWidth) / 2;
@@ -124,7 +135,7 @@ public class CustomMuseumMenu : IClickableMenu
             int row = i / InventoryColumns;
             
             int slotX = panelX + SlotPadding + (col * (SlotSize + SlotPadding));
-            int slotY = panelY + 50 + SlotPadding + (row * (SlotSize + SlotPadding));
+            int slotY = panelY + SlotPadding + (row * (SlotSize + SlotPadding));
             
             _inventorySlots.Add(new ClickableComponent(
                 bounds: new Rectangle(slotX, slotY, SlotSize, SlotSize),
@@ -160,16 +171,25 @@ public class CustomMuseumMenu : IClickableMenu
             {
                 if (_inventorySlots[i].containsPoint(x, y) && i < _donatableItems.Count)
                 {
-                    HeldItem = _donatableItems[i].getOne();
-                    var consumedItem = _donatableItems[i].ConsumeStack(1);
+                    Item item = _donatableItems[i];
                     
-                    // Remove from list if stack depleted
-                    if (consumedItem == null || consumedItem.Stack <= 0)
+                    // Remove from PLAYER inventory (prevents duplication)
+                    for (int j = 0; j < Game1.player.Items.Count; j++)
                     {
-                        _donatableItems.RemoveAt(i);
-                        InitializeDonationInventory(); // Rebuild layout
+                        if (Game1.player.Items[j] == item)
+                        {
+                            HeldItem = item.getOne();
+                            Game1.player.Items[j] = item.ConsumeStack(1);
+                            if (Game1.player.Items[j] == null || Game1.player.Items[j].Stack <= 0)
+                            {
+                                Game1.player.Items[j] = null;
+                            }
+                            break;
+                        }
                     }
                     
+                    // Rebuild inventory display
+                    InitializeDonationInventory();
                     Game1.playSound("dwop");
                     return;
                 }
@@ -304,6 +324,36 @@ public class CustomMuseumMenu : IClickableMenu
     {
         base.update(time);
         
+        // Handle fade transitions
+        if (_fadeTimer > 0)
+        {
+            _fadeTimer -= time.ElapsedGameTime.Milliseconds;
+            
+            if (_fadeTimer <= 0)
+            {
+                switch (_state)
+                {
+                    case 0: // Starting fade done - move camera to museum
+                        _state = 1;
+                        Game1.viewportFreeze = true;
+                        Game1.viewport.Location = new Location(1152, 128);
+                        Game1.clampViewportToGameMap();
+                        _fadeTimer = 800;
+                        _fadeIntoBlack = false;
+                        break;
+                    case 2: // Exit fade started
+                        Game1.viewportFreeze = false;
+                        _fadeIntoBlack = false;
+                        _fadeTimer = 800;
+                        _state = 3;
+                        break;
+                    case 3: // Exit fade done
+                        exitThisMenuNoSound();
+                        break;
+                }
+            }
+        }
+        
         SparkleText?.update(time);
         
         // Update inventory panel position while dragging
@@ -321,7 +371,15 @@ public class CustomMuseumMenu : IClickableMenu
     
     public override void draw(SpriteBatch b)
     {
-        // Draw fade overlay
+        // Draw fade overlay during transitions
+        if (_fadeTimer > 0)
+        {
+            float alpha = _fadeIntoBlack ? (1f - _fadeTimer / 800f) : (_fadeTimer / 800f);
+            b.Draw(Game1.fadeToBlackRect, Game1.graphics.GraphicsDevice.Viewport.Bounds, Color.Black * alpha);
+            return; // Don't draw anything else during fade
+        }
+        
+        // Draw semi-transparent background overlay
         b.Draw(Game1.fadeToBlackRect, Game1.graphics.GraphicsDevice.Viewport.Bounds, Color.Black * 0.5f);
         
         // Draw valid placement tiles when holding item
@@ -351,23 +409,7 @@ public class CustomMuseumMenu : IClickableMenu
         {
             DrawDonationInventory(b);
         }
-        else
-        {
-            // Arrange mode: Draw helpful text
-            string message = HeldItem != null 
-                ? "Place item on a shelf or press ESC to cancel" 
-                : "Click a museum piece to move it";
-            
-            Vector2 textSize = Game1.dialogueFont.MeasureString(message);
-            Vector2 textPos = new Vector2(
-                (Game1.uiViewport.Width - textSize.X) / 2,
-                Game1.uiViewport.Height - 120
-            );
-            
-            // Draw shadow
-            b.DrawString(Game1.dialogueFont, message, textPos + new Vector2(2, 2), Color.Black);
-            b.DrawString(Game1.dialogueFont, message, textPos, Color.White);
-        }
+        // No text overlay in arrange mode - keep it clean
         
         // Draw OK button
         _okButton?.draw(b);
@@ -413,15 +455,7 @@ public class CustomMuseumMenu : IClickableMenu
             false
         );
         
-        // Draw title
-        string title = "Donatable Items";
-        Vector2 titleSize = Game1.dialogueFont.MeasureString(title);
-        b.DrawString(
-            Game1.dialogueFont,
-            title,
-            new Vector2(panelX + (panelWidth - titleSize.X) / 2, panelY + 8),
-            Game1.textColor
-        );
+        // No title needed - inventory is self-explanatory
         
         // Draw drag handle hint
         int mouseX = Game1.getMouseX();
@@ -480,15 +514,7 @@ public class CustomMuseumMenu : IClickableMenu
             }
         }
         
-        // Draw count
-        string countText = $"{_donatableItems.Count} item{(_donatableItems.Count != 1 ? "s" : "")}";
-        Vector2 countSize = Game1.smallFont.MeasureString(countText);
-        b.DrawString(
-            Game1.smallFont,
-            countText,
-            new Vector2(panelX + panelWidth - countSize.X - 12, panelY + panelHeight - countSize.Y - 8),
-            Color.DarkGray
-        );
+        // No item count text needed
     }
     
     public bool ReadyToClose()
