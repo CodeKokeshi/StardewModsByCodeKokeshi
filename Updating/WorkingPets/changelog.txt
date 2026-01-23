@@ -1,20 +1,42 @@
 1.4.0
+=== NEW: Autonomous Explore Mode ===
+- NEW: "Go explore the valley!" - Pet autonomously forages across Stardew Valley without following you!
+- NEW: Pet scans entire area for forageables, collects them all, then teleports to the next area.
+- NEW: Explores only standard Stardew Valley areas - NO Ginger Island, NO Desert!
+- NEW: Valid explore areas include: Farm, Town, Mountain, Forest, Beach, BusStop, Backwoods, Railroad, Woods, and more.
+- NEW: "Come back home" option returns pet to your location instantly.
+- NEW: Separate from Follow mode - choose between following you OR exploring independently.
+- NEW: Uses same BLINK wall-pass system to reach forageables through obstacles.
+
 === MAJOR: Complete Follow System Rewrite ===
 - FIXED: Pet stuttering and left-right flickering completely eliminated! Movement is now buttery smooth.
-- FIXED: Pets no longer get stuck on tiny obstacles - BLINK wall-pass mode kicks in automatically.
+- FIXED: Pets no longer get stuck on ANY obstacles - EXTREME BLINK mode kicks in automatically.
 - FIXED: Vanilla pet behavior no longer interferes with mod-controlled movement.
 - FIXED: Pets won't randomly fall asleep or sit down while following you.
 - FIXED: "Moonwalking" bug (moving while facing opposite direction) after picking up forageables.
+- FIXED: Pets can now cross beaches, rivers, and any terrain without getting stuck!
+- FIXED: Pets now IMMEDIATELY look for the next forageable after pickup instead of returning to player!
 
-=== BLINK Wall-Pass System (Stuck Recovery) ===
-- NEW: When stuck for ~0.5 seconds, pets activate BLINK MODE with SUPER speed (30 px/frame)!
+=== EXTREME BLINK Wall-Pass System (Stuck Recovery) ===
+- NEW: When stuck for ~0.5 seconds, pets activate EXTREME BLINK MODE with insane speed (50 px/frame)!
 - NEW: Wall-pass works for BOTH following AND foraging - pets blink through walls to reach anything.
-- NEW: In wall-pass mode, pets phase through ALL obstacles except water (fences, buildings, rocks, etc.).
-- NEW: Direction is LOCKED during wall-pass to prevent wobbling/flickering while passing through walls.
-- NEW: Wall-pass INSTANTLY accelerates (0.6 lerp) - looks like a teleport/blink, not gradual.
-- NEW: Wall-pass auto-exits when: reaching target, timeout (~2 sec max), or forage disappears.
-- NEW: Water tiles are ALWAYS blocked even in wall-pass mode (pets try to go around water).
+- NEW: Pets phase through **EVERYTHING** - water, walls, buildings, fences, rocks, trees, EVERYTHING!
+- NEW: No collision checks in blink mode - pets become ghosts until they reach their target.
+- NEW: Direction is LOCKED during wall-pass to prevent wobbling/flickering while phasing.
+- NEW: Wall-pass INSTANTLY accelerates (0.8 lerp) - looks like a true teleport/blink.
+- NEW: Wall-pass auto-exits when: reaching target, timeout (~4 sec max for long distances), or forage disappears.
+- NEW: Increased timeout to 4 seconds (240 ticks) to handle long distances like crossing beaches.
+- IMPROVED: Debug logging shows when blink activates, distance to target, and speed.
 - IMPROVED: Forage wall-pass marks unreachable items after timeout and moves to next target.
+
+=== Foraging Behavior Improvements ===
+- CHANGED: Foraging takes ABSOLUTE priority - pet completely ignores player while collecting items.
+- NEW: After picking up forage, pet IMMEDIATELY scans for the next forageable instead of returning to player!
+- NEW: Pet only returns to player when ALL nearby forageables have been collected.
+- NEW: Forage stuck activates WALL-PASS (0.5 sec) instead of marking unreachable immediately.
+- NEW: Unreachable forage tiles tracked and cleared every 10 seconds.
+- IMPROVED: Forage scanning every 12 ticks (was 15) for more responsive pickup.
+- NEW: 10-tile leash - won't chase forageables too far from player while following.
 
 === Moonwalking Fix ===
 - NEW: Direction is synced to velocity when transitioning between states.

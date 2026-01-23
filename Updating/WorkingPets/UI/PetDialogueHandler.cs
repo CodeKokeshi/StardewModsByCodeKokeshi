@@ -41,6 +41,7 @@ namespace WorkingPets.UI
             string petName = pet.Name ?? ModEntry.I18n.Get("pet.genericName");
             bool isWorking = manager?.IsWorking ?? false;
             bool isFollowing = manager?.IsFollowing ?? false;
+            bool isExploring = manager?.IsExploring ?? false;
             int totalItems = ModEntry.InventoryManager.TotalItemCount;
 
             // Build response options - natural dialogue style
@@ -54,6 +55,16 @@ namespace WorkingPets.UI
             else
             {
                 responses.Add(new Response("ToggleFollow", ModEntry.I18n.Get("petMenu.option.follow.start", new { petName })));
+            }
+            
+            // Explore option - autonomous foraging across the valley
+            if (isExploring)
+            {
+                responses.Add(new Response("ToggleExplore", ModEntry.I18n.Get("petMenu.option.explore.stop", new { petName })));
+            }
+            else
+            {
+                responses.Add(new Response("ToggleExplore", ModEntry.I18n.Get("petMenu.option.explore.start", new { petName })));
             }
 
             // Work option (always available - selecting it cancels follow mode)
@@ -87,7 +98,9 @@ namespace WorkingPets.UI
 
             // Create question dialogue
             string greeting;
-            if (isFollowing)
+            if (isExploring)
+                greeting = ModEntry.I18n.Get("petMenu.greeting.exploring", new { petName });
+            else if (isFollowing)
                 greeting = ModEntry.I18n.Get("petMenu.greeting.following", new { petName });
             else if (isWorking)
                 greeting = ModEntry.I18n.Get("petMenu.greeting.working", new { petName });
@@ -114,6 +127,10 @@ namespace WorkingPets.UI
             {
                 case "ToggleFollow":
                     HandleToggleFollow(pet, manager);
+                    break;
+                    
+                case "ToggleExplore":
+                    HandleToggleExplore(pet, manager);
                     break;
 
                 case "ToggleWork":
@@ -159,6 +176,26 @@ namespace WorkingPets.UI
             {
                 Game1.playSound("cat");
                 Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.follow.stop", new { petName }), HUDMessage.newQuest_type));
+            }
+        }
+        
+        private static void HandleToggleExplore(Pet? pet, PetWorkManager? manager)
+        {
+            if (manager == null) return;
+            
+            manager.ToggleExplore();
+
+            string petName = pet?.Name ?? "Your pet";
+
+            if (manager.IsExploring)
+            {
+                Game1.playSound("questcomplete");
+                Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.explore.start", new { petName }), HUDMessage.newQuest_type));
+            }
+            else
+            {
+                Game1.playSound("cat");
+                Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.explore.stop", new { petName }), HUDMessage.newQuest_type));
             }
         }
 

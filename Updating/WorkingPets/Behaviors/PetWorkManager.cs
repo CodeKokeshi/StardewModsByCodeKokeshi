@@ -40,13 +40,13 @@ namespace WorkingPets.Behaviors
         // Speed settings
         private const float BASE_FOLLOW_SPEED = 5f;           // Base following speed (slightly faster)
         private const float BASE_FORAGE_SPEED = 5.5f;         // Speed when going to forageables
-        private const float WALL_PASS_SPEED = 30f;            // BLINK speed - super fast through walls
-        private const float WALL_PASS_LERP_IN = 0.6f;         // Fast acceleration into wall-pass (almost instant)
+        private const float WALL_PASS_SPEED = 50f;            // EXTREME BLINK speed - phases through EVERYTHING
+        private const float WALL_PASS_LERP_IN = 0.8f;         // Almost instant acceleration
         private const float WALL_PASS_LERP_OUT = 0.25f;       // Decelerate out of wall-pass
         
         // Stuck detection thresholds
         private const int STUCK_THRESHOLD_TICKS = 30;         // ~0.5 seconds before activating wall-pass
-        private const int WALL_PASS_MAX_TICKS = 120;          // Max ~2 seconds in wall-pass mode
+        private const int WALL_PASS_MAX_TICKS = 240;          // Max ~4 seconds in wall-pass mode (for long distances like beach)
         private const float STUCK_MOVEMENT_THRESHOLD = 1.5f;  // Min pixels moved to not be "stuck"
         private const int FORAGE_STUCK_THRESHOLD = 30;        // 0.5 second before activating wall-pass for forage
         
@@ -63,6 +63,24 @@ namespace WorkingPets.Behaviors
         // Scanning intervals
         private const int FORAGE_SCAN_INTERVAL = 12;          // Ticks between forage scans
         private const int UNREACHABLE_CLEAR_INTERVAL = 600;   // Clear unreachable list every 10 seconds
+        
+        // ===== EXPLORE MODE CONSTANTS =====
+        private const int EXPLORE_SCAN_RADIUS = 50;           // Scan 50 tiles for forageables
+        private const int EXPLORE_AREA_DONE_DELAY = 120;      // 2 seconds before teleporting to next area
+        private const float EXPLORE_FORAGE_SPEED = 6f;        // Speed when exploring
+        
+        // Valid exploration areas (no Ginger Island, no Desert, no special areas)
+        private static readonly string[] EXPLORE_AREAS = new[]
+        {
+            "Farm", "Town", "Mountain", "Forest", "Beach", "BusStop",
+            "Backwoods", "Railroad", "Woods", "FarmCave", "Greenhouse",
+            "UndergroundMine", "Mine", "BathHouse_Entry", "BathHouse_Pool",
+            "WizardHouse", "AnimalShop", "ScienceHouse", "SebastianRoom",
+            "JoshHouse", "HaleyHouse", "SamHouse", "Blacksmith", "ManorHouse",
+            "SeedShop", "Saloon", "Trailer", "Hospital", "HarveyRoom",
+            "Beach", "FishShop", "ElliottHouse", "ArchaeologyHouse", "Sewer",
+            "WitchWarpCave", "WitchSwamp", "WitchHut", "BugLand"
+        };
 
         /*********
         ** Fields
@@ -70,6 +88,7 @@ namespace WorkingPets.Behaviors
         private Pet? _pet;
         private bool _isWorking;
         private bool _isFollowing;
+        private bool _isExploring;  // NEW: Autonomous explore mode
         private int _tickCounter;
         private bool _isPausedForDialogue;
         
@@ -133,6 +152,16 @@ namespace WorkingPets.Behaviors
         // Animation state
         private bool _wasMoving = false;
         // ===== END FOLLOW MODE STATE =====
+        
+        // ===== EXPLORE MODE STATE =====
+        private Vector2? _exploreTarget;
+        private int _exploreScanTimer = 0;
+        private int _exploreStuckTicks = 0;
+        private int _exploreAreaDoneTimer = 0;
+        private bool _exploreAreaComplete = false;
+        private HashSet<Vector2> _exploreUnreachableTiles = new();
+        private int _currentExploreAreaIndex = 0;
+        // ===== END EXPLORE MODE STATE =====
 
         private readonly Random _random = new();
 
@@ -147,6 +176,7 @@ namespace WorkingPets.Behaviors
         *********/
         public bool IsWorking => _isWorking;
         public bool IsFollowing => _isFollowing;
+        public bool IsExploring => _isExploring;
         public Pet? Pet => _pet;
 
         /*********
@@ -224,6 +254,72 @@ namespace WorkingPets.Behaviors
             }
         }
 
+        /// <summary>Toggle autonomous explore mode - pet forages across the valley on its own.</summary>
+        public void ToggleExplore()
+        {
+            _isExploring = !_isExploring;
+            
+            if (_isExploring)
+            {
+                // Stop other modes
+                _isWorking = false;
+                _isFollowing = false;
+                _targetTile = null;
+                _pendingAction = null;
+                ResetFollowState();
+                ResetExploreState();
+                
+                if (_pet != null)
+                {
+                    _pet.farmerPassesThrough = true;
+                    _pet.controller = null;
+                    _pet.Halt();
+                    
+                    // Start exploring from current location or Farm
+                    string currentLoc = _pet.currentLocation?.Name ?? "Farm";
+                    if (!IsValidExploreArea(currentLoc))
+                    {
+                        Game1.warpCharacter(_pet, "Farm", new Vector2(64, 15));
+                    }
+                }
+                
+                ModEntry.Instance.Monitor.Log($"[WorkingPets] === {_pet?.Name} STARTED EXPLORING THE VALLEY ===", LogLevel.Info);
+            }
+            else
+            {
+                ResetExploreState();
+                if (_pet != null)
+                {
+                    _pet.farmerPassesThrough = false;
+                    _pet.Halt();
+                }
+                ModEntry.Instance.Monitor.Log($"[WorkingPets] === {_pet?.Name} STOPPED EXPLORING ===", LogLevel.Info);
+            }
+        }
+        
+        /// <summary>Stop exploring and return to player.</summary>
+        public void StopExploring()
+        {
+            if (_isExploring)
+            {
+                _isExploring = false;
+                ResetExploreState();
+                if (_pet != null)
+                {
+                    _pet.farmerPassesThrough = false;
+                    _pet.Halt();
+                    
+                    // Warp back to player
+                    var player = Game1.player;
+                    if (player?.currentLocation != null)
+                    {
+                        Game1.warpCharacter(_pet, player.currentLocation, player.Tile);
+                    }
+                }
+                ModEntry.Instance.Monitor.Log($"[WorkingPets] === {_pet?.Name} STOPPED EXPLORING (returned to player) ===", LogLevel.Info);
+            }
+        }
+
         public void PauseForDialogue()
         {
             _isPausedForDialogue = true;
@@ -252,7 +348,14 @@ namespace WorkingPets.Behaviors
                 return;
             }
 
-            // Handle following mode FIRST - following overrides resting state
+            // Handle explore mode - autonomous foraging across the valley
+            if (_isExploring)
+            {
+                UpdateExplore();
+                return;
+            }
+
+            // Handle following mode - following overrides resting state
             // The pet should follow even if it was sleeping
             if (_isFollowing)
             {
@@ -698,22 +801,50 @@ namespace WorkingPets.Behaviors
             {
                 if (!IsForageTargetStillValid(petLocation, _foragingTarget.Value))
                 {
-                    // Target gone, clear and reset direction toward player
+                    // Target gone, immediately scan for another forage
                     _foragingTarget = null;
-                    _followState = FollowState.Idle;
                     _forageStuckTicks = 0;
-                    SyncDirectionToTarget(playerPos); // FIX MOONWALKING - face player after forage disappears
+                    
+                    // IMMEDIATELY look for next forageable before returning to player
+                    var nextForage = FindNearbyForageableSmooth(petLocation, _pet.Tile);
+                    if (nextForage.HasValue)
+                    {
+                        _foragingTarget = nextForage.Value;
+                        _followState = FollowState.Foraging;
+                        SyncDirectionToTarget(_foragingTarget.Value * 64f + new Vector2(32f, 32f));
+                    }
+                    else
+                    {
+                        _followState = FollowState.Idle;
+                        SyncDirectionToTarget(playerPos);
+                    }
                 }
                 else if (Vector2.Distance(_pet.Tile, _foragingTarget.Value) < 1.5f)
                 {
                     // Close enough to pick up
                     TryPickupForageableAt(petLocation, _foragingTarget.Value);
                     _foragingTarget = null;
-                    _followState = FollowState.Idle;
-                    _forageScanTimer = 0;
                     _forageStuckTicks = 0;
-                    SyncDirectionToTarget(playerPos); // FIX MOONWALKING - face player after pickup
-                    StopMovingSmooth();
+                    
+                    // IMMEDIATELY look for next forageable - DON'T go back to player yet!
+                    var nextForage = FindNearbyForageableSmooth(petLocation, _pet.Tile);
+                    if (nextForage.HasValue)
+                    {
+                        _foragingTarget = nextForage.Value;
+                        _followState = FollowState.Foraging;
+                        _forageScanTimer = 0;
+                        SyncDirectionToTarget(_foragingTarget.Value * 64f + new Vector2(32f, 32f));
+                        // Don't stop moving - keep going!
+                        return;
+                    }
+                    else
+                    {
+                        // No more forageables, NOW go back to player
+                        _followState = FollowState.Idle;
+                        _forageScanTimer = 0;
+                        SyncDirectionToTarget(playerPos);
+                        StopMovingSmooth();
+                    }
                 }
                 else
                 {
@@ -897,6 +1028,9 @@ namespace WorkingPets.Behaviors
         {
             if (_pet == null) return;
             
+            float dist = Vector2.Distance(_pet.Position, targetPos);
+            ModEntry.Instance.Monitor.Log($"[WallPass] ACTIVATED toward PLAYER | Distance: {dist:F0}px ({dist/64:F1} tiles)", LogLevel.Debug);
+            
             _followState = FollowState.WallPassing;
             _wallPassTicks = 0;
             _stuckTicks = 0;
@@ -923,6 +1057,9 @@ namespace WorkingPets.Behaviors
         {
             if (_pet == null) return;
             
+            float dist = Vector2.Distance(_pet.Position, targetPos);
+            ModEntry.Instance.Monitor.Log($"[WallPass] ACTIVATED toward FORAGE | Distance: {dist:F0}px ({dist/64:F1} tiles)", LogLevel.Debug);
+            
             _followState = FollowState.WallPassing;
             _wallPassTicks = 0;
             _forageStuckTicks = 0;
@@ -947,6 +1084,12 @@ namespace WorkingPets.Behaviors
         /// <summary>Exit wall-pass mode.</summary>
         private void ExitWallPassMode()
         {
+            if (_followState == FollowState.WallPassing)
+            {
+                string reason = _wallPassingToForage ? "(reached forage)" : "(reached player)";
+                ModEntry.Instance.Monitor.Log($"[WallPass] EXITED {reason} | Ticks: {_wallPassTicks}", LogLevel.Debug);
+            }
+            
             _followState = FollowState.Idle;
             _wallPassTicks = 0;
             _wallPassDirection = Vector2.Zero;
@@ -986,32 +1129,15 @@ namespace WorkingPets.Behaviors
             Vector2 velocity = direction * _currentFollowSpeed;
             Vector2 nextPos = _pet.Position + velocity;
             
-            // Only check for water - we pass through everything else
-            int nextTileX = (int)((nextPos.X + 32f) / 64f);
-            int nextTileY = (int)((nextPos.Y + 32f) / 64f);
+            // === PHASE THROUGH EVERYTHING - NO COLLISION CHECKS ===
+            // In wall-pass mode, pets ignore water, walls, buildings, fences, EVERYTHING
+            _pet.Position = nextPos;
             
-            // Don't walk into water even in wall-pass mode
-            if (!_pet.currentLocation.isWaterTile(nextTileX, nextTileY))
+            // Log for debugging
+            if (_wallPassTicks % 20 == 0)
             {
-                _pet.Position = nextPos;
-            }
-            else
-            {
-                // Try to go around water
-                Vector2 perpendicular = new Vector2(-direction.Y, direction.X);
-                Vector2 altPos1 = _pet.Position + (direction + perpendicular * 0.5f) * _currentFollowSpeed;
-                Vector2 altPos2 = _pet.Position + (direction - perpendicular * 0.5f) * _currentFollowSpeed;
-                
-                int alt1X = (int)((altPos1.X + 32f) / 64f);
-                int alt1Y = (int)((altPos1.Y + 32f) / 64f);
-                int alt2X = (int)((altPos2.X + 32f) / 64f);
-                int alt2Y = (int)((altPos2.Y + 32f) / 64f);
-                
-                if (!_pet.currentLocation.isWaterTile(alt1X, alt1Y))
-                    _pet.Position = altPos1;
-                else if (!_pet.currentLocation.isWaterTile(alt2X, alt2Y))
-                    _pet.Position = altPos2;
-                // If all options are water, stay put (will timeout)
+                float distToTarget = Vector2.Distance(nextPos, targetPos);
+                ModEntry.Instance.Monitor.Log($"[WallPass] Tick {_wallPassTicks}: Speed={_currentFollowSpeed:F1}, Dist={distToTarget:F0}", LogLevel.Trace);
             }
             
             // Update facing direction (locked during wall-pass to prevent flickering)
@@ -1131,6 +1257,290 @@ namespace WorkingPets.Behaviors
             _idleRoamCooldown = 0;
             _playerStationaryTicks = 0;
             _lastPlayerPosition = Vector2.Zero;
+        }
+        
+        /// <summary>Reset all explore-related state.</summary>
+        private void ResetExploreState()
+        {
+            _exploreTarget = null;
+            _exploreScanTimer = 0;
+            _exploreStuckTicks = 0;
+            _exploreAreaDoneTimer = 0;
+            _exploreAreaComplete = false;
+            _exploreUnreachableTiles.Clear();
+            _velocity = Vector2.Zero;
+            _stuckTicks = 0;
+            _wallPassTicks = 0;
+            _wallPassDirection = Vector2.Zero;
+            _wallPassTarget = null;
+            _followState = FollowState.Idle;
+        }
+        
+        /// <summary>Update autonomous explore mode.</summary>
+        private void UpdateExplore()
+        {
+            if (_pet == null) return;
+            
+            var location = _pet.currentLocation;
+            if (location == null) return;
+            
+            // === TAKE FULL CONTROL ===
+            _pet.farmerPassesThrough = true;
+            _pet.controller = null;
+            
+            // Force out of sleep
+            if (_pet.CurrentBehavior == Pet.behavior_Sleep || _pet.CurrentBehavior == "SitDown")
+            {
+                _pet.CurrentBehavior = "Walk";
+            }
+            
+            // === CHECK IF IN VALID AREA ===
+            if (!IsValidExploreArea(location.Name))
+            {
+                // Teleport to next valid area
+                TeleportToNextExploreArea();
+                return;
+            }
+            
+            Vector2 petPos = _pet.Position;
+            
+            // === WALL-PASS MODE (same as follow mode) ===
+            if (_followState == FollowState.WallPassing && _wallPassTarget.HasValue)
+            {
+                _wallPassTicks++;
+                
+                float distToTarget = Vector2.Distance(petPos, _wallPassTarget.Value);
+                
+                if (distToTarget <= 64f || _wallPassTicks >= WALL_PASS_MAX_TICKS)
+                {
+                    ExitWallPassMode();
+                    _exploreStuckTicks = 0;
+                    
+                    // Check if we reached the forage
+                    if (_exploreTarget.HasValue && Vector2.Distance(_pet.Tile, _exploreTarget.Value) < 1.5f)
+                    {
+                        TryPickupForageableAt(location, _exploreTarget.Value);
+                        _exploreTarget = null;
+                    }
+                }
+                else
+                {
+                    MoveWithWallPass(_wallPassTarget.Value);
+                    _lastPosition = petPos;
+                    return;
+                }
+            }
+            
+            // === IF AREA IS COMPLETE, WAIT THEN TELEPORT ===
+            if (_exploreAreaComplete)
+            {
+                _exploreAreaDoneTimer++;
+                
+                // Do a little idle animation
+                StopMovingSmooth();
+                
+                if (_exploreAreaDoneTimer >= EXPLORE_AREA_DONE_DELAY)
+                {
+                    TeleportToNextExploreArea();
+                }
+                return;
+            }
+            
+            // === SCAN FOR FORAGEABLES ===
+            _exploreScanTimer++;
+            if (_exploreScanTimer >= FORAGE_SCAN_INTERVAL && !_exploreTarget.HasValue)
+            {
+                _exploreScanTimer = 0;
+                
+                var nearestForage = ScanAreaForForageable(location);
+                if (nearestForage.HasValue)
+                {
+                    _exploreTarget = nearestForage.Value;
+                    _exploreStuckTicks = 0;
+                    SyncDirectionToTarget(_exploreTarget.Value * 64f + new Vector2(32f, 32f));
+                    ModEntry.Instance.Monitor.Log($"[Explore] {_pet.Name} found forageable at {_exploreTarget.Value} in {location.Name}", LogLevel.Debug);
+                }
+                else
+                {
+                    // No more forageables in this area!
+                    _exploreAreaComplete = true;
+                    _exploreAreaDoneTimer = 0;
+                    ModEntry.Instance.Monitor.Log($"[Explore] {_pet.Name} finished exploring {location.Name}!", LogLevel.Info);
+                }
+            }
+            
+            // === MOVE TO FORAGE TARGET ===
+            if (_exploreTarget.HasValue)
+            {
+                // Check if target still valid
+                if (!IsForageTargetStillValid(location, _exploreTarget.Value))
+                {
+                    _exploreTarget = null;
+                    return;
+                }
+                
+                // Check if reached
+                if (Vector2.Distance(_pet.Tile, _exploreTarget.Value) < 1.5f)
+                {
+                    TryPickupForageableAt(location, _exploreTarget.Value);
+                    _exploreTarget = null;
+                    _exploreStuckTicks = 0;
+                    return;
+                }
+                
+                // Move toward forage
+                Vector2 targetPos = _exploreTarget.Value * 64f + new Vector2(32f, 32f);
+                bool moved = MoveTowardTarget(targetPos, EXPLORE_FORAGE_SPEED, false);
+                
+                // Stuck detection
+                float movedDist = Vector2.Distance(petPos, _lastPosition);
+                if (!moved || movedDist < STUCK_MOVEMENT_THRESHOLD)
+                {
+                    _exploreStuckTicks++;
+                    if (_exploreStuckTicks >= STUCK_THRESHOLD_TICKS)
+                    {
+                        // Activate wall-pass
+                        _followState = FollowState.WallPassing;
+                        _wallPassTicks = 0;
+                        _wallPassTarget = targetPos;
+                        _wallPassDirection = targetPos - petPos;
+                        if (_wallPassDirection != Vector2.Zero)
+                            _wallPassDirection.Normalize();
+                        _currentFollowSpeed = EXPLORE_FORAGE_SPEED;
+                        
+                        ModEntry.Instance.Monitor.Log($"[Explore] {_pet.Name} activating wall-pass to reach forage", LogLevel.Debug);
+                    }
+                }
+                else
+                {
+                    _exploreStuckTicks = 0;
+                }
+                
+                _lastPosition = petPos;
+            }
+        }
+        
+        /// <summary>Scan the entire area for forageables.</summary>
+        private Vector2? ScanAreaForForageable(GameLocation location)
+        {
+            if (location == null || _pet == null) return null;
+            
+            float nearestDist = float.MaxValue;
+            Vector2? nearestForage = null;
+            Vector2 petTile = _pet.Tile;
+            
+            foreach (var pair in location.Objects.Pairs)
+            {
+                if (!IsForageable(pair.Value))
+                    continue;
+                
+                if (_exploreUnreachableTiles.Contains(pair.Key))
+                    continue;
+                
+                float dist = Vector2.Distance(petTile, pair.Key);
+                if (dist < nearestDist)
+                {
+                    nearestDist = dist;
+                    nearestForage = pair.Key;
+                }
+            }
+            
+            return nearestForage;
+        }
+        
+        /// <summary>Check if an area is valid for exploration.</summary>
+        private bool IsValidExploreArea(string locationName)
+        {
+            // Exclude Ginger Island and Desert
+            if (locationName.Contains("Island") || locationName.Contains("Caldera") || 
+                locationName.Contains("Volcano") || locationName.Contains("FieldOffice"))
+                return false;
+            
+            if (locationName == "Desert" || locationName == "DesertFestival" || 
+                locationName == "SkullCave" || locationName == "Club")
+                return false;
+            
+            // Allow standard Stardew Valley areas
+            return true;
+        }
+        
+        /// <summary>Get the next area to explore.</summary>
+        private string GetNextExploreArea()
+        {
+            // Rotate through explore areas
+            _currentExploreAreaIndex = (_currentExploreAreaIndex + 1) % EXPLORE_AREAS.Length;
+            return EXPLORE_AREAS[_currentExploreAreaIndex];
+        }
+        
+        /// <summary>Teleport pet to the next exploration area.</summary>
+        private void TeleportToNextExploreArea()
+        {
+            if (_pet == null) return;
+            
+            string nextArea = GetNextExploreArea();
+            GameLocation? targetLocation = Game1.getLocationFromName(nextArea);
+            
+            // Keep trying until we find a valid location
+            int attempts = 0;
+            while (targetLocation == null && attempts < EXPLORE_AREAS.Length)
+            {
+                nextArea = GetNextExploreArea();
+                targetLocation = Game1.getLocationFromName(nextArea);
+                attempts++;
+            }
+            
+            if (targetLocation != null)
+            {
+                // Find a safe spawn point
+                Vector2 spawnTile = FindSafeSpawnTile(targetLocation);
+                
+                Game1.warpCharacter(_pet, targetLocation, spawnTile);
+                ResetExploreState();
+                _isExploring = true; // Keep exploring
+                
+                ModEntry.Instance.Monitor.Log($"[Explore] {_pet.Name} teleported to {nextArea} at tile {spawnTile}", LogLevel.Info);
+            }
+            else
+            {
+                // Fallback to Farm
+                Game1.warpCharacter(_pet, "Farm", new Vector2(64, 15));
+                ResetExploreState();
+                _isExploring = true;
+            }
+        }
+        
+        /// <summary>Find a safe spawn tile in a location.</summary>
+        private Vector2 FindSafeSpawnTile(GameLocation location)
+        {
+            // Try common spawn points
+            Vector2[] commonSpawns = new[]
+            {
+                new Vector2(10, 10),
+                new Vector2(15, 15),
+                new Vector2(20, 20),
+                new Vector2(25, 25),
+                new Vector2(30, 30),
+            };
+            
+            foreach (var tile in commonSpawns)
+            {
+                if (IsTileWalkable(location, tile))
+                    return tile;
+            }
+            
+            // Random search
+            for (int i = 0; i < 50; i++)
+            {
+                int x = _random.Next(5, Math.Min(50, location.Map?.Layers[0]?.LayerWidth ?? 50));
+                int y = _random.Next(5, Math.Min(50, location.Map?.Layers[0]?.LayerHeight ?? 50));
+                Vector2 tile = new Vector2(x, y);
+                
+                if (IsTileWalkable(location, tile))
+                    return tile;
+            }
+            
+            // Fallback
+            return new Vector2(10, 10);
         }
 
         /// <summary>Stop the pet's movement smoothly.</summary>
