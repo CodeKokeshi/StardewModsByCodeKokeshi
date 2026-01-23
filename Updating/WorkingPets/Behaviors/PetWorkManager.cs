@@ -31,16 +31,32 @@ namespace WorkingPets.Behaviors
         private const int BOULDER_HEALTH = 8;
         private const int FORAGE_DETECTION_RADIUS = 20; // tiles around pet to check for forageable items
         
-        // Following behavior constants
-        private const float FOLLOW_STOP_DISTANCE = 96f;      // Stop when this close to player (1.5 tiles)
-        private const float FOLLOW_START_DISTANCE = 192f;    // Start following when farther than this (3 tiles)
-        private const float FORAGE_LEASH_DISTANCE = 640f;    // Max distance from player to forage (10 tiles)
-        private const float FORAGE_PICKUP_DISTANCE = 48f;    // Distance to pick up forageable (pixels)
-        private const float BASE_FOLLOW_SPEED = 4.5f;        // Base following speed
-        private const float BASE_FORAGE_SPEED = 5f;          // Speed when going to forageables
-        private const int DIRECTION_LOCK_TICKS = 8;          // Minimum ticks before changing direction
-        private const int STUCK_WARP_THRESHOLD = 180;        // Ticks before warping (3 seconds)
-        private const int FORAGE_SCAN_INTERVAL = 15;         // Ticks between forage scans
+        // ===== FOLLOWING BEHAVIOR CONSTANTS =====
+        // Distance thresholds (in pixels, 64px = 1 tile)
+        private const float FOLLOW_STOP_DISTANCE = 80f;       // Stop when this close to player (~1.25 tiles)
+        private const float FOLLOW_START_DISTANCE = 160f;     // Start following when farther than this (~2.5 tiles)
+        private const float FORAGE_LEASH_DISTANCE = 640f;     // Max distance from player to forage (10 tiles)
+        
+        // Speed settings
+        private const float BASE_FOLLOW_SPEED = 5f;           // Base following speed (slightly faster)
+        private const float BASE_FORAGE_SPEED = 5.5f;         // Speed when going to forageables
+        private const float WALL_PASS_SPEED = 18f;            // Super speed when passing through walls
+        private const float WALL_PASS_LERP_IN = 0.3f;         // How fast to accelerate into wall-pass
+        private const float WALL_PASS_LERP_OUT = 0.15f;       // How fast to decelerate out of wall-pass
+        
+        // Stuck detection thresholds
+        private const int STUCK_THRESHOLD_TICKS = 45;         // ~0.75 seconds before activating wall-pass
+        private const int WALL_PASS_MAX_TICKS = 90;           // Max ~1.5 seconds in wall-pass mode
+        private const float STUCK_MOVEMENT_THRESHOLD = 1.5f;  // Min pixels moved to not be "stuck"
+        private const int FORAGE_STUCK_THRESHOLD = 60;        // 1 second before giving up on forage target
+        
+        // Direction locking
+        private const int DIRECTION_LOCK_TICKS = 6;           // Min ticks before changing direction
+        private const float DIRECTION_CHANGE_THRESHOLD = 0.4f; // How different direction must be to change
+        
+        // Scanning intervals
+        private const int FORAGE_SCAN_INTERVAL = 12;          // Ticks between forage scans
+        private const int UNREACHABLE_CLEAR_INTERVAL = 600;   // Clear unreachable list every 10 seconds
 
         /*********
         ** Fields
@@ -51,54 +67,56 @@ namespace WorkingPets.Behaviors
         private int _tickCounter;
         private bool _isPausedForDialogue;
         
-        // Movement & Action State
+        // Movement & Action State (for work mode)
         private Vector2? _targetTile;
         private Action? _pendingAction;
         private readonly float _moveSpeed = 3f;
-        private float _currentSpeed = 3f;  // Current movement speed (may be increased when stuck)
-        private bool _isInFastMode = false; // Whether pet is moving at high speed to bypass obstacles
+        private float _currentSpeed = 3f;
+        private bool _isInFastMode = false;
         
         // Track unreachable targets to avoid trying them repeatedly
         private readonly HashSet<Vector2> _unreachableTiles = new();
         private int _unreachableClearTimer;
         
-        // Track when we've notified about no work available (to avoid spam)
+        // Track when we've notified about no work available
         private bool _noWorkNotificationShown = false;
 
-        // Stuck detection (fallback fast-speed bypass instead of warping)
+        // Stuck detection for work mode
         private float _lastDistanceToTarget = float.MaxValue;
         private int _noProgressTicks;
         private Vector2? _lastTargetTile;
-        
-        // Track consecutive fast-speed attempts to same target (infinite loop protection)
         private int _consecutiveFastAttempts;
         private const int MAX_FAST_ATTEMPTS = 3;
 
-        // ===== NEW SMOOTH FOLLOWING SYSTEM =====
+        // ===== FOLLOW MODE STATE =====
         // Direction locking to prevent flickering
         private int _currentDirection = 2; // 0=up, 1=right, 2=down, 3=left
         private int _directionLockTimer = 0;
         
         // Follow state machine
-        private enum FollowState { Idle, FollowingPlayer, Foraging }
+        private enum FollowState { Idle, FollowingPlayer, Foraging, WallPassing }
         private FollowState _followState = FollowState.Idle;
         
-        // Smooth movement
+        // Movement
         private Vector2 _velocity = Vector2.Zero;
+        private float _currentFollowSpeed = BASE_FOLLOW_SPEED;
         
-        // Stuck detection for following
+        // Stuck detection for follow mode
         private Vector2 _lastPosition = Vector2.Zero;
         private int _stuckTicks = 0;
+        private int _wallPassTicks = 0;
+        private Vector2 _wallPassDirection = Vector2.Zero; // Lock direction during wall-pass
         
         // Foraging state
         private Vector2? _foragingTarget;
         private int _forageScanTimer = 0;
+        private int _forageStuckTicks = 0;
         private HashSet<Vector2> _unreachableForageTiles = new();
         private int _unreachableForageClearTimer = 0;
         
         // Animation state
         private bool _wasMoving = false;
-        // ===== END NEW SYSTEM =====
+        // ===== END FOLLOW MODE STATE =====
 
         private readonly Random _random = new();
 
@@ -514,7 +532,6 @@ namespace WorkingPets.Behaviors
             var petLocation = _pet.currentLocation;
             
             // === TAKE FULL CONTROL OF THE PET ===
-            // Suppress vanilla pet behavior to prevent interference
             _pet.farmerPassesThrough = true;
             _pet.controller = null;
             
@@ -530,7 +547,7 @@ namespace WorkingPets.Behaviors
                 _isFollowing = false;
                 _pet.farmerPassesThrough = false;
                 _followState = FollowState.Idle;
-                ModEntry.Instance.Monitor.Log($"[WorkingPets] Player left farm, {_pet.Name} stopped following.", LogLevel.Debug);
+                ExitWallPassMode();
                 return;
             }
             
@@ -547,26 +564,59 @@ namespace WorkingPets.Behaviors
 
             // === CLEAR UNREACHABLE FORAGE PERIODICALLY ===
             _unreachableForageClearTimer++;
-            if (_unreachableForageClearTimer > 600)
+            if (_unreachableForageClearTimer > UNREACHABLE_CLEAR_INTERVAL)
             {
                 _unreachableForageTiles.Clear();
                 _unreachableForageClearTimer = 0;
             }
 
-            // === DECIDE WHAT TO DO: FORAGE OR FOLLOW ===
             Vector2 petPos = _pet.Position;
             Vector2 playerPos = player.Position;
             float distanceToPlayer = Vector2.Distance(petPos, playerPos);
-            
-            // Scan for forageables periodically
-            if (ModEntry.Config.ForageWhileFollowing && petLocation != null)
+
+            // === WALL-PASS MODE HANDLING ===
+            // If we're in wall-pass mode, continue until we reach target or timeout
+            if (_followState == FollowState.WallPassing)
+            {
+                _wallPassTicks++;
+                
+                // Check exit conditions
+                bool reachedPlayer = distanceToPlayer <= FOLLOW_STOP_DISTANCE;
+                bool timedOut = _wallPassTicks >= WALL_PASS_MAX_TICKS;
+                bool madeProgress = Vector2.Distance(petPos, _lastPosition) > STUCK_MOVEMENT_THRESHOLD * 2;
+                
+                if (reachedPlayer)
+                {
+                    // Successfully reached player
+                    ExitWallPassMode();
+                    StopMovingSmooth();
+                    _lastPosition = petPos;
+                    return;
+                }
+                
+                if (timedOut)
+                {
+                    // Wall-pass took too long, exit and resume normal movement
+                    ExitWallPassMode();
+                    _stuckTicks = 0; // Reset stuck counter to give normal movement another chance
+                }
+                else
+                {
+                    // Continue wall-passing toward player
+                    MoveWithWallPass(playerPos);
+                    _lastPosition = petPos;
+                    return;
+                }
+            }
+
+            // === SCAN FOR FORAGEABLES ===
+            if (ModEntry.Config.ForageWhileFollowing && petLocation != null && _followState != FollowState.WallPassing)
             {
                 _forageScanTimer++;
                 if (_forageScanTimer >= FORAGE_SCAN_INTERVAL)
                 {
                     _forageScanTimer = 0;
                     
-                    // Only scan if we're not too far from player and don't have a target
                     if (distanceToPlayer <= FORAGE_LEASH_DISTANCE && !_foragingTarget.HasValue)
                     {
                         var nearestForage = FindNearbyForageableSmooth(petLocation, _pet.Tile);
@@ -574,6 +624,7 @@ namespace WorkingPets.Behaviors
                         {
                             _foragingTarget = nearestForage.Value;
                             _followState = FollowState.Foraging;
+                            _forageStuckTicks = 0;
                         }
                     }
                 }
@@ -582,26 +633,48 @@ namespace WorkingPets.Behaviors
             // === FORAGING TAKES ABSOLUTE PRIORITY ===
             if (_foragingTarget.HasValue && ModEntry.Config.ForageWhileFollowing && petLocation != null)
             {
-                // Check if forage target is still valid
                 if (!IsForageTargetStillValid(petLocation, _foragingTarget.Value))
                 {
+                    // Target gone, find another
                     _foragingTarget = null;
                     _followState = FollowState.Idle;
+                    _forageStuckTicks = 0;
                 }
-                // Check if we're close enough to pick up
                 else if (Vector2.Distance(_pet.Tile, _foragingTarget.Value) < 1.5f)
                 {
+                    // Close enough to pick up
                     TryPickupForageableAt(petLocation, _foragingTarget.Value);
                     _foragingTarget = null;
                     _followState = FollowState.Idle;
-                    _forageScanTimer = 0; // Immediately scan for more
+                    _forageScanTimer = 0;
+                    _forageStuckTicks = 0;
                 }
-                // Move to forage target - THE CAT DOES NOT CARE ABOUT THE PLAYER
                 else
                 {
+                    // Move to forage - CAT IGNORES PLAYER COMPLETELY
                     Vector2 targetPos = _foragingTarget.Value * 64f + new Vector2(32f, 32f);
-                    MoveTowardPositionSmooth(targetPos, BASE_FORAGE_SPEED);
-                    return; // Don't do anything else, foraging is priority
+                    bool moved = MoveTowardTarget(targetPos, BASE_FORAGE_SPEED, false);
+                    
+                    // Forage stuck detection - give up if can't reach
+                    if (!moved || Vector2.Distance(petPos, _lastPosition) < STUCK_MOVEMENT_THRESHOLD)
+                    {
+                        _forageStuckTicks++;
+                        if (_forageStuckTicks >= FORAGE_STUCK_THRESHOLD)
+                        {
+                            // Can't reach this forage, mark unreachable and find another
+                            _unreachableForageTiles.Add(_foragingTarget.Value);
+                            _foragingTarget = null;
+                            _followState = FollowState.Idle;
+                            _forageStuckTicks = 0;
+                        }
+                    }
+                    else
+                    {
+                        _forageStuckTicks = 0;
+                    }
+                    
+                    _lastPosition = petPos;
+                    return;
                 }
             }
 
@@ -618,7 +691,7 @@ namespace WorkingPets.Behaviors
             }
             
             // If within comfortable range, don't move
-            if (distanceToPlayer <= FOLLOW_START_DISTANCE && _followState != FollowState.Foraging)
+            if (distanceToPlayer <= FOLLOW_START_DISTANCE)
             {
                 StopMovingSmooth();
                 _stuckTicks = 0;
@@ -627,110 +700,219 @@ namespace WorkingPets.Behaviors
             }
             
             // === MOVE TOWARD PLAYER ===
-            // Calculate speed based on distance (further = faster catch-up)
-            float speed = BASE_FOLLOW_SPEED;
-            if (distanceToPlayer > 512f) speed *= 2.0f;      // 8+ tiles: sprint
-            else if (distanceToPlayer > 320f) speed *= 1.5f; // 5+ tiles: jog
-            else if (distanceToPlayer > 192f) speed *= 1.2f; // 3+ tiles: walk fast
+            float speed = CalculateFollowSpeed(distanceToPlayer);
+            bool successfulMove = MoveTowardTarget(playerPos, speed, false);
             
-            MoveTowardPositionSmooth(playerPos, speed);
-            
-            // === STUCK DETECTION ===
+            // === STUCK DETECTION - TRIGGER WALL-PASS ===
             float movedDistance = Vector2.Distance(petPos, _lastPosition);
-            if (movedDistance < 0.5f)
+            if (movedDistance < STUCK_MOVEMENT_THRESHOLD)
             {
                 _stuckTicks++;
-                if (_stuckTicks >= STUCK_WARP_THRESHOLD)
+                if (_stuckTicks >= STUCK_THRESHOLD_TICKS)
                 {
-                    // Warp near player
-                    Vector2 warpPos = player.Tile + GetRandomAdjacentTile();
-                    if (petLocation != null && IsTileWalkable(petLocation, warpPos))
-                    {
-                        Game1.warpCharacter(_pet, player.currentLocation, warpPos);
-                        ModEntry.Instance.Monitor.Log($"[WorkingPets] {_pet.Name} was stuck, warped to player.", LogLevel.Debug);
-                    }
-                    _stuckTicks = 0;
-                    ResetFollowState();
+                    // ACTIVATE WALL-PASS MODE
+                    EnterWallPassMode(playerPos);
                 }
             }
             else
             {
                 _stuckTicks = 0;
             }
+            
             _lastPosition = petPos;
         }
 
-        /// <summary>Reset all follow-related state when transitioning.</summary>
-        private void ResetFollowState()
+        /// <summary>Calculate follow speed based on distance to player.</summary>
+        private float CalculateFollowSpeed(float distanceToPlayer)
         {
-            _velocity = Vector2.Zero;
-            _stuckTicks = 0;
-            _foragingTarget = null;
-            _followState = FollowState.Idle;
-            _directionLockTimer = 0;
-            _unreachableForageTiles.Clear();
+            float speed = BASE_FOLLOW_SPEED;
+            if (distanceToPlayer > 512f) speed *= 2.2f;       // 8+ tiles: sprint hard
+            else if (distanceToPlayer > 384f) speed *= 1.8f;  // 6+ tiles: sprint
+            else if (distanceToPlayer > 256f) speed *= 1.4f;  // 4+ tiles: jog
+            else if (distanceToPlayer > 160f) speed *= 1.1f;  // 2.5+ tiles: walk fast
+            return speed;
         }
 
-        /// <summary>Move the pet smoothly toward a target position.</summary>
-        private void MoveTowardPositionSmooth(Vector2 targetPos, float speed)
+        /// <summary>Enter wall-pass mode to bypass obstacles.</summary>
+        private void EnterWallPassMode(Vector2 targetPos)
+        {
+            if (_pet == null) return;
+            
+            _followState = FollowState.WallPassing;
+            _wallPassTicks = 0;
+            _stuckTicks = 0;
+            
+            // Lock direction toward target
+            Vector2 direction = targetPos - _pet.Position;
+            if (direction != Vector2.Zero)
+            {
+                direction.Normalize();
+                _wallPassDirection = direction;
+            }
+            
+            // Start accelerating toward wall-pass speed
+            _currentFollowSpeed = _velocity.Length();
+        }
+
+        /// <summary>Exit wall-pass mode.</summary>
+        private void ExitWallPassMode()
+        {
+            _followState = FollowState.Idle;
+            _wallPassTicks = 0;
+            _wallPassDirection = Vector2.Zero;
+            _currentFollowSpeed = BASE_FOLLOW_SPEED;
+        }
+
+        /// <summary>Move with wall-pass enabled (ignores obstacles except water).</summary>
+        private void MoveWithWallPass(Vector2 targetPos)
         {
             if (_pet == null || _pet.currentLocation == null) return;
 
-            Vector2 petPos = _pet.Position + new Vector2(32f, 32f); // Center of pet
+            Vector2 petPos = _pet.Position + new Vector2(32f, 32f);
+            Vector2 direction = targetPos - petPos;
+            
+            if (direction.LengthSquared() < 1f)
+            {
+                ExitWallPassMode();
+                return;
+            }
+            
+            direction.Normalize();
+            
+            // Use locked direction to prevent wobbling during wall-pass
+            if (_wallPassDirection != Vector2.Zero)
+            {
+                // Blend toward current target but mostly keep locked direction
+                direction = Vector2.Lerp(_wallPassDirection, direction, 0.1f);
+                direction.Normalize();
+                _wallPassDirection = direction;
+            }
+            
+            // Smoothly accelerate to wall-pass speed
+            _currentFollowSpeed = MathHelper.Lerp(_currentFollowSpeed, WALL_PASS_SPEED, WALL_PASS_LERP_IN);
+            
+            Vector2 velocity = direction * _currentFollowSpeed;
+            Vector2 nextPos = _pet.Position + velocity;
+            
+            // Only check for water - we pass through everything else
+            int nextTileX = (int)((nextPos.X + 32f) / 64f);
+            int nextTileY = (int)((nextPos.Y + 32f) / 64f);
+            
+            // Don't walk into water even in wall-pass mode
+            if (!_pet.currentLocation.isWaterTile(nextTileX, nextTileY))
+            {
+                _pet.Position = nextPos;
+            }
+            else
+            {
+                // Try to go around water
+                Vector2 perpendicular = new Vector2(-direction.Y, direction.X);
+                Vector2 altPos1 = _pet.Position + (direction + perpendicular * 0.5f) * _currentFollowSpeed;
+                Vector2 altPos2 = _pet.Position + (direction - perpendicular * 0.5f) * _currentFollowSpeed;
+                
+                int alt1X = (int)((altPos1.X + 32f) / 64f);
+                int alt1Y = (int)((altPos1.Y + 32f) / 64f);
+                int alt2X = (int)((altPos2.X + 32f) / 64f);
+                int alt2Y = (int)((altPos2.Y + 32f) / 64f);
+                
+                if (!_pet.currentLocation.isWaterTile(alt1X, alt1Y))
+                    _pet.Position = altPos1;
+                else if (!_pet.currentLocation.isWaterTile(alt2X, alt2Y))
+                    _pet.Position = altPos2;
+                // If all options are water, stay put (will timeout)
+            }
+            
+            // Update facing direction (locked during wall-pass to prevent flickering)
+            UpdateDirectionSmooth(direction);
+            AnimatePetMovement();
+        }
+
+        /// <summary>Move toward a target position with obstacle handling.</summary>
+        /// <returns>True if movement was successful.</returns>
+        private bool MoveTowardTarget(Vector2 targetPos, float speed, bool allowWallPass)
+        {
+            if (_pet == null || _pet.currentLocation == null) return false;
+
+            Vector2 petPos = _pet.Position + new Vector2(32f, 32f);
             Vector2 direction = targetPos - petPos;
             float distance = direction.Length();
             
             if (distance < 1f)
             {
                 StopMovingSmooth();
-                return;
+                return true;
             }
             
             direction.Normalize();
             
-            // Apply smooth acceleration
+            // Smooth acceleration
             Vector2 desiredVelocity = direction * speed;
-            _velocity = Vector2.Lerp(_velocity, desiredVelocity, 0.15f); // Smooth acceleration
+            _velocity = Vector2.Lerp(_velocity, desiredVelocity, 0.2f);
             
-            // Calculate next position
             Vector2 nextPos = _pet.Position + _velocity;
             
-            // Check for obstacles and try to navigate around them
-            if (!TryMoveWithObstacleAvoidance(_pet.currentLocation, nextPos, direction, speed))
-            {
-                // If completely blocked, try sliding along obstacles
-                TrySlideAlongObstacle(_pet.currentLocation, direction, speed);
-            }
-            
-            // Update direction with locking to prevent flickering
-            UpdateDirectionSmooth(direction);
-            
-            // Animate
-            AnimatePetMovement();
-        }
-
-        /// <summary>Try to move to position, with obstacle avoidance.</summary>
-        private bool TryMoveWithObstacleAvoidance(GameLocation location, Vector2 nextPos, Vector2 direction, float speed)
-        {
-            if (_pet == null) return false;
-
-            // First try direct movement
-            if (IsPositionWalkable(location, nextPos))
+            // Try direct movement first
+            if (IsPositionWalkable(_pet.currentLocation, nextPos))
             {
                 _pet.Position = nextPos;
+                UpdateDirectionSmooth(direction);
+                AnimatePetMovement();
                 return true;
             }
             
-            // Try 30-degree angles to either side
-            float[] angles = { 30f, -30f, 45f, -45f, 60f, -60f };
+            // Try angled approaches
+            float[] angles = { 25f, -25f, 45f, -45f, 70f, -70f };
             foreach (float angle in angles)
             {
                 Vector2 rotatedDir = RotateVector(direction, angle);
-                Vector2 altPos = _pet.Position + rotatedDir * (speed * 0.9f);
+                Vector2 altPos = _pet.Position + rotatedDir * (speed * 0.85f);
                 
-                if (IsPositionWalkable(location, altPos))
+                if (IsPositionWalkable(_pet.currentLocation, altPos))
                 {
                     _pet.Position = altPos;
+                    UpdateDirectionSmooth(rotatedDir);
+                    AnimatePetMovement();
+                    return true;
+                }
+            }
+            
+            // Try sliding along walls
+            if (TrySlideMovement(_pet.currentLocation, direction, speed))
+            {
+                UpdateDirectionSmooth(direction);
+                AnimatePetMovement();
+                return true;
+            }
+            
+            // Movement failed
+            return false;
+        }
+
+        /// <summary>Try to slide along obstacles.</summary>
+        private bool TrySlideMovement(GameLocation location, Vector2 direction, float speed)
+        {
+            if (_pet == null) return false;
+
+            float slideSpeed = speed * 0.6f;
+            
+            // Try horizontal slide
+            if (Math.Abs(direction.X) > 0.1f)
+            {
+                Vector2 hPos = _pet.Position + new Vector2(Math.Sign(direction.X) * slideSpeed, 0);
+                if (IsPositionWalkable(location, hPos))
+                {
+                    _pet.Position = hPos;
+                    return true;
+                }
+            }
+            
+            // Try vertical slide
+            if (Math.Abs(direction.Y) > 0.1f)
+            {
+                Vector2 vPos = _pet.Position + new Vector2(0, Math.Sign(direction.Y) * slideSpeed);
+                if (IsPositionWalkable(location, vPos))
+                {
+                    _pet.Position = vPos;
                     return true;
                 }
             }
@@ -738,94 +920,86 @@ namespace WorkingPets.Behaviors
             return false;
         }
 
-        /// <summary>Try sliding along an obstacle when direct movement fails.</summary>
-        private void TrySlideAlongObstacle(GameLocation location, Vector2 direction, float speed)
+        /// <summary>Reset all follow-related state.</summary>
+        private void ResetFollowState()
         {
-            if (_pet == null) return;
-
-            // Try pure horizontal movement
-            if (Math.Abs(direction.X) > 0.1f)
-            {
-                Vector2 horizontalPos = _pet.Position + new Vector2(Math.Sign(direction.X) * speed * 0.7f, 0);
-                if (IsPositionWalkable(location, horizontalPos))
-                {
-                    _pet.Position = horizontalPos;
-                    return;
-                }
-            }
-            
-            // Try pure vertical movement
-            if (Math.Abs(direction.Y) > 0.1f)
-            {
-                Vector2 verticalPos = _pet.Position + new Vector2(0, Math.Sign(direction.Y) * speed * 0.7f);
-                if (IsPositionWalkable(location, verticalPos))
-                {
-                    _pet.Position = verticalPos;
-                    return;
-                }
-            }
+            _velocity = Vector2.Zero;
+            _stuckTicks = 0;
+            _wallPassTicks = 0;
+            _wallPassDirection = Vector2.Zero;
+            _currentFollowSpeed = BASE_FOLLOW_SPEED;
+            _foragingTarget = null;
+            _forageStuckTicks = 0;
+            _followState = FollowState.Idle;
+            _directionLockTimer = 0;
+            _unreachableForageTiles.Clear();
         }
 
         /// <summary>Stop the pet's movement smoothly.</summary>
         private void StopMovingSmooth()
         {
-            _velocity = Vector2.Zero;
+            // Decelerate smoothly instead of instant stop
+            _velocity = Vector2.Lerp(_velocity, Vector2.Zero, 0.3f);
             
-            if (_pet != null && _wasMoving)
+            if (_velocity.LengthSquared() < 0.1f)
             {
-                _pet.Sprite.StopAnimation();
-                _wasMoving = false;
+                _velocity = Vector2.Zero;
+                if (_pet != null && _wasMoving)
+                {
+                    _pet.Sprite.StopAnimation();
+                    _wasMoving = false;
+                }
             }
         }
 
-        /// <summary>Update the pet's facing direction with hysteresis to prevent flickering.</summary>
+        /// <summary>Update facing direction with hysteresis.</summary>
         private void UpdateDirectionSmooth(Vector2 direction)
         {
             if (_pet == null) return;
             
-            // Decrement lock timer
+            // Don't change direction during wall-pass (prevents flickering)
+            if (_followState == FollowState.WallPassing && _directionLockTimer > 0)
+            {
+                _directionLockTimer--;
+                return;
+            }
+            
             if (_directionLockTimer > 0)
             {
                 _directionLockTimer--;
-                return; // Keep current direction
+                return;
             }
             
-            // Calculate new direction only if significantly different
             int newDirection = _currentDirection;
             float absX = Math.Abs(direction.X);
             float absY = Math.Abs(direction.Y);
             
-            // Use threshold to prevent flickering when X and Y are close
-            const float threshold = 0.3f;
-            
-            if (absX > absY + threshold)
+            if (absX > absY + DIRECTION_CHANGE_THRESHOLD)
             {
-                newDirection = direction.X > 0 ? 1 : 3; // Right or Left
+                newDirection = direction.X > 0 ? 1 : 3;
             }
-            else if (absY > absX + threshold)
+            else if (absY > absX + DIRECTION_CHANGE_THRESHOLD)
             {
-                newDirection = direction.Y > 0 ? 2 : 0; // Down or Up
+                newDirection = direction.Y > 0 ? 2 : 0;
             }
-            // If they're close, keep current direction
             
             if (newDirection != _currentDirection)
             {
                 _currentDirection = newDirection;
-                _directionLockTimer = DIRECTION_LOCK_TICKS;
+                _directionLockTimer = _followState == FollowState.WallPassing ? DIRECTION_LOCK_TICKS * 2 : DIRECTION_LOCK_TICKS;
                 _pet.faceDirection(_currentDirection);
             }
         }
 
-        /// <summary>Animate the pet based on movement.</summary>
+        /// <summary>Animate pet movement.</summary>
         private void AnimatePetMovement()
         {
             if (_pet == null) return;
-            
             _wasMoving = true;
             _pet.animateInFacingDirection(Game1.currentGameTime);
         }
 
-        /// <summary>Check if a position is walkable (not water, not blocked).</summary>
+        /// <summary>Check if a position is walkable.</summary>
         private bool IsPositionWalkable(GameLocation location, Vector2 pixelPos)
         {
             if (location == null) return false;
@@ -833,7 +1007,7 @@ namespace WorkingPets.Behaviors
             int tileX = (int)(pixelPos.X / 64f);
             int tileY = (int)(pixelPos.Y / 64f);
             
-            // Check water
+            // Always block water
             if (location.isWaterTile(tileX, tileY))
                 return false;
             
@@ -841,7 +1015,7 @@ namespace WorkingPets.Behaviors
             if (!location.isTilePassable(new xTile.Dimensions.Location(tileX, tileY), Game1.viewport))
                 return false;
             
-            // Check for blocking objects
+            // Check blocking objects
             Vector2 tile = new Vector2(tileX, tileY);
             if (location.Objects.TryGetValue(tile, out var obj) && !obj.isPassable())
                 return false;
@@ -855,7 +1029,7 @@ namespace WorkingPets.Behaviors
             return IsPositionWalkable(location, tile * 64f + new Vector2(32f, 32f));
         }
 
-        /// <summary>Find nearby forageable with smarter selection.</summary>
+        /// <summary>Find nearby forageable.</summary>
         private Vector2? FindNearbyForageableSmooth(GameLocation location, Vector2 petTile)
         {
             if (location == null) return null;
@@ -868,14 +1042,12 @@ namespace WorkingPets.Behaviors
                 if (!IsForageable(pair.Value))
                     continue;
                 
-                // Skip tiles we know are unreachable
                 if (_unreachableForageTiles.Contains(pair.Key))
                     continue;
                 
                 float dist = Vector2.Distance(petTile, pair.Key);
                 if (dist <= FORAGE_DETECTION_RADIUS && dist < nearestDist)
                 {
-                    // Verify we can potentially reach it
                     if (IsTileWalkable(location, pair.Key) || HasWalkableAdjacent(location, pair.Key))
                     {
                         nearestDist = dist;

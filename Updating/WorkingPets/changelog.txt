@@ -1,44 +1,56 @@
 1.4.0
 === MAJOR: Complete Follow System Rewrite ===
 - FIXED: Pet stuttering and left-right flickering completely eliminated! Movement is now buttery smooth.
-- FIXED: Pets no longer get stuck on tiny obstacles or spam direction changes.
+- FIXED: Pets no longer get stuck on tiny obstacles - wall-pass mode kicks in automatically.
 - FIXED: Vanilla pet behavior no longer interferes with mod-controlled movement.
 - FIXED: Pets won't randomly fall asleep or sit down while following you.
 
+=== Wall-Pass System (Stuck Recovery) ===
+- NEW: When stuck for ~0.75 seconds, pets activate WALL-PASS MODE with super speed (18 px/frame).
+- NEW: In wall-pass mode, pets phase through ALL obstacles except water (fences, buildings, rocks, etc.).
+- NEW: Direction is LOCKED during wall-pass to prevent wobbling/flickering while passing through walls.
+- NEW: Wall-pass smoothly accelerates in (0.3 lerp) and decelerates out (0.15 lerp) - no jarring speed changes.
+- NEW: Wall-pass auto-exits when: reaching player, timeout (~1.5 sec max), or making good progress.
+- NEW: Water tiles are ALWAYS blocked even in wall-pass mode (pets try to go around water).
+- IMPROVED: After wall-pass timeout, normal movement gets another chance before re-triggering.
+
 === Movement System Overhaul ===
-- NEW: Completely rewritten movement system with smooth velocity-based acceleration using Vector2.Lerp.
-- NEW: Direction locking with hysteresis - pet must move significantly in a new direction for 8+ ticks before changing facing direction (eliminates flickering).
-- NEW: Intelligent obstacle avoidance tries multiple angles (30°, 45°, 60°) then slides along walls smoothly.
-- NEW: Proper state machine (Idle → FollowingPlayer → Foraging) prevents state conflicts.
-- IMPROVED: Follow distances rebalanced - stops at 1.5 tiles, starts following at 3 tiles (more natural spacing).
-- IMPROVED: Speed scaling based on distance - pets sprint when far (8+ tiles), jog when mid-range (5+ tiles), walk normally when close.
-- IMPROVED: Stuck detection simplified - warps to player after 3 seconds of no progress instead of complex wall-passing.
+- NEW: State machine with 4 states: Idle, FollowingPlayer, Foraging, WallPassing.
+- NEW: Smooth velocity-based movement with Vector2.Lerp acceleration (0.2 factor).
+- NEW: Smooth deceleration when stopping (0.3 lerp toward zero instead of instant stop).
+- NEW: Direction locking with configurable threshold (0.4) - prevents flickering on diagonal movement.
+- NEW: Double direction lock time during wall-pass for extra stability.
+- IMPROVED: Obstacle avoidance tries angles: 25°, -25°, 45°, -45°, 70°, -70° before sliding.
+- IMPROVED: Slide movement at 60% speed along walls when angled approaches fail.
+- IMPROVED: Follow distances: stop at 1.25 tiles, start at 2.5 tiles (tighter follow).
+- IMPROVED: Speed scaling: 2.2x sprint (8+ tiles), 1.8x (6+ tiles), 1.4x (4+ tiles), 1.1x (2.5+ tiles).
 
-=== Foraging Priority System ===
-- CHANGED: **Foraging now takes ABSOLUTE priority** - when the cat finds forageable items, it completely ignores the player and collects them first.
-- IMPROVED: Unreachable forage tracking prevents pets from repeatedly targeting items they can't reach.
-- IMPROVED: Forage scanning optimized with 15-tick intervals and walkability verification.
-- IMPROVED: Pets scan for next forageable immediately after picking one up (smooth chaining).
-- NEW: 10-tile leash distance - pets won't chase forageables that are too far from the player.
+=== Foraging System ===
+- CHANGED: Foraging takes ABSOLUTE priority - cat completely ignores player while collecting items.
+- NEW: Forage-specific stuck detection (1 second) - marks unreachable items and moves on.
+- NEW: Unreachable forage tiles tracked and cleared every 10 seconds.
+- IMPROVED: Forage scanning every 12 ticks (was 15) for more responsive pickup.
+- IMPROVED: Immediately scans for next forageable after pickup (no delay).
+- NEW: 10-tile leash - won't chase forageables too far from player.
 
-=== Harmony Patches for Stability ===
-- NEW: RunState_Prefix patch completely suppresses vanilla pet AI when following or working (prevents movement interference).
-- NEW: BehaviorOnFarmerLocationEntry_Prefix patch prevents vanilla code from randomly making pets sleep while following.
-- IMPROVED: Pets are forced out of sleep/sit behaviors when follow mode activates.
-- IMPROVED: Vanilla PathFindController is cleared to prevent conflicts.
+=== Harmony Patches ===
+- NEW: RunState_Prefix - completely suppresses vanilla pet AI when following/working.
+- NEW: BehaviorOnFarmerLocationEntry_Prefix - prevents random sleep behavior while following.
+- IMPROVED: Forces pet out of Sleep/SitDown behaviors when follow activates.
+- IMPROVED: Clears vanilla PathFindController to prevent conflicts.
 
-=== User Experience ===
-- FIXED: Pet command menu no longer hijacks normal pet interaction - hold LeftShift while interacting with your pet to open the command menu.
-- IMPROVED: Follow mode update order changed - following now processes BEFORE resting checks (pets follow even if sleepy).
-- IMPROVED: State reset system properly clears velocity, direction locks, and targets when toggling follow mode.
-- IMPROVED: Overnight scavenging now happens regardless of pet state (Working/Following/Idle).
-- NEW: Added i18n support (English default) for pet menu and key HUD messages.
+=== Edge Cases Handled ===
+- Location changes: Properly warps pet and resets all state.
+- Water navigation: Even in wall-pass, pets route around water tiles.
+- Forage stuck: After 1 second, marks forage as unreachable and finds another.
+- Wall-pass stuck: Times out after 1.5 seconds, gives normal movement another chance.
+- State transitions: Full state reset when toggling follow mode.
+- Animation: Proper animate calls, smooth stop animation on halt.
 
-=== Technical Improvements ===
-- Added tunable constants for easy adjustment: follow distances, speeds, lock timers, stuck thresholds.
-- Removed unused/obsolete code from old movement system.
-- Better null safety and guard clauses throughout follow logic.
-- Comprehensive comments and documentation for future maintenance.
+=== Other Fixes ===
+- FIXED: Pet command menu no longer hijacks normal interaction (hold LeftShift to open).
+- IMPROVED: Overnight scavenging now happens regardless of pet state.
+- NEW: Added i18n support (English default) for pet menu and HUD messages.
 
 1.3.1
 - Fixed bug where SMAPI console window would flash repeatedly after naming a new pet during the adoption cutscene.
