@@ -1,0 +1,9 @@
+D:\December 2025 OS\Development\StardewModding\Updating\BountifulForaging\bin\Release\net6.0\BountifulForaging.deps.json
+D:\December 2025 OS\Development\StardewModding\Updating\BountifulForaging\bin\Release\net6.0\BountifulForaging.dll
+D:\December 2025 OS\Development\StardewModding\Updating\BountifulForaging\obj\Release\net6.0\BountifulForaging.csproj.AssemblyReference.cache
+D:\December 2025 OS\Development\StardewModding\Updating\BountifulForaging\obj\Release\net6.0\BountifulForaging.GeneratedMSBuildEditorConfig.editorconfig
+D:\December 2025 OS\Development\StardewModding\Updating\BountifulForaging\obj\Release\net6.0\BountifulForaging.AssemblyInfoInputs.cache
+D:\December 2025 OS\Development\StardewModding\Updating\BountifulForaging\obj\Release\net6.0\BountifulForaging.AssemblyInfo.cs
+D:\December 2025 OS\Development\StardewModding\Updating\BountifulForaging\obj\Release\net6.0\BountifulForaging.csproj.CoreCompileInputs.cache
+D:\December 2025 OS\Development\StardewModding\Updating\BountifulForaging\obj\Release\net6.0\BountifulForaging.sourcelink.json
+D:\December 2025 OS\Development\StardewModding\Updating\BountifulForaging\obj\Release\net6.0\BountifulForaging.dll

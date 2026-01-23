@@ -1,12 +1,12 @@
 {
   "Name": "Bountiful Foraging",
   "Author": "CodeKokeshi",
-  "Version": "1.1.0",
-  "Description": "All areas spawn forageables every day at maximum yield. Never have an empty foraging spot again!",
+  "Version": "2.1.0",
+  "Description": "Boosts vanilla forage, artifact spots, and beach items (coral/sea urchins). Configure min/max spawns, chance multipliers, and more!",
   "UniqueID": "CodeKokeshi.BountifulForaging",
   "EntryDll": "BountifulForaging.dll",
   "MinimumApiVersion": "4.0.0",
-    "UpdateKeys": [
+  "UpdateKeys": [
     "Nexus:41289"
   ]
 }

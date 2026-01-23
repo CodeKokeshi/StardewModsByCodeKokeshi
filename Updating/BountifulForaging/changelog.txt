@@ -1,0 +1,62 @@
+================================
+BOUNTIFUL FORAGING - CHANGELOG
+================================
+
+Version 2.1.0 - January 23, 2026
+--------------------------------
+BEACH ITEMS FIX - Coral & Sea Urchins now boosted!
+
+ISSUE: Beach-specific items (coral, nautilus shell, sea urchins) were NOT being
+boosted because vanilla uses HARDCODED spawning in Beach.DayUpdate() that is 
+completely separate from the SpawnForageData system.
+
+NEW BEACH ITEMS SETTINGS:
+- Boost Beach Items: Toggle extra coral/urchin spawning
+- Extra Coral Spawns: Spawns coral and nautilus shells in tidepool area (default: 10)
+- Extra Sea Urchin Spawns: Spawns sea urchins on shore strip (default: 5)
+
+TECHNICAL DETAILS:
+Vanilla Beach.DayUpdate() spawns:
+- Coral/Nautilus Shell: Rectangle(65,11,25,12) - 80% coral, 20% nautilus
+- Sea Urchin: Rectangle(66,24,19,1) - EXTREMELY rare (0.25 * 0.1 chance!)
+
+================================
+
+Version 2.0.0 - January 23, 2026
+--------------------------------
+COMPLETE REWRITE - VANILLA-ALIGNED SYSTEM
+
+This version is a complete rewrite with a cleaner, simpler approach.
+The mod now directly uses vanilla spawning logic with configurable boosts.
+
+ FORAGE SETTINGS:
+- Min Daily Forage: Minimum spawn attempts per day (vanilla: 1-2)
+- Max Daily Forage: Maximum spawn attempts per day (vanilla: 4-6)  
+- Max Forage At Once: Cap on forage items per location (vanilla: 6)
+- Forage Spawn Chance %: Multiplier for individual item chance (100% = vanilla)
+
+ ARTIFACT SPOT (DIGGING SPOT) SETTINGS:
+- Boost Artifact Spots: Toggle extra spawning on/off
+- Extra Spawn Attempts: Number of extra artifact spot attempts per day
+- Seed Spot Chance %: Chance for 4-leaf clover instead of artifact spot (vanilla: ~17%)
+
+HOW IT WORKS:
+- Uses EXACT vanilla spawning logic (copied from decompiled GameLocation.spawnObjects)
+- Forage spawns on "Spawnable" tiles (vanilla behavior)
+- Artifact spots spawn on "Diggable" tiles (vanilla behavior)
+- Supports modded forageables that use vanilla's SpawnForageData system
+- Runs AFTER vanilla spawning to add extra items
+
+DEFAULTS (boosted but balanced):
+- Min Daily Forage: 10 (vanilla ~1-2)
+- Max Daily Forage: 25 (vanilla ~4-6)
+- Max Forage At Once: 50 (vanilla 6)
+- Forage Chance: 150% (50% boost)
+- Extra Artifact Spots: 15
+- Seed Spot Chance: 17% (vanilla)
+- Extra Coral: 10
+- Extra Sea Urchins: 5
+
+================================
+
+Previous versions deprecated - config will reset to new format.
