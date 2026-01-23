@@ -77,6 +77,10 @@ namespace WorkingPets.Behaviors
         private Vector2? _lastForagingTargetTile;
         private int _postForageIdleTicks;
 
+        // Forage-mode window: after finding/picking forageables, keep prioritizing foraging for a bit.
+        private int _forageModeTicks;
+        private const int FORAGE_MODE_TICKS = 300; // ~5 seconds at 60 FPS
+
         private readonly Random _random = new();
 
         // Track damage for multi-hit objects
@@ -527,7 +531,10 @@ namespace WorkingPets.Behaviors
                         // Pick up the item at this location
                         TryPickupForageableAt(petLocation, _foragingTarget.Value);
                         _foragingTarget = null;
-                        _foragingCooldown = 30; // Short cooldown after pickup
+                        _foragingCooldown = 6; // Very short cooldown; try to chain to next forageable quickly
+
+                        // Stay in forage mode for a bit so we don't step toward the player between targets.
+                        _forageModeTicks = FORAGE_MODE_TICKS;
 
                         // Small pause to avoid a jarring snap-turn back to the player.
                         _postForageIdleTicks = 12;
@@ -545,14 +552,18 @@ namespace WorkingPets.Behaviors
                     if (nearbyForage.HasValue)
                     {
                         _foragingTarget = nearbyForage.Value;
-                        _foragingCooldown = 10; // Very short scan cooldown
+                        _foragingCooldown = 6; // Very short scan cooldown
+                        _forageModeTicks = FORAGE_MODE_TICKS;
                     }
                     else
                     {
-                        _foragingCooldown = 60; // Longer cooldown if nothing found
+                        _foragingCooldown = 30; // Don't spam scans
                     }
                 }
             }
+
+            if (_forageModeTicks > 0)
+                _forageModeTicks--;
 
             Vector2 playerPos = player.Position;
             Vector2 petPos = _pet.Position;
@@ -597,19 +608,22 @@ namespace WorkingPets.Behaviors
                 return;
             }
 
-            // Allow foraging movement even when close to the player, but keep a leash so the pet doesn't wander too far.
+            // While in forage-mode, do NOT chase the player if there are/should be forageables to collect nearby.
+            // Only fall back to following if we can't find anything to forage anymore.
             float forageLeashDistance = 768f; // 12 tiles
+            bool hasForageTarget = _foragingTarget.HasValue;
+            bool shouldPrioritizeForage = ModEntry.Config.ForageWhileFollowing && (_forageModeTicks > 0 || hasForageTarget);
+            bool canForageNow = shouldPrioritizeForage && hasForageTarget && distance <= forageLeashDistance;
+            bool shouldMoveToPlayer = !shouldPrioritizeForage && distance > followDistance;
 
-            bool hasForageTarget = _foragingTarget is Vector2;
-
-            if ((hasForageTarget && distance <= forageLeashDistance) || distance > followDistance)
+            if (canForageNow || shouldMoveToPlayer)
             {
                 // PRIORITIZE FORAGING: If we have a forageable target, go for it first!
                 Vector2 targetPosition;
                 bool isForaging = false;
                 Vector2? forageTile = null;
                 
-                if (hasForageTarget && distance <= forageLeashDistance)
+                if (canForageNow)
                 {
                     // Always prioritize foraging when a target exists
                     Vector2 forageTileValue = _foragingTarget.GetValueOrDefault();
@@ -631,11 +645,13 @@ namespace WorkingPets.Behaviors
 
                 // Catch-up speed scaling: if the player is far, move faster (sprint-like).
                 // This keeps following responsive without permanently changing base speed.
-                float speed = _moveSpeed;
+                // Boost follow speed so the pet can actually keep up.
+                float baseFollowSpeed = _moveSpeed * 1.8f;
+                float speed = baseFollowSpeed;
                 if (isForaging)
                 {
                     // Adaptive forage speed: faster when far, but never into "unstuck" ultra-speed.
-                    speed = GetAdaptiveForageSpeed(distanceToTarget);
+                    speed = GetAdaptiveForageSpeed(distanceToTarget, baseFollowSpeed);
 
                     // Progress tracking toward forage target (separate from player-follow stuck detection).
                     Vector2 forageTileValue = forageTile ?? _foragingTarget.GetValueOrDefault();
@@ -660,116 +676,47 @@ namespace WorkingPets.Behaviors
                 }
                 else if (!_isInFastMode) // Only apply normal speed scaling when NOT in fast mode
                 {
-                    if (distance > 512f)
+                    // Catch-up scaling when the player is far.
+                    if (distance > 640f)
+                        speed *= 2.4f;
+                    else if (distance > 384f)
                         speed *= 2.0f;
                     else if (distance > 256f)
-                        speed *= 1.5f;
+                        speed *= 1.6f;
                 }
 
-                Vector2 nextPos = _pet.Position + direction * speed;
+                Vector2 nextPos;
 
-                // Check for water/obstacles using improved detection
+                // Follow/forage should never enable wall-pass mode.
+                _isInFastMode = false;
+
+                // Check for water/obstacles using improved detection and try a simple sidestep instead of phasing.
                 var currentLocation = _pet.currentLocation;
-
-                // If we start foraging while in wall-pass mode from following, exit it.
-                // Foraging should never look like "unstuck" teleport/superspeed.
-                if (isForaging && _isInFastMode)
+                if (!TryGetUnblockedStep(currentLocation, _pet.Position, direction, speed, out nextPos))
                 {
-                    _isInFastMode = false;
-                    _noProgressFollowTicks = 0;
-                    _lastDistanceToPlayer = float.MaxValue;
-                }
-
-                // Foraging: do not activate wall-pass mode. If blocked/not progressing, abandon target.
-                if (isForaging)
-                {
-                    if (IsNearWaterOrBlocked(currentLocation, nextPos))
+                    if (isForaging)
                     {
                         _noProgressForageTicks++;
                         if (_noProgressForageTicks >= 180) // ~3 seconds
                         {
+                            // Give up on this target and look for another.
                             _foragingTarget = null;
-                            _foragingCooldown = 60;
-                            _lastForagingTargetTile = null;
-                            _lastDistanceToForageTarget = float.MaxValue;
+                            _foragingCooldown = 6;
                             _noProgressForageTicks = 0;
-                            _pet.Halt();
-                        }
-                        return;
-                    }
-
-                    // If we haven't made progress for too long, abandon the target.
-                    if (_noProgressForageTicks >= 300) // ~5 seconds
-                    {
-                        _foragingTarget = null;
-                        _foragingCooldown = 60;
-                        _lastForagingTargetTile = null;
-                        _lastDistanceToForageTarget = float.MaxValue;
-                        _noProgressForageTicks = 0;
-                        _pet.Halt();
-                        return;
-                    }
-                }
-                
-                // When in fast mode: use ultra-fast speed and IGNORE all collisions (pass through walls)
-                if (!isForaging && _isInFastMode)
-                {
-                    // Check if we're close enough to exit fast mode
-                    if (distance <= followDistance * 2) // Within reasonable range
-                    {
-                        // Also check if path is now clear
-                        Vector2 testPos = _pet.Position + direction * speed;
-                        if (!IsNearWaterOrBlocked(currentLocation, testPos))
-                        {
-                            // Path is clear and we're close enough - exit fast mode
-                            _isInFastMode = false;
-                            _lastDistanceToPlayer = distance;
-                            _noProgressFollowTicks = 0;
-                            ModEntry.Instance.Monitor.Log($"[WorkingPets] {_pet.Name} path clear; exiting wall-pass mode", LogLevel.Debug);
-                            // Continue with normal movement below
-                        }
-                        else
-                        {
-                            // Still blocked, keep wall-passing at ULTRA SPEED
-                            nextPos = _pet.Position + direction * (_moveSpeed * 8f);
-                            _pet.Position = nextPos;
-                            
-                            if (Math.Abs(direction.X) > Math.Abs(direction.Y))
-                                _pet.faceDirection(direction.X > 0 ? 1 : 3);
-                            else
-                                _pet.faceDirection(direction.Y > 0 ? 2 : 0);
-                            
-                            _pet.animateInFacingDirection(Game1.currentGameTime);
-                            return;
                         }
                     }
                     else
                     {
-                        // Still far, keep wall-passing at ULTRA SPEED
-                        nextPos = _pet.Position + direction * (_moveSpeed * 8f);
-                        _pet.Position = nextPos;
-                        
-                        if (Math.Abs(direction.X) > Math.Abs(direction.Y))
-                            _pet.faceDirection(direction.X > 0 ? 1 : 3);
-                        else
-                            _pet.faceDirection(direction.Y > 0 ? 2 : 0);
-                        
-                        _pet.animateInFacingDirection(Game1.currentGameTime);
-                        return;
+                        _noProgressFollowTicks++;
+                        if (_noProgressFollowTicks >= 300) // ~5 seconds
+                        {
+                            // Last-resort: warp close to player if we truly can't navigate.
+                            Game1.warpCharacter(_pet, player.currentLocation, player.Tile);
+                            _noProgressFollowTicks = 0;
+                        }
                     }
-                }
-                
-                // Normal mode: check for water/obstacles
-                if (!isForaging && IsNearWaterOrBlocked(currentLocation, nextPos))
-                {
-                    // Give pet time to navigate around obstacles naturally
-                    _noProgressFollowTicks++;
-                    if (_noProgressFollowTicks >= 180) // 3 seconds of being blocked before activating wall-pass
-                    {
-                        _isInFastMode = true;
-                        ModEntry.Instance.Monitor.Log($"[WorkingPets] {_pet.Name} stuck; activating wall-pass mode", LogLevel.Debug);
-                        _noProgressFollowTicks = 0;
-                    }
+
+                    _pet.Halt();
                     return;
                 }
 
@@ -790,24 +737,100 @@ namespace WorkingPets.Behaviors
                     }
                 }
 
+                Vector2 delta = nextPos - _pet.Position;
+                if (delta.LengthSquared() < 0.01f)
+                {
+                    _pet.Halt();
+                    return;
+                }
+
                 _pet.Position = nextPos;
 
                 // Face the right direction
-                if (Math.Abs(direction.X) > Math.Abs(direction.Y))
-                    _pet.faceDirection(direction.X > 0 ? 1 : 3);
+                if (Math.Abs(delta.X) > Math.Abs(delta.Y))
+                    _pet.faceDirection(delta.X > 0 ? 1 : 3);
                 else
-                    _pet.faceDirection(direction.Y > 0 ? 2 : 0);
+                    _pet.faceDirection(delta.Y > 0 ? 2 : 0);
 
                 _pet.animateInFacingDirection(Game1.currentGameTime);
             }
         }
 
-        private float GetAdaptiveForageSpeed(float distanceToTargetPixels)
+        private float GetAdaptiveForageSpeed(float distanceToTargetPixels, float baseSpeed)
         {
             // 64px = 1 tile. Scale up gently with distance, but keep it well below the wall-pass/unstuck speeds.
             float tiles = distanceToTargetPixels / 64f;
-            float multiplier = 1f + MathF.Min(0.6f, tiles / 16f); // 1.0 .. 1.6
-            return _moveSpeed * multiplier;
+            float multiplier = 1f + MathF.Min(0.8f, tiles / 14f); // 1.0 .. 1.8
+            return baseSpeed * multiplier;
+        }
+
+        private bool TryGetUnblockedStep(GameLocation location, Vector2 currentPos, Vector2 desiredDirection, float speed, out Vector2 nextPos)
+        {
+            nextPos = currentPos;
+            if (location == null)
+                return false;
+            if (desiredDirection == Vector2.Zero)
+                return false;
+
+            Vector2 dir = desiredDirection;
+            if (dir != Vector2.Zero)
+                dir.Normalize();
+
+            Vector2 step = dir * speed;
+            Vector2 candidate = currentPos + step;
+            if (!IsNearWaterOrBlocked(location, candidate))
+            {
+                nextPos = candidate;
+                return true;
+            }
+
+            // Try 45-degree blends and perpendicular sidesteps to get around single-tile blockers.
+            Vector2 perp1 = new Vector2(-dir.Y, dir.X);
+            Vector2 perp2 = new Vector2(dir.Y, -dir.X);
+
+            Vector2[] tryDirs =
+            {
+                Vector2.Normalize(dir + perp1),
+                Vector2.Normalize(dir + perp2),
+                perp1,
+                perp2
+            };
+
+            foreach (var d in tryDirs)
+            {
+                if (d == Vector2.Zero)
+                    continue;
+                candidate = currentPos + d * (speed * 0.9f);
+                if (!IsNearWaterOrBlocked(location, candidate))
+                {
+                    nextPos = candidate;
+                    return true;
+                }
+            }
+
+            // Try axis-aligned movement as a last attempt.
+            Vector2 axisX = new Vector2(MathF.Sign(dir.X), 0f);
+            Vector2 axisY = new Vector2(0f, MathF.Sign(dir.Y));
+            if (axisX != Vector2.Zero)
+            {
+                candidate = currentPos + axisX * (speed * 0.9f);
+                if (!IsNearWaterOrBlocked(location, candidate))
+                {
+                    nextPos = candidate;
+                    return true;
+                }
+            }
+            if (axisY != Vector2.Zero)
+            {
+                candidate = currentPos + axisY * (speed * 0.9f);
+                if (!IsNearWaterOrBlocked(location, candidate))
+                {
+                    nextPos = candidate;
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private bool IsForageTargetStillValid(GameLocation location, Vector2 tile)

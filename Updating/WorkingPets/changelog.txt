@@ -1,3 +1,11 @@
+1.4.0
+- FIXED: Pet command menu no longer hijacks normal pet interaction. Hold LeftShift while interacting with your pet to open the command menu; otherwise vanilla petting behavior is used.
+- IMPROVED: Follow mode is more lenient (pets don't rubber-band as tightly).
+- IMPROVED: Foraging while following no longer triggers the "unstuck" ultra-speed; movement is smoother with adaptive forage speed and better idle fallback.
+- CHANGED: Overnight scavenging now happens regardless of whether the pet is Working/Following/Idle (items are added in the morning).
+- IMPROVED: Overnight scavenging item pool greatly expanded (more variety, still small quantities).
+- NEW: Added i18n support (English default) for pet menu + key HUD messages.
+
 1.3.1
 - Fixed bug where SMAPI console window would flash repeatedly after naming a new pet during the adoption cutscene.
 - Pets now use vanilla interaction behavior during events, cutscenes, and when menus/dialogues are active to prevent conflicts.
