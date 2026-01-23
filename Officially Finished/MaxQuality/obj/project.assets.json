@@ -43,11 +43,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\December 2025 OS\\Development\\StardewModding\\Done Not Uploaded\\MaxQuality\\MaxQuality.csproj",
+      "projectUniqueName": "D:\\December 2025 OS\\Development\\StardewModding\\Officially Finished\\MaxQuality\\MaxQuality.csproj",
       "projectName": "MaxQuality",
-      "projectPath": "D:\\December 2025 OS\\Development\\StardewModding\\Done Not Uploaded\\MaxQuality\\MaxQuality.csproj",
+      "projectPath": "D:\\December 2025 OS\\Development\\StardewModding\\Officially Finished\\MaxQuality\\MaxQuality.csproj",
       "packagesPath": "C:\\Users\\Aikawa\\.nuget\\packages\\",
-      "outputPath": "D:\\December 2025 OS\\Development\\StardewModding\\Done Not Uploaded\\MaxQuality\\obj\\",
+      "outputPath": "D:\\December 2025 OS\\Development\\StardewModding\\Officially Finished\\MaxQuality\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\Aikawa\\AppData\\Roaming\\NuGet\\NuGet.Config"

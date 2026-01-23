@@ -1,12 +1,12 @@
 {
   "Name": "Max Quality",
   "Author": "CodeKokeshi",
-  "Version": "1.0.0",
-  "Description": "Makes all items have maximum (iridium) quality.",
+  "Version": "1.1.0",
+  "Description": "Manually apply iridium quality to your inventory and open chests via hotkey (no automatic quality changes).",
   "UniqueID": "CodeKokeshi.MaxQuality",
   "EntryDll": "MaxQuality.dll",
   "MinimumApiVersion": "4.0.0",
-    "UpdateKeys": [
+  "UpdateKeys": [
     "Nexus:41507"
   ]
 }

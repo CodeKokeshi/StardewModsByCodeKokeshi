@@ -7,3 +7,12 @@ D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\MaxQuality\obj\
 D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\MaxQuality\obj\Debug\net6.0\MaxQuality.csproj.CoreCompileInputs.cache
 D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\MaxQuality\obj\Debug\net6.0\MaxQuality.sourcelink.json
 D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\MaxQuality\obj\Debug\net6.0\MaxQuality.dll
+D:\December 2025 OS\Development\StardewModding\Officially Finished\MaxQuality\bin\Debug\net6.0\MaxQuality.deps.json
+D:\December 2025 OS\Development\StardewModding\Officially Finished\MaxQuality\bin\Debug\net6.0\MaxQuality.dll
+D:\December 2025 OS\Development\StardewModding\Officially Finished\MaxQuality\obj\Debug\net6.0\MaxQuality.csproj.AssemblyReference.cache
+D:\December 2025 OS\Development\StardewModding\Officially Finished\MaxQuality\obj\Debug\net6.0\MaxQuality.GeneratedMSBuildEditorConfig.editorconfig
+D:\December 2025 OS\Development\StardewModding\Officially Finished\MaxQuality\obj\Debug\net6.0\MaxQuality.AssemblyInfoInputs.cache
+D:\December 2025 OS\Development\StardewModding\Officially Finished\MaxQuality\obj\Debug\net6.0\MaxQuality.AssemblyInfo.cs
+D:\December 2025 OS\Development\StardewModding\Officially Finished\MaxQuality\obj\Debug\net6.0\MaxQuality.csproj.CoreCompileInputs.cache
+D:\December 2025 OS\Development\StardewModding\Officially Finished\MaxQuality\obj\Debug\net6.0\MaxQuality.sourcelink.json
+D:\December 2025 OS\Development\StardewModding\Officially Finished\MaxQuality\obj\Debug\net6.0\MaxQuality.dll

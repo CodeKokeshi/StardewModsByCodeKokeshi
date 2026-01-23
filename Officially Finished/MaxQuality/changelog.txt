@@ -1,0 +1,2 @@
+v1.1.0
+- Added hotkey to manually apply iridium quality to your inventory and open chest, plus GMCM hotkey configuration.

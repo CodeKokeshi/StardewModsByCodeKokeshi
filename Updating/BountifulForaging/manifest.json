@@ -1,7 +1,7 @@
 {
   "Name": "Bountiful Foraging",
   "Author": "CodeKokeshi",
-  "Version": "2.1.0",
+  "Version": "1.1.0",
   "Description": "Boosts vanilla forage, artifact spots, and beach items (coral/sea urchins). Configure min/max spawns, chance multipliers, and more!",
   "UniqueID": "CodeKokeshi.BountifulForaging",
   "EntryDll": "BountifulForaging.dll",
