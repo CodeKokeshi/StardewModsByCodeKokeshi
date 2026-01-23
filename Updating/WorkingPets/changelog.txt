@@ -1,18 +1,35 @@
 1.4.0
 === MAJOR: Complete Follow System Rewrite ===
 - FIXED: Pet stuttering and left-right flickering completely eliminated! Movement is now buttery smooth.
-- FIXED: Pets no longer get stuck on tiny obstacles - wall-pass mode kicks in automatically.
+- FIXED: Pets no longer get stuck on tiny obstacles - BLINK wall-pass mode kicks in automatically.
 - FIXED: Vanilla pet behavior no longer interferes with mod-controlled movement.
 - FIXED: Pets won't randomly fall asleep or sit down while following you.
+- FIXED: "Moonwalking" bug (moving while facing opposite direction) after picking up forageables.
 
-=== Wall-Pass System (Stuck Recovery) ===
-- NEW: When stuck for ~0.75 seconds, pets activate WALL-PASS MODE with super speed (18 px/frame).
+=== BLINK Wall-Pass System (Stuck Recovery) ===
+- NEW: When stuck for ~0.5 seconds, pets activate BLINK MODE with SUPER speed (30 px/frame)!
+- NEW: Wall-pass works for BOTH following AND foraging - pets blink through walls to reach anything.
 - NEW: In wall-pass mode, pets phase through ALL obstacles except water (fences, buildings, rocks, etc.).
 - NEW: Direction is LOCKED during wall-pass to prevent wobbling/flickering while passing through walls.
-- NEW: Wall-pass smoothly accelerates in (0.3 lerp) and decelerates out (0.15 lerp) - no jarring speed changes.
-- NEW: Wall-pass auto-exits when: reaching player, timeout (~1.5 sec max), or making good progress.
+- NEW: Wall-pass INSTANTLY accelerates (0.6 lerp) - looks like a teleport/blink, not gradual.
+- NEW: Wall-pass auto-exits when: reaching target, timeout (~2 sec max), or forage disappears.
 - NEW: Water tiles are ALWAYS blocked even in wall-pass mode (pets try to go around water).
-- IMPROVED: After wall-pass timeout, normal movement gets another chance before re-triggering.
+- IMPROVED: Forage wall-pass marks unreachable items after timeout and moves to next target.
+
+=== Moonwalking Fix ===
+- NEW: Direction is synced to velocity when transitioning between states.
+- NEW: SyncDirectionToTarget() called when switching from forage to follow.
+- NEW: SyncDirectionToVelocity() called after wall-pass completion.
+- FIXED: Pet now faces the correct direction after picking up forageables.
+- FIXED: Pet faces player immediately when forage target disappears.
+
+=== Idle Roaming (NEW!) ===
+- NEW: When player is stationary and pet is close, pet will do small random movements!
+- NEW: Pet "roams" within 0.75 tiles of current position for natural behavior.
+- NEW: Roaming only triggers after player stationary for 1+ second.
+- NEW: 2% chance per tick to start a roam (not constant movement).
+- NEW: Roaming cancels immediately when player moves or pet needs to follow.
+- NEW: 30-tick cooldown between roams to prevent hyperactive behavior.
 
 === Movement System Overhaul ===
 - NEW: State machine with 4 states: Idle, FollowingPlayer, Foraging, WallPassing.
@@ -26,8 +43,8 @@
 - IMPROVED: Speed scaling: 2.2x sprint (8+ tiles), 1.8x (6+ tiles), 1.4x (4+ tiles), 1.1x (2.5+ tiles).
 
 === Foraging System ===
-- CHANGED: Foraging takes ABSOLUTE priority - cat completely ignores player while collecting items.
-- NEW: Forage-specific stuck detection (1 second) - marks unreachable items and moves on.
+- CHANGED: Foraging takes ABSOLUTE priority - pet completely ignores player while collecting items.
+- NEW: Forage stuck activates WALL-PASS (0.5 sec) instead of marking unreachable immediately.
 - NEW: Unreachable forage tiles tracked and cleared every 10 seconds.
 - IMPROVED: Forage scanning every 12 ticks (was 15) for more responsive pickup.
 - IMPROVED: Immediately scans for next forageable after pickup (no delay).
@@ -42,10 +59,11 @@
 === Edge Cases Handled ===
 - Location changes: Properly warps pet and resets all state.
 - Water navigation: Even in wall-pass, pets route around water tiles.
-- Forage stuck: After 1 second, marks forage as unreachable and finds another.
-- Wall-pass stuck: Times out after 1.5 seconds, gives normal movement another chance.
+- Forage stuck: After 0.5 sec, activates wall-pass to reach it (or marks unreachable after 2 sec timeout).
+- Wall-pass stuck: Times out after 2 seconds, gives normal movement another chance.
 - State transitions: Full state reset when toggling follow mode.
 - Animation: Proper animate calls, smooth stop animation on halt.
+- Direction sync: Facing direction always matches movement direction after state changes.
 
 === Other Fixes ===
 - FIXED: Pet command menu no longer hijacks normal interaction (hold LeftShift to open).

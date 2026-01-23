@@ -40,15 +40,21 @@ namespace WorkingPets.Behaviors
         // Speed settings
         private const float BASE_FOLLOW_SPEED = 5f;           // Base following speed (slightly faster)
         private const float BASE_FORAGE_SPEED = 5.5f;         // Speed when going to forageables
-        private const float WALL_PASS_SPEED = 18f;            // Super speed when passing through walls
-        private const float WALL_PASS_LERP_IN = 0.3f;         // How fast to accelerate into wall-pass
-        private const float WALL_PASS_LERP_OUT = 0.15f;       // How fast to decelerate out of wall-pass
+        private const float WALL_PASS_SPEED = 30f;            // BLINK speed - super fast through walls
+        private const float WALL_PASS_LERP_IN = 0.6f;         // Fast acceleration into wall-pass (almost instant)
+        private const float WALL_PASS_LERP_OUT = 0.25f;       // Decelerate out of wall-pass
         
         // Stuck detection thresholds
-        private const int STUCK_THRESHOLD_TICKS = 45;         // ~0.75 seconds before activating wall-pass
-        private const int WALL_PASS_MAX_TICKS = 90;           // Max ~1.5 seconds in wall-pass mode
+        private const int STUCK_THRESHOLD_TICKS = 30;         // ~0.5 seconds before activating wall-pass
+        private const int WALL_PASS_MAX_TICKS = 120;          // Max ~2 seconds in wall-pass mode
         private const float STUCK_MOVEMENT_THRESHOLD = 1.5f;  // Min pixels moved to not be "stuck"
-        private const int FORAGE_STUCK_THRESHOLD = 60;        // 1 second before giving up on forage target
+        private const int FORAGE_STUCK_THRESHOLD = 30;        // 0.5 second before activating wall-pass for forage
+        
+        // Idle roaming (when close to stationary player)
+        private const float IDLE_ROAM_CHANCE = 0.02f;         // 2% chance per tick to start roaming
+        private const float IDLE_ROAM_RADIUS = 48f;           // Max 0.75 tiles roam distance
+        private const int IDLE_ROAM_MIN_TICKS = 30;           // Min ticks between roams
+        private const float PLAYER_STATIONARY_THRESHOLD = 2f; // Player considered stationary if moved less than this
         
         // Direction locking
         private const int DIRECTION_LOCK_TICKS = 6;           // Min ticks before changing direction
@@ -113,6 +119,16 @@ namespace WorkingPets.Behaviors
         private int _forageStuckTicks = 0;
         private HashSet<Vector2> _unreachableForageTiles = new();
         private int _unreachableForageClearTimer = 0;
+        
+        // Wall-pass target (can be player OR forage target)
+        private Vector2? _wallPassTarget = null;
+        private bool _wallPassingToForage = false; // True if wall-passing to forage, false if to player
+        
+        // Idle roaming state
+        private Vector2? _roamTarget = null;
+        private int _idleRoamCooldown = 0;
+        private Vector2 _lastPlayerPosition = Vector2.Zero;
+        private int _playerStationaryTicks = 0;
         
         // Animation state
         private bool _wasMoving = false;
@@ -573,22 +589,60 @@ namespace WorkingPets.Behaviors
             Vector2 petPos = _pet.Position;
             Vector2 playerPos = player.Position;
             float distanceToPlayer = Vector2.Distance(petPos, playerPos);
+            
+            // === TRACK PLAYER MOVEMENT FOR IDLE ROAMING ===
+            float playerMoved = Vector2.Distance(playerPos, _lastPlayerPosition);
+            if (playerMoved > PLAYER_STATIONARY_THRESHOLD)
+            {
+                _playerStationaryTicks = 0;
+                _roamTarget = null; // Cancel roaming if player moves
+            }
+            else
+            {
+                _playerStationaryTicks++;
+            }
+            _lastPlayerPosition = playerPos;
+            
+            if (_idleRoamCooldown > 0) _idleRoamCooldown--;
 
-            // === WALL-PASS MODE HANDLING ===
-            // If we're in wall-pass mode, continue until we reach target or timeout
-            if (_followState == FollowState.WallPassing)
+            // === WALL-PASS MODE HANDLING (WORKS FOR BOTH PLAYER AND FORAGE) ===
+            if (_followState == FollowState.WallPassing && _wallPassTarget.HasValue)
             {
                 _wallPassTicks++;
                 
-                // Check exit conditions
-                bool reachedPlayer = distanceToPlayer <= FOLLOW_STOP_DISTANCE;
-                bool timedOut = _wallPassTicks >= WALL_PASS_MAX_TICKS;
-                bool madeProgress = Vector2.Distance(petPos, _lastPosition) > STUCK_MOVEMENT_THRESHOLD * 2;
+                Vector2 target = _wallPassTarget.Value;
+                float distToTarget = Vector2.Distance(petPos, target);
+                float stopDist = _wallPassingToForage ? 64f : FOLLOW_STOP_DISTANCE;
                 
-                if (reachedPlayer)
+                // Check if forage target still valid
+                if (_wallPassingToForage && _foragingTarget.HasValue && petLocation != null)
                 {
-                    // Successfully reached player
+                    if (!IsForageTargetStillValid(petLocation, _foragingTarget.Value))
+                    {
+                        // Forage gone, exit wall-pass
+                        _foragingTarget = null;
+                        ExitWallPassMode();
+                        _followState = FollowState.Idle;
+                        _lastPosition = petPos;
+                        return;
+                    }
+                }
+                
+                // Check exit conditions
+                bool reachedTarget = distToTarget <= stopDist;
+                bool timedOut = _wallPassTicks >= WALL_PASS_MAX_TICKS;
+                
+                if (reachedTarget)
+                {
+                    // Successfully reached target
+                    if (_wallPassingToForage && _foragingTarget.HasValue && petLocation != null)
+                    {
+                        // Pick up the forage
+                        TryPickupForageableAt(petLocation, _foragingTarget.Value);
+                        _foragingTarget = null;
+                    }
                     ExitWallPassMode();
+                    SyncDirectionToVelocity(); // FIX MOONWALKING - sync direction after arrival
                     StopMovingSmooth();
                     _lastPosition = petPos;
                     return;
@@ -596,20 +650,27 @@ namespace WorkingPets.Behaviors
                 
                 if (timedOut)
                 {
-                    // Wall-pass took too long, exit and resume normal movement
+                    // Wall-pass took too long
+                    if (_wallPassingToForage && _foragingTarget.HasValue)
+                    {
+                        // Mark as unreachable
+                        _unreachableForageTiles.Add(_foragingTarget.Value);
+                        _foragingTarget = null;
+                    }
                     ExitWallPassMode();
-                    _stuckTicks = 0; // Reset stuck counter to give normal movement another chance
+                    _stuckTicks = 0;
+                    _forageStuckTicks = 0;
                 }
                 else
                 {
-                    // Continue wall-passing toward player
-                    MoveWithWallPass(playerPos);
+                    // Continue wall-passing toward target (BLINK SPEED!)
+                    MoveWithWallPass(target);
                     _lastPosition = petPos;
                     return;
                 }
             }
 
-            // === SCAN FOR FORAGEABLES ===
+            // === SCAN FOR FORAGEABLES (TAKES PRIORITY) ===
             if (ModEntry.Config.ForageWhileFollowing && petLocation != null && _followState != FollowState.WallPassing)
             {
                 _forageScanTimer++;
@@ -625,6 +686,8 @@ namespace WorkingPets.Behaviors
                             _foragingTarget = nearestForage.Value;
                             _followState = FollowState.Foraging;
                             _forageStuckTicks = 0;
+                            _stuckTicks = 0;
+                            SyncDirectionToTarget(_foragingTarget.Value * 64f + new Vector2(32f, 32f)); // Face new target
                         }
                     }
                 }
@@ -635,10 +698,11 @@ namespace WorkingPets.Behaviors
             {
                 if (!IsForageTargetStillValid(petLocation, _foragingTarget.Value))
                 {
-                    // Target gone, find another
+                    // Target gone, clear and reset direction toward player
                     _foragingTarget = null;
                     _followState = FollowState.Idle;
                     _forageStuckTicks = 0;
+                    SyncDirectionToTarget(playerPos); // FIX MOONWALKING - face player after forage disappears
                 }
                 else if (Vector2.Distance(_pet.Tile, _foragingTarget.Value) < 1.5f)
                 {
@@ -648,24 +712,25 @@ namespace WorkingPets.Behaviors
                     _followState = FollowState.Idle;
                     _forageScanTimer = 0;
                     _forageStuckTicks = 0;
+                    SyncDirectionToTarget(playerPos); // FIX MOONWALKING - face player after pickup
+                    StopMovingSmooth();
                 }
                 else
                 {
-                    // Move to forage - CAT IGNORES PLAYER COMPLETELY
+                    // Move to forage - PET IGNORES PLAYER COMPLETELY
+                    _followState = FollowState.Foraging;
                     Vector2 targetPos = _foragingTarget.Value * 64f + new Vector2(32f, 32f);
                     bool moved = MoveTowardTarget(targetPos, BASE_FORAGE_SPEED, false);
                     
-                    // Forage stuck detection - give up if can't reach
-                    if (!moved || Vector2.Distance(petPos, _lastPosition) < STUCK_MOVEMENT_THRESHOLD)
+                    // Forage stuck detection - activate WALL-PASS if stuck
+                    float movedDist = Vector2.Distance(petPos, _lastPosition);
+                    if (!moved || movedDist < STUCK_MOVEMENT_THRESHOLD)
                     {
                         _forageStuckTicks++;
                         if (_forageStuckTicks >= FORAGE_STUCK_THRESHOLD)
                         {
-                            // Can't reach this forage, mark unreachable and find another
-                            _unreachableForageTiles.Add(_foragingTarget.Value);
-                            _foragingTarget = null;
-                            _followState = FollowState.Idle;
-                            _forageStuckTicks = 0;
+                            // ACTIVATE WALL-PASS TO REACH FORAGE
+                            EnterWallPassModeForForage(targetPos);
                         }
                     }
                     else
@@ -681,23 +746,32 @@ namespace WorkingPets.Behaviors
             // === FOLLOWING THE PLAYER ===
             _followState = FollowState.FollowingPlayer;
             
-            // If close enough, stop and idle
+            // If close enough, stop and maybe do idle roaming
             if (distanceToPlayer <= FOLLOW_STOP_DISTANCE)
             {
                 StopMovingSmooth();
                 _stuckTicks = 0;
                 _lastPosition = petPos;
+                
+                // === IDLE ROAMING ===
+                TryIdleRoam(petLocation, playerPos);
                 return;
             }
             
-            // If within comfortable range, don't move
+            // If within comfortable range and player stationary, allow idle roaming
             if (distanceToPlayer <= FOLLOW_START_DISTANCE)
             {
                 StopMovingSmooth();
                 _stuckTicks = 0;
                 _lastPosition = petPos;
+                
+                // === IDLE ROAMING ===
+                TryIdleRoam(petLocation, playerPos);
                 return;
             }
+            
+            // Cancel roaming if we need to follow
+            _roamTarget = null;
             
             // === MOVE TOWARD PLAYER ===
             float speed = CalculateFollowSpeed(distanceToPlayer);
@@ -732,8 +806,93 @@ namespace WorkingPets.Behaviors
             else if (distanceToPlayer > 160f) speed *= 1.1f;  // 2.5+ tiles: walk fast
             return speed;
         }
+        
+        /// <summary>Try to do idle roaming when player is stationary and pet is close.</summary>
+        private void TryIdleRoam(GameLocation? location, Vector2 playerPos)
+        {
+            if (_pet == null || location == null) return;
+            
+            // If we have an active roam target, move toward it
+            if (_roamTarget.HasValue)
+            {
+                Vector2 roamTargetPos = _roamTarget.Value;
+                float distToRoam = Vector2.Distance(_pet.Position, roamTargetPos);
+                
+                if (distToRoam < 8f)
+                {
+                    // Reached roam target
+                    _roamTarget = null;
+                    _idleRoamCooldown = IDLE_ROAM_MIN_TICKS;
+                    StopMovingSmooth();
+                    return;
+                }
+                
+                // Move slowly toward roam target
+                MoveTowardTarget(roamTargetPos, 1.5f, false);
+                return;
+            }
+            
+            // Only roam if player has been stationary for a while
+            if (_playerStationaryTicks < 60) return; // Wait 1 second of stationary
+            if (_idleRoamCooldown > 0) return;
+            
+            // Random chance to start roaming
+            if (_random.NextDouble() > IDLE_ROAM_CHANCE) return;
+            
+            // Pick a random nearby position
+            float angle = (float)(_random.NextDouble() * Math.PI * 2);
+            float distance = (float)(_random.NextDouble() * IDLE_ROAM_RADIUS);
+            Vector2 offset = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * distance;
+            Vector2 potentialTarget = _pet.Position + offset;
+            
+            // Make sure it's walkable and doesn't go too far from player
+            if (IsPositionWalkable(location, potentialTarget) && 
+                Vector2.Distance(potentialTarget, playerPos) <= FOLLOW_START_DISTANCE + IDLE_ROAM_RADIUS)
+            {
+                _roamTarget = potentialTarget;
+            }
+        }
+        
+        /// <summary>Sync facing direction to current velocity (fixes moonwalking).</summary>
+        private void SyncDirectionToVelocity()
+        {
+            if (_pet == null || _velocity.LengthSquared() < 0.01f) return;
+            
+            Vector2 dir = _velocity;
+            dir.Normalize();
+            
+            int newDir = _currentDirection;
+            if (Math.Abs(dir.X) > Math.Abs(dir.Y))
+                newDir = dir.X > 0 ? 1 : 3;
+            else
+                newDir = dir.Y > 0 ? 2 : 0;
+            
+            _currentDirection = newDir;
+            _pet.faceDirection(_currentDirection);
+            _directionLockTimer = DIRECTION_LOCK_TICKS;
+        }
+        
+        /// <summary>Sync facing direction to a target position (fixes moonwalking on state change).</summary>
+        private void SyncDirectionToTarget(Vector2 targetPos)
+        {
+            if (_pet == null) return;
+            
+            Vector2 dir = targetPos - _pet.Position;
+            if (dir.LengthSquared() < 1f) return;
+            dir.Normalize();
+            
+            int newDir = _currentDirection;
+            if (Math.Abs(dir.X) > Math.Abs(dir.Y))
+                newDir = dir.X > 0 ? 1 : 3;
+            else
+                newDir = dir.Y > 0 ? 2 : 0;
+            
+            _currentDirection = newDir;
+            _pet.faceDirection(_currentDirection);
+            _directionLockTimer = DIRECTION_LOCK_TICKS;
+        }
 
-        /// <summary>Enter wall-pass mode to bypass obstacles.</summary>
+        /// <summary>Enter wall-pass mode to bypass obstacles (toward PLAYER).</summary>
         private void EnterWallPassMode(Vector2 targetPos)
         {
             if (_pet == null) return;
@@ -741,6 +900,8 @@ namespace WorkingPets.Behaviors
             _followState = FollowState.WallPassing;
             _wallPassTicks = 0;
             _stuckTicks = 0;
+            _wallPassTarget = targetPos;
+            _wallPassingToForage = false;
             
             // Lock direction toward target
             Vector2 direction = targetPos - _pet.Position;
@@ -750,8 +911,37 @@ namespace WorkingPets.Behaviors
                 _wallPassDirection = direction;
             }
             
+            // Sync direction immediately
+            SyncDirectionToTarget(targetPos);
+            
             // Start accelerating toward wall-pass speed
-            _currentFollowSpeed = _velocity.Length();
+            _currentFollowSpeed = Math.Max(_velocity.Length(), BASE_FOLLOW_SPEED);
+        }
+        
+        /// <summary>Enter wall-pass mode to bypass obstacles (toward FORAGE).</summary>
+        private void EnterWallPassModeForForage(Vector2 targetPos)
+        {
+            if (_pet == null) return;
+            
+            _followState = FollowState.WallPassing;
+            _wallPassTicks = 0;
+            _forageStuckTicks = 0;
+            _wallPassTarget = targetPos;
+            _wallPassingToForage = true;
+            
+            // Lock direction toward target
+            Vector2 direction = targetPos - _pet.Position;
+            if (direction != Vector2.Zero)
+            {
+                direction.Normalize();
+                _wallPassDirection = direction;
+            }
+            
+            // Sync direction immediately
+            SyncDirectionToTarget(targetPos);
+            
+            // Start accelerating toward wall-pass speed
+            _currentFollowSpeed = Math.Max(_velocity.Length(), BASE_FORAGE_SPEED);
         }
 
         /// <summary>Exit wall-pass mode.</summary>
@@ -760,6 +950,8 @@ namespace WorkingPets.Behaviors
             _followState = FollowState.Idle;
             _wallPassTicks = 0;
             _wallPassDirection = Vector2.Zero;
+            _wallPassTarget = null;
+            _wallPassingToForage = false;
             _currentFollowSpeed = BASE_FOLLOW_SPEED;
         }
 
@@ -927,12 +1119,18 @@ namespace WorkingPets.Behaviors
             _stuckTicks = 0;
             _wallPassTicks = 0;
             _wallPassDirection = Vector2.Zero;
+            _wallPassTarget = null;
+            _wallPassingToForage = false;
             _currentFollowSpeed = BASE_FOLLOW_SPEED;
             _foragingTarget = null;
             _forageStuckTicks = 0;
             _followState = FollowState.Idle;
             _directionLockTimer = 0;
             _unreachableForageTiles.Clear();
+            _roamTarget = null;
+            _idleRoamCooldown = 0;
+            _playerStationaryTicks = 0;
+            _lastPlayerPosition = Vector2.Zero;
         }
 
         /// <summary>Stop the pet's movement smoothly.</summary>
