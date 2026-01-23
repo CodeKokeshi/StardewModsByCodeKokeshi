@@ -27,12 +27,21 @@ namespace WorkingPets
 
         /// <summary>Whether to show floating text when pet clears something.</summary>
         public bool ShowWorkingMessages { get; set; } = true;
+        
+        /// <summary>Whether to show HUD notifications when pet picks up items.</summary>
+        public bool ShowForageNotifications { get; set; } = false;
+        
+        /// <summary>Whether to show HUD notifications for follow/work/explore state changes.</summary>
+        public bool ShowStateNotifications { get; set; } = false;
 
         /// <summary>Whether the pet can follow you outside the farm.</summary>
         public bool FollowOutsideFarm { get; set; } = true;
 
         /// <summary>Whether the pet picks up forageable items while following you.</summary>
         public bool ForageWhileFollowing { get; set; } = true;
+
+        /// <summary>Whether to automatically deposit pet inventory items to matching chests each morning.</summary>
+        public bool AutoDepositToChests { get; set; } = true;
 
         /*********
         ** Work Type Toggles

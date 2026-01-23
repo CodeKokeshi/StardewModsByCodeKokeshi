@@ -1,0 +1,9 @@
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\CustomAnimalHearts\bin\Debug\net6.0\CustomAnimalHearts.deps.json
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\CustomAnimalHearts\bin\Debug\net6.0\CustomAnimalHearts.dll
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\CustomAnimalHearts\obj\Debug\net6.0\CustomAnimalHearts.csproj.AssemblyReference.cache
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\CustomAnimalHearts\obj\Debug\net6.0\CustomAnimalHearts.GeneratedMSBuildEditorConfig.editorconfig
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\CustomAnimalHearts\obj\Debug\net6.0\CustomAnimalHearts.AssemblyInfoInputs.cache
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\CustomAnimalHearts\obj\Debug\net6.0\CustomAnimalHearts.AssemblyInfo.cs
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\CustomAnimalHearts\obj\Debug\net6.0\CustomAnimalHearts.csproj.CoreCompileInputs.cache
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\CustomAnimalHearts\obj\Debug\net6.0\CustomAnimalHearts.sourcelink.json
+D:\December 2025 OS\Development\StardewModding\Done Not Uploaded\CustomAnimalHearts\obj\Debug\net6.0\CustomAnimalHearts.dll

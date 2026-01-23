@@ -170,12 +170,14 @@ namespace WorkingPets.UI
             if (manager.IsFollowing)
             {
                 Game1.playSound("dog_pant");
-                Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.follow.start", new { petName }), HUDMessage.newQuest_type));
+                if (ModEntry.Config.ShowStateNotifications)
+                    Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.follow.start", new { petName }), HUDMessage.newQuest_type));
             }
             else
             {
                 Game1.playSound("cat");
-                Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.follow.stop", new { petName }), HUDMessage.newQuest_type));
+                if (ModEntry.Config.ShowStateNotifications)
+                    Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.follow.stop", new { petName }), HUDMessage.newQuest_type));
             }
         }
         
@@ -190,12 +192,14 @@ namespace WorkingPets.UI
             if (manager.IsExploring)
             {
                 Game1.playSound("questcomplete");
-                Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.explore.start", new { petName }), HUDMessage.newQuest_type));
+                if (ModEntry.Config.ShowStateNotifications)
+                    Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.explore.start", new { petName }), HUDMessage.newQuest_type));
             }
             else
             {
                 Game1.playSound("cat");
-                Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.explore.stop", new { petName }), HUDMessage.newQuest_type));
+                if (ModEntry.Config.ShowStateNotifications)
+                    Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.explore.stop", new { petName }), HUDMessage.newQuest_type));
             }
         }
 
@@ -217,12 +221,14 @@ namespace WorkingPets.UI
             if (manager.IsWorking)
             {
                 Game1.playSound("questcomplete");
-                Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.work.start", new { petName }), HUDMessage.newQuest_type));
+                if (ModEntry.Config.ShowStateNotifications)
+                    Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.work.start", new { petName }), HUDMessage.newQuest_type));
             }
             else
             {
                 Game1.playSound("breathout");
-                Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.work.stop", new { petName }), HUDMessage.newQuest_type));
+                if (ModEntry.Config.ShowStateNotifications)
+                    Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.work.stop", new { petName }), HUDMessage.newQuest_type));
             }
         }
 

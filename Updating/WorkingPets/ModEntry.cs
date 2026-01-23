@@ -36,6 +36,9 @@ namespace WorkingPets
         /// <summary>Manages daily scavenging.</summary>
         public static PetScavengeManager ScavengeManager { get; private set; } = null!;
 
+        /// <summary>Manages auto-deposit of pet items to matching chests.</summary>
+        public static ChestStorageManager ChestManager { get; private set; } = null!;
+
         /// <summary>Provides i18n translations.</summary>
         public static ITranslationHelper I18n { get; private set; } = null!;
 
@@ -57,6 +60,7 @@ namespace WorkingPets
             PetManager = new MultiPetManager();
             InventoryManager = new PetInventoryManager();
             ScavengeManager = new PetScavengeManager();
+            ChestManager = new ChestStorageManager(this.Monitor);
 
             // Apply Harmony patches
             var harmony = new Harmony(this.ModManifest.UniqueID);
@@ -231,6 +235,28 @@ namespace WorkingPets
                 tooltip: () => "When following you, your pet will pick up forageable items (spring onions, berries, mushrooms, etc.) and store them in their inventory.",
                 getValue: () => Config.ForageWhileFollowing,
                 setValue: value => Config.ForageWhileFollowing = value
+            );
+
+            // === Notification Settings ===
+            configMenu.AddSectionTitle(
+                mod: this.ModManifest,
+                text: () => "Notification Settings"
+            );
+
+            configMenu.AddBoolOption(
+                mod: this.ModManifest,
+                name: () => "Show Forage Notifications",
+                tooltip: () => "Show HUD messages when your pet picks up forageable items.",
+                getValue: () => Config.ShowForageNotifications,
+                setValue: value => Config.ShowForageNotifications = value
+            );
+
+            configMenu.AddBoolOption(
+                mod: this.ModManifest,
+                name: () => "Show State Notifications",
+                tooltip: () => "Show HUD messages when your pet starts/stops following, working, or exploring.",
+                getValue: () => Config.ShowStateNotifications,
+                setValue: value => Config.ShowStateNotifications = value
             );
 
             // === Work Types ===
@@ -430,12 +456,57 @@ namespace WorkingPets
             {
                 ScavengeManager.PerformDailyScavenge(pet);
                 
-                // Ensure pet is on the farm if it was working
+                // Reset daily flags (auto-explore, etc.)
                 var manager = PetManager.GetManagerForPet(pet);
+                manager?.ResetDailyFlags();
+                
+                // Ensure pet is on the farm if it was working
                 if (manager?.IsWorking == true && pet.currentLocation?.Name != "Farm")
                 {
                     Game1.warpCharacter(pet, "Farm", new Microsoft.Xna.Framework.Vector2(54, 8));
                     this.Monitor.Log($"Warped {pet.Name} back to the farm.", LogLevel.Debug);
+                }
+            }
+
+            // Auto-deposit pet inventory items to matching chests
+            if (Config.AutoDepositToChests && InventoryManager.ItemCount > 0)
+            {
+                try
+                {
+                    // Get all items from pet inventory
+                    var itemsToDeposit = new List<Item>();
+                    for (int i = 0; i < InventoryManager.Inventory.Count; i++)
+                    {
+                        if (InventoryManager.Inventory[i] != null)
+                        {
+                            itemsToDeposit.Add(InventoryManager.Inventory[i]!);
+                        }
+                    }
+
+                    // Try to deposit items to matching chests
+                    var remainingItems = ChestManager.DepositItemsToMatchingChests(itemsToDeposit);
+
+                    // Clear inventory and add back only remaining items
+                    InventoryManager.Clear();
+                    int depositedCount = itemsToDeposit.Count - remainingItems.Count;
+                    
+                    foreach (var item in remainingItems)
+                    {
+                        InventoryManager.AddItem(item);
+                    }
+
+                    if (depositedCount > 0)
+                    {
+                        string petName = allPets.Count > 0 ? allPets[0].Name : "Pet";
+                        Game1.addHUDMessage(new HUDMessage(
+                            I18n.Get("hud.chestDeposit.morning", new { petName, depositedCount }), 
+                            HUDMessage.newQuest_type));
+                        this.Monitor.Log($"Auto-deposited {depositedCount} items from pet inventory to matching chests.", LogLevel.Debug);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    this.Monitor.Log($"Error during auto-deposit to chests: {ex.Message}", LogLevel.Warn);
                 }
             }
         }

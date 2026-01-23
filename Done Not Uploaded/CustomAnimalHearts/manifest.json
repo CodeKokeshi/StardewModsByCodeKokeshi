@@ -1,0 +1,10 @@
+{
+  "Name": "Custom Animal Hearts",
+  "Author": "YourName",
+  "Version": "1.0.0",
+  "Description": "Override the friendship/heart levels for pets and farm animals. Configure via GMCM to set custom heart values (0-10) for your pets and farm animals.",
+  "UniqueID": "YourName.CustomAnimalHearts",
+  "EntryDll": "CustomAnimalHearts.dll",
+  "MinimumApiVersion": "4.0.0",
+  "UpdateKeys": []
+}

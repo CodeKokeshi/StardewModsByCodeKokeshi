@@ -65,6 +65,23 @@ namespace WorkingPets.Behaviors
                 return count;
             }
         }
+        
+        /// <summary>Check if the inventory is full (no empty slots).</summary>
+        public bool IsFull
+        {
+            get
+            {
+                foreach (var item in _inventory)
+                {
+                    if (item == null)
+                        return false;
+                }
+                return true;
+            }
+        }
+        
+        /// <summary>Check if inventory has space for more items.</summary>
+        public bool HasSpace => !IsFull;
 
         /*********
         ** Public methods

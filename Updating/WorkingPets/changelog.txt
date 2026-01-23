@@ -1,3 +1,40 @@
+1.4.1
+=== Stability & Crash Fixes ===
+- FIXED: Crash when whistling an exploring pet! Warping now uses DelayedAction for safe async operation.
+- FIXED: Added null checks and try-catch around all warp operations to prevent crashes.
+- FIXED: StopExploring now safely handles edge cases (events, festivals, null locations).
+
+=== Inventory Full Handling ===
+- NEW: Pet automatically stops foraging/exploring when inventory is full!
+- NEW: Inventory full check runs before any pickup attempt - no wasted effort.
+- NEW: When inventory fills up during explore, pet returns to Farm and goes idle.
+- NEW: Pets won't chase forageables if they have no space to store them.
+- NEW: **ALWAYS** shows HUD notification when inventory is full (regardless of notification settings).
+
+=== Auto-Explore Feature ===
+- NEW: Pets will autonomously decide to explore ONCE per day when idle for too long!
+- NEW: After ~30 seconds of idle time, there's a chance the pet will start exploring on its own.
+- NEW: Auto-explore only happens once per day - resets at start of new day.
+- NEW: Requires inventory space - won't auto-explore if inventory is full.
+
+=== Notification Improvements ===
+- NEW: "Show Forage Notifications" config option - disabled by default!
+- NEW: "Show State Notifications" config option - disabled by default!
+- CHANGED: Forage pickup HUD messages now respect ShowForageNotifications config.
+- CHANGED: State change messages (follow/explore/work start/stop) respect ShowStateNotifications config.
+- IMPROVED: Less spam by default - only shows notifications when you enable them.
+
+=== Whistle Menu Improvements ===
+- CHANGED: "Exploring" status now shows location! e.g. "Exploring (Mountain)", "Exploring (Forest)"
+- CHANGED: Removed gold color from status - now uses normal text color for consistency.
+- IMPROVED: CurrentExploreLocation property tracks which area the pet is currently exploring.
+
+=== Debug Log Reduction ===
+- REMOVED: Verbose state change logs (started/stopped working/following/exploring).
+- REMOVED: Movement debug logs (wall-pass activation, arrival at target, scanning for work).
+- REMOVED: Forage pickup/inventory logs that cluttered the console.
+- IMPROVED: Debug logs now reserved for edge cases and errors only - cleaner console output!
+
 1.4.0
 === NEW: Autonomous Explore Mode ===
 - NEW: "Go explore the valley!" - Pet autonomously forages across Stardew Valley without following you!
@@ -7,6 +44,8 @@
 - NEW: "Come back home" option returns pet to your location instantly.
 - NEW: Separate from Follow mode - choose between following you OR exploring independently.
 - NEW: Uses same BLINK wall-pass system to reach forageables through obstacles.
+- NEW: Whistle menu shows "Exploring" status in gold color.
+- NEW: Whistling an exploring pet will stop exploration and make them follow you!
 
 === MAJOR: Complete Follow System Rewrite ===
 - FIXED: Pet stuttering and left-right flickering completely eliminated! Movement is now buttery smooth.

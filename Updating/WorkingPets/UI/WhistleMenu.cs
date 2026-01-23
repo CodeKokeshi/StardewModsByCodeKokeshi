@@ -60,12 +60,13 @@ public class WhistleMenu : IClickableMenu
             
             var manager = ModEntry.PetManager?.GetManagerForPet(pet);
             bool isAlreadyFollowing = manager?.IsFollowing == true;
+            bool isExploring = manager?.IsExploring == true;
             
             PetEntries.Add(new PetEntry
             {
                 Pet = pet,
                 DisplayName = displayName,
-                IsEnabled = isInSameLocation && !isAlreadyFollowing,
+                IsEnabled = (isInSameLocation && !isAlreadyFollowing) || isExploring, // Can whistle exploring pets
                 Sprite = pet.Sprite.Texture,
                 SpriteSourceRect = new Rectangle(0, pet.Sprite.SourceRect.Height * 2 - 24, pet.Sprite.SourceRect.Width, 24)
             });
@@ -318,7 +319,9 @@ public class WhistleMenu : IClickableMenu
                 else
                 {
                     var manager = ModEntry.PetManager?.GetManagerForPet(entry.Pet);
-                    if (manager?.IsFollowing == true)
+                    if (manager?.IsExploring == true)
+                        HoverText = $"{entry.DisplayName} is exploring the valley.";
+                    else if (manager?.IsFollowing == true)
                         HoverText = $"{entry.DisplayName} is already following you!";
                     else
                         HoverText = $"{entry.DisplayName} is not on the same area.";
@@ -333,6 +336,10 @@ public class WhistleMenu : IClickableMenu
         var manager = ModEntry.PetManager?.GetManagerForPet(pet);
         if (manager == null)
             return;
+        
+        // Stop exploring if needed
+        if (manager.IsExploring)
+            manager.StopExploring();
         
         // Stop working if needed
         if (manager.IsWorking)
@@ -479,7 +486,14 @@ public class WhistleMenu : IClickableMenu
         
         if (manager != null)
         {
-            if (manager.IsFollowing)
+            if (manager.IsExploring)
+            {
+                // Show current explore location in status
+                string locationName = manager.CurrentExploreLocation ?? "Valley";
+                statusText = $"Exploring ({locationName})";
+                statusColor = Game1.textColor; // No gold, just normal text color
+            }
+            else if (manager.IsFollowing)
             {
                 statusText = "Following";
                 statusColor = Game1.textColor;

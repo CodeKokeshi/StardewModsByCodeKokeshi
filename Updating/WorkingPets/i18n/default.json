@@ -33,5 +33,6 @@
   "hud.work.start": "{{petName}} is now helping on the farm!",
   "hud.work.stop": "{{petName}} is taking a break.",
   "hud.scavenge.morning": "{{petName}} found {{addedCount}} item(s) overnight!",
+  "hud.chestDeposit.morning": "{{petName}} deposited {{depositedCount}} item(s) into your chests!",
   "hud.genericError": "Something went wrong!"
 }
