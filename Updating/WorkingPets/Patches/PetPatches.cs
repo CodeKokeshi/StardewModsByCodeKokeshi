@@ -3,6 +3,7 @@ using HarmonyLib;
 using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Characters;
+using WorkingPets.Behaviors;
 using WorkingPets.UI;
 
 namespace WorkingPets.Patches
@@ -22,7 +23,74 @@ namespace WorkingPets.Patches
                 prefix: new HarmonyMethod(typeof(PetPatches), nameof(CheckAction_Prefix))
             );
 
+            // Patch Pet.update to suppress vanilla movement when following/working
+            harmony.Patch(
+                original: AccessTools.Method(typeof(Pet), "RunState"),
+                prefix: new HarmonyMethod(typeof(PetPatches), nameof(RunState_Prefix))
+            );
+            
+            // Patch Pet behavior changes that cause stuttering
+            harmony.Patch(
+                original: AccessTools.Method(typeof(Pet), "behaviorOnFarmerLocationEntry"),
+                prefix: new HarmonyMethod(typeof(PetPatches), nameof(BehaviorOnFarmerLocationEntry_Prefix))
+            );
+
             Monitor.Log("Pet patches applied successfully.", LogLevel.Debug);
+        }
+
+        /// <summary>Suppress vanilla RunState when pet is following or working (prevents movement interference).</summary>
+        public static bool RunState_Prefix(Pet __instance)
+        {
+            try
+            {
+                if (!ModEntry.Config.ModEnabled)
+                    return true;
+
+                var manager = ModEntry.PetManager?.GetManagerForPet(__instance);
+                if (manager == null)
+                    return true;
+
+                // If the pet is following or working, skip vanilla RunState entirely
+                // This prevents the vanilla behavior from changing direction/movement
+                if (manager.IsFollowing || manager.IsWorking)
+                {
+                    return false; // Skip original
+                }
+
+                return true; // Run original for idle pets
+            }
+            catch (Exception ex)
+            {
+                Monitor.Log($"Error in Pet.RunState patch: {ex}", LogLevel.Error);
+                return true;
+            }
+        }
+
+        /// <summary>Prevent vanilla sleep/behavior changes when pet is following.</summary>
+        public static bool BehaviorOnFarmerLocationEntry_Prefix(Pet __instance, GameLocation location, Farmer who)
+        {
+            try
+            {
+                if (!ModEntry.Config.ModEnabled)
+                    return true;
+
+                var manager = ModEntry.PetManager?.GetManagerForPet(__instance);
+                if (manager == null)
+                    return true;
+
+                // If following, don't let the vanilla code mess with the pet's behavior
+                if (manager.IsFollowing)
+                {
+                    return false; // Skip original - don't randomly start sleeping
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Monitor.Log($"Error in Pet.behaviorOnFarmerLocationEntry patch: {ex}", LogLevel.Error);
+                return true;
+            }
         }
 
         /// <summary>Intercept pet interaction to show custom dialogue.</summary>
