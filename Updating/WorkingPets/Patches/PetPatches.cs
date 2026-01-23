@@ -33,6 +33,12 @@ namespace WorkingPets.Patches
                 if (!ModEntry.Config.ModEnabled)
                     return true; // Use original behavior
 
+                // Only open the custom command menu when the player is intentionally requesting it.
+                // This avoids accidentally opening the menu while holding the action button to harvest/use items near the pet.
+                // Default: hold LeftShift while interacting with the pet.
+                if (ModEntry.Instance?.Helper?.Input == null || !ModEntry.Instance.Helper.Input.IsDown(SButton.LeftShift))
+                    return true; // Use original behavior (petting / vanilla gifts)
+
                 // Don't intercept during events (like the naming cutscene)
                 if (Game1.CurrentEvent != null)
                     return true; // Use original behavior

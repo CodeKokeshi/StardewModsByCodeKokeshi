@@ -1,0 +1,31 @@
+{
+  "log.loaded": "Working Pets loaded! Hold LeftShift and interact with your pet to open commands, or press your Whistle key to call pets.",
+
+  "pet.genericName": "Your pet",
+
+  "petMenu.greeting.following": "{{petName}} is happily following you!",
+  "petMenu.greeting.working": "{{petName}} pauses and looks at you, tail wagging.",
+  "petMenu.greeting.idle": "{{petName}} looks up at you expectantly.",
+
+  "petMenu.option.follow.start": "Follow me, {{petName}}!",
+  "petMenu.option.follow.stop": "That's enough following for now, {{petName}}",
+
+  "petMenu.option.work.start": "Ask {{petName}} to help around the farm",
+  "petMenu.option.work.stop": "Let {{petName}} rest",
+
+  "petMenu.option.inventory.withCount": "Check what {{petName}} has found ({{totalItems}} items)",
+  "petMenu.option.inventory.empty": "Check {{petName}}'s pouch",
+
+  "petMenu.option.pet": "Give {{petName}} some love",
+  "petMenu.option.rename": "Give {{petName}} a new name",
+  "petMenu.option.cancel": "Never mind",
+
+  "petMenu.inventory.title": "{{petName}}'s Finds",
+
+  "hud.follow.start": "{{petName}} is now following you!",
+  "hud.follow.stop": "{{petName}} is no longer following you.",
+  "hud.work.start": "{{petName}} is now helping on the farm!",
+  "hud.work.stop": "{{petName}} is taking a break.",
+  "hud.scavenge.morning": "{{petName}} found {{addedCount}} item(s) overnight!",
+  "hud.genericError": "Something went wrong!"
+}

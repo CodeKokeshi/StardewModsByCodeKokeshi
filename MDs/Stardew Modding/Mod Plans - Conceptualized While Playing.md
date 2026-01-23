@@ -14,3 +14,4 @@
 14. [[Unnamed Mod - Easier Way to Mine (Conceptualizing)]]
 15. [[Unnamed Mod - Easier Farm Design (Conceptualizing)]]
 16. [[Unnamed Mod - Easier Passive Farming (Conceptualizing)]]
+17. [[Max Hearts on Pets and Farm Animals]]

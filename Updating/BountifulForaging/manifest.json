@@ -1,0 +1,12 @@
+{
+  "Name": "Bountiful Foraging",
+  "Author": "CodeKokeshi",
+  "Version": "1.1.0",
+  "Description": "All areas spawn forageables every day at maximum yield. Never have an empty foraging spot again!",
+  "UniqueID": "CodeKokeshi.BountifulForaging",
+  "EntryDll": "BountifulForaging.dll",
+  "MinimumApiVersion": "4.0.0",
+    "UpdateKeys": [
+    "Nexus:41289"
+  ]
+}

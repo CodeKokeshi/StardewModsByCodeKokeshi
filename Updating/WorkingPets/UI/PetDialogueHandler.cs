@@ -38,7 +38,7 @@ namespace WorkingPets.UI
             // Pause THIS pet's movement while dialogue is open
             manager?.PauseForDialogue();
             
-            string petName = pet.Name ?? "Your pet";
+            string petName = pet.Name ?? ModEntry.I18n.Get("pet.genericName");
             bool isWorking = manager?.IsWorking ?? false;
             bool isFollowing = manager?.IsFollowing ?? false;
             int totalItems = ModEntry.InventoryManager.TotalItemCount;
@@ -49,50 +49,50 @@ namespace WorkingPets.UI
             // Follow option
             if (isFollowing)
             {
-                responses.Add(new Response("ToggleFollow", $"That's enough following for now, {petName}"));
+                responses.Add(new Response("ToggleFollow", ModEntry.I18n.Get("petMenu.option.follow.stop", new { petName })));
             }
             else
             {
-                responses.Add(new Response("ToggleFollow", $"Follow me, {petName}!"));
+                responses.Add(new Response("ToggleFollow", ModEntry.I18n.Get("petMenu.option.follow.start", new { petName })));
             }
 
             // Work option (always available - selecting it cancels follow mode)
             if (isWorking)
             {
-                responses.Add(new Response("ToggleWork", $"Let {petName} rest"));
+                responses.Add(new Response("ToggleWork", ModEntry.I18n.Get("petMenu.option.work.stop", new { petName })));
             }
             else
             {
-                responses.Add(new Response("ToggleWork", $"Ask {petName} to help around the farm"));
+                responses.Add(new Response("ToggleWork", ModEntry.I18n.Get("petMenu.option.work.start", new { petName })));
             }
 
             if (totalItems > 0)
             {
-                responses.Add(new Response("OpenInventory", $"Check what {petName} has found ({totalItems} items)"));
+                responses.Add(new Response("OpenInventory", ModEntry.I18n.Get("petMenu.option.inventory.withCount", new { petName, totalItems })));
             }
             else
             {
-                responses.Add(new Response("OpenInventory", $"Check {petName}'s pouch"));
+                responses.Add(new Response("OpenInventory", ModEntry.I18n.Get("petMenu.option.inventory.empty", new { petName })));
             }
 
-            responses.Add(new Response("PetThem", $"Give {petName} some love"));
+            responses.Add(new Response("PetThem", ModEntry.I18n.Get("petMenu.option.pet", new { petName })));
 
             // One-time rename option - only show if not used yet
             if (!pet.modData.ContainsKey(RENAME_USED_KEY))
             {
-                responses.Add(new Response("Rename", $"Give {petName} a new name"));
+                responses.Add(new Response("Rename", ModEntry.I18n.Get("petMenu.option.rename", new { petName })));
             }
 
-            responses.Add(new Response("Cancel", "Never mind"));
+            responses.Add(new Response("Cancel", ModEntry.I18n.Get("petMenu.option.cancel")));
 
             // Create question dialogue
             string greeting;
             if (isFollowing)
-                greeting = $"{petName} is happily following you!";
+                greeting = ModEntry.I18n.Get("petMenu.greeting.following", new { petName });
             else if (isWorking)
-                greeting = $"{petName} pauses and looks at you, tail wagging.";
+                greeting = ModEntry.I18n.Get("petMenu.greeting.working", new { petName });
             else
-                greeting = $"{petName} looks up at you expectantly.";
+                greeting = ModEntry.I18n.Get("petMenu.greeting.idle", new { petName });
 
             location.createQuestionDialogue(
                 greeting,
@@ -153,12 +153,12 @@ namespace WorkingPets.UI
             if (manager.IsFollowing)
             {
                 Game1.playSound("dog_pant");
-                Game1.addHUDMessage(new HUDMessage($"{petName} is now following you!", HUDMessage.newQuest_type));
+                Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.follow.start", new { petName }), HUDMessage.newQuest_type));
             }
             else
             {
                 Game1.playSound("cat");
-                Game1.addHUDMessage(new HUDMessage($"{petName} is no longer following you.", HUDMessage.newQuest_type));
+                Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.follow.stop", new { petName }), HUDMessage.newQuest_type));
             }
         }
 
@@ -180,12 +180,12 @@ namespace WorkingPets.UI
             if (manager.IsWorking)
             {
                 Game1.playSound("questcomplete");
-                Game1.addHUDMessage(new HUDMessage($"{petName} is now helping on the farm!", HUDMessage.newQuest_type));
+                Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.work.start", new { petName }), HUDMessage.newQuest_type));
             }
             else
             {
                 Game1.playSound("breathout");
-                Game1.addHUDMessage(new HUDMessage($"{petName} is taking a break.", HUDMessage.newQuest_type));
+                Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.work.stop", new { petName }), HUDMessage.newQuest_type));
             }
         }
 
@@ -193,7 +193,7 @@ namespace WorkingPets.UI
         {
             try
             {
-                string petName = pet?.Name ?? "Pet";
+                string petName = pet?.Name ?? ModEntry.I18n.Get("pet.genericName");
 
                 // Create inventory list for ItemGrabMenu
                 var inventoryList = ModEntry.InventoryManager.Inventory;
@@ -205,7 +205,7 @@ namespace WorkingPets.UI
                     showReceivingMenu: true,
                     highlightFunction: InventoryMenu.highlightAllItems,
                     behaviorOnItemSelectFunction: null,
-                    message: $"{petName}'s Finds",
+                    message: ModEntry.I18n.Get("petMenu.inventory.title", new { petName }),
                     behaviorOnItemGrab: OnItemGrabbed,
                     snapToBottom: false,
                     canBeExitedWithKey: true,
@@ -220,7 +220,7 @@ namespace WorkingPets.UI
             catch (Exception ex)
             {
                 ModEntry.Instance.Monitor.Log($"Error opening pet inventory: {ex}", LogLevel.Error);
-                Game1.addHUDMessage(new HUDMessage("Something went wrong!", HUDMessage.error_type));
+                Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.genericError"), HUDMessage.error_type));
             }
         }
 

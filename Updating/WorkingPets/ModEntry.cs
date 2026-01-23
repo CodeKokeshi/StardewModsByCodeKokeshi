@@ -36,6 +36,9 @@ namespace WorkingPets
         /// <summary>Manages daily scavenging.</summary>
         public static PetScavengeManager ScavengeManager { get; private set; } = null!;
 
+        /// <summary>Provides i18n translations.</summary>
+        public static ITranslationHelper I18n { get; private set; } = null!;
+
         /*********
         ** Public methods
         *********/
@@ -45,6 +48,7 @@ namespace WorkingPets
         {
             Instance = this;
             Config = helper.ReadConfig<ModConfig>();
+            I18n = helper.Translation;
 
             // Initialize managers
             #pragma warning disable CS0618 // Intentionally using legacy WorkManager for backwards compat
@@ -69,7 +73,7 @@ namespace WorkingPets
             helper.Events.Input.ButtonPressed += OnButtonPressed;
             helper.Events.Player.Warped += OnPlayerWarped; // Exit resting on location change
 
-            this.Monitor.Log("Working Pets mod loaded! Talk to your pet to toggle work mode, or press V to whistle!", LogLevel.Info);
+            this.Monitor.Log(I18n.Get("log.loaded"), LogLevel.Info);
         }
 
         /*********

@@ -71,6 +71,12 @@ namespace WorkingPets.Behaviors
         private Vector2? _foragingTarget;
         private int _foragingCooldown = 0;
 
+        // Forage movement smoothing / progress tracking (separate from follow-to-player stuck detection)
+        private float _lastDistanceToForageTarget = float.MaxValue;
+        private int _noProgressForageTicks;
+        private Vector2? _lastForagingTargetTile;
+        private int _postForageIdleTicks;
+
         private readonly Random _random = new();
 
         // Track damage for multi-hit objects
@@ -505,13 +511,30 @@ namespace WorkingPets.Behaviors
                     Vector2 targetPos = _foragingTarget.Value;
                     Vector2 foragePetPos = _pet.Tile;
                     float targetDistance = Vector2.Distance(foragePetPos, targetPos);
+
+                    // If the forageable is gone or no longer valid, drop the target.
+                    if (!IsForageTargetStillValid(petLocation, targetPos))
+                    {
+                        _foragingTarget = null;
+                        _foragingCooldown = 30;
+                        _lastForagingTargetTile = null;
+                        _lastDistanceToForageTarget = float.MaxValue;
+                        _noProgressForageTicks = 0;
+                    }
                     
-                    if (targetDistance < 2f)
+                    else if (targetDistance < 2f)
                     {
                         // Pick up the item at this location
                         TryPickupForageableAt(petLocation, _foragingTarget.Value);
                         _foragingTarget = null;
                         _foragingCooldown = 30; // Short cooldown after pickup
+
+                        // Small pause to avoid a jarring snap-turn back to the player.
+                        _postForageIdleTicks = 12;
+
+                        _lastForagingTargetTile = null;
+                        _lastDistanceToForageTarget = float.MaxValue;
+                        _noProgressForageTicks = 0;
                     }
                 }
                 
@@ -536,8 +559,18 @@ namespace WorkingPets.Behaviors
             float distance = Vector2.Distance(petPos, playerPos);
 
             // Stay close but not too close (follow at ~2 tiles behind)
-            float followDistance = 96f; // 1.5 tiles
-            float stopDistance = 64f;   // 1 tile
+            // Lenient following: let the pet roam/forage without constantly rubber-banding to the player.
+            float followDistance = 256f; // 4 tiles
+            float stopDistance = 128f;   // 2 tiles
+
+            // Brief idle pause after a forage pickup to avoid sharp snap-turns.
+            if (_postForageIdleTicks > 0)
+            {
+                _postForageIdleTicks--;
+                _pet.Halt();
+                _pet.controller = null;
+                return;
+            }
             
             if (distance <= stopDistance)
             {
@@ -556,16 +589,32 @@ namespace WorkingPets.Behaviors
                 return;
             }
 
-            if (distance > followDistance)
+            // If the pet has nothing to do and is already within follow range, return to idle.
+            if (distance <= followDistance && !_foragingTarget.HasValue)
+            {
+                _pet.Halt();
+                _pet.controller = null;
+                return;
+            }
+
+            // Allow foraging movement even when close to the player, but keep a leash so the pet doesn't wander too far.
+            float forageLeashDistance = 768f; // 12 tiles
+
+            bool hasForageTarget = _foragingTarget is Vector2;
+
+            if ((hasForageTarget && distance <= forageLeashDistance) || distance > followDistance)
             {
                 // PRIORITIZE FORAGING: If we have a forageable target, go for it first!
                 Vector2 targetPosition;
                 bool isForaging = false;
+                Vector2? forageTile = null;
                 
-                if (_foragingTarget.HasValue)
+                if (hasForageTarget && distance <= forageLeashDistance)
                 {
                     // Always prioritize foraging when a target exists
-                    targetPosition = _foragingTarget.Value * 64f + new Vector2(32, 32);
+                    Vector2 forageTileValue = _foragingTarget.GetValueOrDefault();
+                    forageTile = forageTileValue;
+                    targetPosition = forageTileValue * 64f + new Vector2(32, 32);
                     isForaging = true;
                 }
                 else
@@ -575,12 +624,41 @@ namespace WorkingPets.Behaviors
                 }
                 
                 Vector2 direction = targetPosition - petPos;
-                direction.Normalize();
+                if (direction != Vector2.Zero)
+                    direction.Normalize();
+
+                float distanceToTarget = Vector2.Distance(petPos, targetPosition);
 
                 // Catch-up speed scaling: if the player is far, move faster (sprint-like).
                 // This keeps following responsive without permanently changing base speed.
                 float speed = _moveSpeed;
-                if (!isForaging && !_isInFastMode) // Only apply normal speed scaling when NOT in fast mode
+                if (isForaging)
+                {
+                    // Adaptive forage speed: faster when far, but never into "unstuck" ultra-speed.
+                    speed = GetAdaptiveForageSpeed(distanceToTarget);
+
+                    // Progress tracking toward forage target (separate from player-follow stuck detection).
+                    Vector2 forageTileValue = forageTile ?? _foragingTarget.GetValueOrDefault();
+                    if (!_lastForagingTargetTile.HasValue || _lastForagingTargetTile.Value != forageTileValue)
+                    {
+                        _lastForagingTargetTile = forageTileValue;
+                        _lastDistanceToForageTarget = distanceToTarget;
+                        _noProgressForageTicks = 0;
+                    }
+                    else
+                    {
+                        if (distanceToTarget < _lastDistanceToForageTarget - 1f)
+                        {
+                            _lastDistanceToForageTarget = distanceToTarget;
+                            _noProgressForageTicks = 0;
+                        }
+                        else
+                        {
+                            _noProgressForageTicks++;
+                        }
+                    }
+                }
+                else if (!_isInFastMode) // Only apply normal speed scaling when NOT in fast mode
                 {
                     if (distance > 512f)
                         speed *= 2.0f;
@@ -592,9 +670,49 @@ namespace WorkingPets.Behaviors
 
                 // Check for water/obstacles using improved detection
                 var currentLocation = _pet.currentLocation;
+
+                // If we start foraging while in wall-pass mode from following, exit it.
+                // Foraging should never look like "unstuck" teleport/superspeed.
+                if (isForaging && _isInFastMode)
+                {
+                    _isInFastMode = false;
+                    _noProgressFollowTicks = 0;
+                    _lastDistanceToPlayer = float.MaxValue;
+                }
+
+                // Foraging: do not activate wall-pass mode. If blocked/not progressing, abandon target.
+                if (isForaging)
+                {
+                    if (IsNearWaterOrBlocked(currentLocation, nextPos))
+                    {
+                        _noProgressForageTicks++;
+                        if (_noProgressForageTicks >= 180) // ~3 seconds
+                        {
+                            _foragingTarget = null;
+                            _foragingCooldown = 60;
+                            _lastForagingTargetTile = null;
+                            _lastDistanceToForageTarget = float.MaxValue;
+                            _noProgressForageTicks = 0;
+                            _pet.Halt();
+                        }
+                        return;
+                    }
+
+                    // If we haven't made progress for too long, abandon the target.
+                    if (_noProgressForageTicks >= 300) // ~5 seconds
+                    {
+                        _foragingTarget = null;
+                        _foragingCooldown = 60;
+                        _lastForagingTargetTile = null;
+                        _lastDistanceToForageTarget = float.MaxValue;
+                        _noProgressForageTicks = 0;
+                        _pet.Halt();
+                        return;
+                    }
+                }
                 
                 // When in fast mode: use ultra-fast speed and IGNORE all collisions (pass through walls)
-                if (_isInFastMode)
+                if (!isForaging && _isInFastMode)
                 {
                     // Check if we're close enough to exit fast mode
                     if (distance <= followDistance * 2) // Within reasonable range
@@ -642,7 +760,7 @@ namespace WorkingPets.Behaviors
                 }
                 
                 // Normal mode: check for water/obstacles
-                if (IsNearWaterOrBlocked(currentLocation, nextPos))
+                if (!isForaging && IsNearWaterOrBlocked(currentLocation, nextPos))
                 {
                     // Give pet time to navigate around obstacles naturally
                     _noProgressFollowTicks++;
@@ -656,12 +774,12 @@ namespace WorkingPets.Behaviors
                 }
 
                 // Progress tracking: if we aren't getting closer to the player, count it as stuck.
-                if (distance < _lastDistanceToPlayer - 1f)
+                if (!isForaging && distance < _lastDistanceToPlayer - 1f)
                 {
                     _lastDistanceToPlayer = distance;
                     _noProgressFollowTicks = 0;
                 }
-                else
+                else if (!isForaging)
                 {
                     _noProgressFollowTicks++;
                     if (_noProgressFollowTicks >= 240) // 4 seconds of no progress before wall-pass
@@ -682,6 +800,23 @@ namespace WorkingPets.Behaviors
 
                 _pet.animateInFacingDirection(Game1.currentGameTime);
             }
+        }
+
+        private float GetAdaptiveForageSpeed(float distanceToTargetPixels)
+        {
+            // 64px = 1 tile. Scale up gently with distance, but keep it well below the wall-pass/unstuck speeds.
+            float tiles = distanceToTargetPixels / 64f;
+            float multiplier = 1f + MathF.Min(0.6f, tiles / 16f); // 1.0 .. 1.6
+            return _moveSpeed * multiplier;
+        }
+
+        private bool IsForageTargetStillValid(GameLocation location, Vector2 tile)
+        {
+            if (location == null)
+                return false;
+            if (!location.Objects.TryGetValue(tile, out StardewValley.Object obj))
+                return false;
+            return IsForageable(obj);
         }
 
         /// <summary>Find a nearby forageable item within detection radius.</summary>
