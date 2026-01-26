@@ -16,3 +16,4 @@
 16. [[Unnamed Mod - Easier Passive Farming (Conceptualizing)]]
 17. [[Max Hearts on Pets and Farm Animals (Done)]]
 18. [[Animals Produce Everyday]]
+19. [[Always Max Quality (Done)]]
