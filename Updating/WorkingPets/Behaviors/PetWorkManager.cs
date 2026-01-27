@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewValley;
+using StardewValley.Pathfinding;
 using StardewValley.TerrainFeatures;
 using StardewValley.Characters;
 using StardewValley.BellsAndWhistles;
@@ -66,20 +67,14 @@ namespace WorkingPets.Behaviors
         
         // ===== EXPLORE MODE CONSTANTS =====
         private const int EXPLORE_SCAN_RADIUS = 50;           // Scan 50 tiles for forageables
-        private const int EXPLORE_AREA_DONE_DELAY = 120;      // 2 seconds before teleporting to next area
+        private const int EXPLORE_AREA_DONE_DELAY = 120;      // 2 seconds before moving to next area
         private const float EXPLORE_FORAGE_SPEED = 6f;        // Speed when exploring
+        private const int EXPLORE_TRANSITION_TIMEOUT = 900;   // 15 seconds before fallback teleport
         
         // Valid exploration areas (no Ginger Island, no Desert, no special areas)
         private static readonly string[] EXPLORE_AREAS = new[]
         {
-            "Farm", "Town", "Mountain", "Forest", "Beach", "BusStop",
-            "Backwoods", "Railroad", "Woods", "FarmCave", "Greenhouse",
-            "UndergroundMine", "Mine", "BathHouse_Entry", "BathHouse_Pool",
-            "WizardHouse", "AnimalShop", "ScienceHouse", "SebastianRoom",
-            "JoshHouse", "HaleyHouse", "SamHouse", "Blacksmith", "ManorHouse",
-            "SeedShop", "Saloon", "Trailer", "Hospital", "HarveyRoom",
-            "Beach", "FishShop", "ElliottHouse", "ArchaeologyHouse", "Sewer",
-            "WitchWarpCave", "WitchSwamp", "WitchHut", "BugLand"
+            "Mountain", "Forest", "Town", "Beach"
         };
 
         /*********
@@ -161,13 +156,19 @@ namespace WorkingPets.Behaviors
         private bool _exploreAreaComplete = false;
         private HashSet<Vector2> _exploreUnreachableTiles = new();
         private int _currentExploreAreaIndex = 0;
-        private bool _exploreFadingOut = false;
-        private int _exploreFadeTimer = 0;
-        private const int EXPLORE_FADE_DURATION = 30; // 0.5 seconds for fade
+        private string? _exploreStartArea;
+        private bool _exploreHasLeftStartArea = false;
+        private bool _exploreEndWhenArriveAtStart = false;
+        private bool _exploreInTransit = false;
+        private readonly Queue<string> _exploreTravelPath = new();
+        private string? _exploreTransitionTargetLocation;
+        private Vector2? _exploreTransitionWarpTile;
+        private Vector2? _exploreTransitionTargetTile;
+        private int _exploreTransitionTicks = 0;
         // ===== END EXPLORE MODE STATE =====
         
         // ===== AUTO-EXPLORE STATE =====
-        private bool _hasAutoExploredToday = false;
+        private bool _hasExploredToday = false;
         private int _idleTicks = 0;
         private const int AUTO_EXPLORE_IDLE_THRESHOLD = 1800; // 30 seconds of idle before auto-explore
         // ===== END AUTO-EXPLORE STATE =====
@@ -203,7 +204,7 @@ namespace WorkingPets.Behaviors
         /// <summary>Reset daily flags (call at start of new day).</summary>
         public void ResetDailyFlags()
         {
-            _hasAutoExploredToday = false;
+            _hasExploredToday = false;
             _idleTicks = 0;
         }
         
@@ -249,6 +250,7 @@ namespace WorkingPets.Behaviors
                 {
                     _pet.farmerPassesThrough = false;
                     _pet.Halt();
+                    _pet.controller = null;
                     
                     // Safely warp to farm
                     try
@@ -343,7 +345,31 @@ namespace WorkingPets.Behaviors
         /// <summary>Toggle autonomous explore mode - pet forages across the valley on its own.</summary>
         public void ToggleExplore()
         {
-            _isExploring = !_isExploring;
+            if (_isExploring)
+            {
+                _isExploring = false;
+                ResetExploreState();
+                if (_pet != null)
+                {
+                    _pet.farmerPassesThrough = false;
+                    _pet.Halt();
+                    _pet.IsInvisible = false; // Ensure visible when stopping
+                }
+                return;
+            }
+
+            if (_hasExploredToday)
+            {
+                return; // Only explore once per day
+            }
+
+            if (_pet?.currentLocation == null || !IsValidExploreArea(_pet.currentLocation.Name))
+            {
+                return; // Only start exploring in allowed exterior areas
+            }
+
+            _isExploring = true;
+            _hasExploredToday = true;
             
             if (_isExploring)
             {
@@ -353,31 +379,20 @@ namespace WorkingPets.Behaviors
                 _targetTile = null;
                 _pendingAction = null;
                 ResetFollowState();
-                ResetExploreState();
+                ResetExploreAreaState();
+                _exploreStartArea = _pet.currentLocation.Name;
+                _exploreHasLeftStartArea = false;
+                _exploreEndWhenArriveAtStart = false;
+                _currentExploreAreaIndex = Array.IndexOf(EXPLORE_AREAS, _exploreStartArea);
+                if (_currentExploreAreaIndex < 0)
+                    _currentExploreAreaIndex = 0;
                 
                 if (_pet != null)
                 {
                     _pet.farmerPassesThrough = true;
                     _pet.controller = null;
                     _pet.Halt();
-                    
-                    // Start fade out before teleporting
-                    _exploreFadingOut = true;
-                    _exploreFadeTimer = 0;
                 }
-                
-
-            }
-            else
-            {
-                ResetExploreState();
-                if (_pet != null)
-                {
-                    _pet.farmerPassesThrough = false;
-                    _pet.Halt();
-                    _pet.IsInvisible = false; // Ensure visible when stopping
-                }
-
             }
         }
         
@@ -387,13 +402,12 @@ namespace WorkingPets.Behaviors
             if (_isExploring)
             {
                 _isExploring = false;
-                _exploreFadingOut = false; // Cancel any pending fade
-                _exploreFadeTimer = 0;
                 ResetExploreState();
                 if (_pet != null)
                 {
                     _pet.farmerPassesThrough = false;
                     _pet.Halt();
+                    _pet.controller = null;
                     _pet.IsInvisible = false; // Ensure visible when stopping;
                     
                     // Safely warp back to player
@@ -497,13 +511,12 @@ namespace WorkingPets.Behaviors
             if (!_isWorking)
             {
                 // === AUTO-EXPLORE ONCE PER DAY ===
-                // If pet is idle for too long and hasn't auto-explored today, start exploring
-                if (!_hasAutoExploredToday && ModEntry.InventoryManager.HasSpace)
+                // If pet is idle for too long and hasn't explored today, start exploring
+                if (!_hasExploredToday && ModEntry.InventoryManager.HasSpace)
                 {
                     _idleTicks++;
-                    if (_idleTicks >= AUTO_EXPLORE_IDLE_THRESHOLD && _random.NextDouble() < 0.1) // 10% chance per tick after threshold
+                    if (_idleTicks >= AUTO_EXPLORE_IDLE_THRESHOLD)
                     {
-                        _hasAutoExploredToday = true;
                         _idleTicks = 0;
                         
                         // Start exploring autonomously (silent - no debug log)
@@ -1409,8 +1422,8 @@ namespace WorkingPets.Behaviors
             _lastPlayerPosition = Vector2.Zero;
         }
         
-        /// <summary>Reset all explore-related state.</summary>
-        private void ResetExploreState()
+        /// <summary>Reset explore state for the current area (keeps daily/loop tracking).</summary>
+        private void ResetExploreAreaState()
         {
             _exploreTarget = null;
             _exploreScanTimer = 0;
@@ -1424,35 +1437,35 @@ namespace WorkingPets.Behaviors
             _wallPassDirection = Vector2.Zero;
             _wallPassTarget = null;
             _followState = FollowState.Idle;
-            // Note: Don't reset _exploreFadingOut here as it's handled separately
+        }
+
+        /// <summary>Reset all explore-related state.</summary>
+        private void ResetExploreState()
+        {
+            ResetExploreAreaState();
+            _exploreTravelPath.Clear();
+            _exploreInTransit = false;
+            _exploreTransitionTargetLocation = null;
+            _exploreTransitionWarpTile = null;
+            _exploreTransitionTargetTile = null;
+            _exploreTransitionTicks = 0;
+            _exploreStartArea = null;
+            _exploreHasLeftStartArea = false;
+            _exploreEndWhenArriveAtStart = false;
+            _currentExploreAreaIndex = 0;
+            // Note: _hasExploredToday is reset daily
         }
         
         /// <summary>Update autonomous explore mode.</summary>
         private void UpdateExplore()
         {
             if (_pet == null) return;
-            
-            // === HANDLE FADE OUT TRANSITION ===
-            if (_exploreFadingOut)
+
+            // === HANDLE AREA TRANSITIONS ===
+            if (_exploreInTransit)
             {
-                _exploreFadeTimer++;
-                
-                // Make pet invisible during fade
-                _pet.IsInvisible = true;
-                
-                // When fade completes, teleport and start fading back in
-                if (_exploreFadeTimer >= EXPLORE_FADE_DURATION)
-                {
-                    _exploreFadingOut = false;
-                    _exploreFadeTimer = 0;
-                    
-                    // Do the actual teleport now
-                    TeleportToNextExploreArea();
-                    
-                    // Make visible again
-                    _pet.IsInvisible = false;
-                }
-                return; // Don't process normal explore while fading
+                UpdateExploreTransition();
+                return;
             }
             
             var location = _pet.currentLocation;
@@ -1471,8 +1484,7 @@ namespace WorkingPets.Behaviors
             // === CHECK IF IN VALID AREA ===
             if (!IsValidExploreArea(location.Name))
             {
-                // Teleport to next valid area
-                TeleportToNextExploreArea();
+                StopExploringReturnToFarm();
                 return;
             }
             
@@ -1515,7 +1527,7 @@ namespace WorkingPets.Behaviors
                 
                 if (_exploreAreaDoneTimer >= EXPLORE_AREA_DONE_DELAY)
                 {
-                    TeleportToNextExploreArea();
+                    TryAdvanceExploreArea();
                 }
                 return;
             }
@@ -1634,21 +1646,219 @@ namespace WorkingPets.Behaviors
             
             return nearestForage;
         }
+
+        /// <summary>Advance to the next explore area or finish if the loop completed.</summary>
+        private void TryAdvanceExploreArea()
+        {
+            if (_pet?.currentLocation == null)
+                return;
+
+            string nextArea = GetNextExploreArea();
+
+            if (_exploreStartArea != null && !string.Equals(nextArea, _exploreStartArea, StringComparison.OrdinalIgnoreCase))
+            {
+                _exploreHasLeftStartArea = true;
+            }
+
+            if (_exploreStartArea != null && string.Equals(nextArea, _exploreStartArea, StringComparison.OrdinalIgnoreCase) && _exploreHasLeftStartArea)
+            {
+                _exploreEndWhenArriveAtStart = true;
+            }
+
+            BeginExploreTravelToArea(nextArea);
+        }
+
+        /// <summary>Begin natural travel to the next explore area using map warps.</summary>
+        private void BeginExploreTravelToArea(string targetArea)
+        {
+            if (_pet?.currentLocation == null)
+                return;
+
+            string currentArea = _pet.currentLocation.Name;
+            if (string.Equals(currentArea, targetArea, StringComparison.OrdinalIgnoreCase))
+            {
+                ResetExploreAreaState();
+                return;
+            }
+
+            ResetExploreAreaState();
+
+            var path = GetExploreTravelPath(currentArea, targetArea);
+            if (path == null || path.Count == 0)
+            {
+                TeleportToExploreArea(targetArea);
+                return;
+            }
+
+            _exploreTravelPath.Clear();
+            foreach (var area in path)
+            {
+                _exploreTravelPath.Enqueue(area);
+            }
+
+            _exploreInTransit = true;
+            BeginExploreTravelHop();
+        }
+
+        /// <summary>Update natural travel between areas.</summary>
+        private void UpdateExploreTransition()
+        {
+            if (_pet == null || _pet.currentLocation == null)
+                return;
+
+            if (_exploreTransitionTargetLocation == null)
+            {
+                _exploreInTransit = false;
+                return;
+            }
+
+            _exploreTransitionTicks++;
+
+            if (string.Equals(_pet.currentLocation.Name, _exploreTransitionTargetLocation, StringComparison.OrdinalIgnoreCase))
+            {
+                _exploreTransitionTicks = 0;
+                _exploreTransitionWarpTile = null;
+                _exploreTransitionTargetTile = null;
+                _pet.controller = null;
+
+                // Arrived at this hop
+                if (_exploreTravelPath.Count > 0)
+                    _exploreTravelPath.Dequeue();
+
+                if (_exploreTravelPath.Count == 0)
+                {
+                    if (_exploreEndWhenArriveAtStart && _exploreStartArea != null &&
+                        string.Equals(_pet.currentLocation.Name, _exploreStartArea, StringComparison.OrdinalIgnoreCase))
+                    {
+                        StopExploringReturnToFarm();
+                        return;
+                    }
+
+                    _exploreInTransit = false;
+                    ResetExploreAreaState();
+                }
+                else
+                {
+                    BeginExploreTravelHop();
+                }
+                return;
+            }
+
+            if (_exploreTransitionWarpTile.HasValue)
+            {
+                float dist = Vector2.Distance(_pet.Tile, _exploreTransitionWarpTile.Value);
+                if (dist <= 0.5f)
+                {
+                    var targetLocation = Game1.getLocationFromName(_exploreTransitionTargetLocation);
+                    if (targetLocation != null)
+                    {
+                        Vector2 preferred = _exploreTransitionTargetTile ?? FindSafeSpawnTile(targetLocation);
+                        Vector2 arrival = GetSafeArrivalTile(targetLocation, preferred);
+                        Game1.warpCharacter(_pet, targetLocation, arrival);
+                    }
+                }
+            }
+
+            if (_exploreTransitionTicks >= EXPLORE_TRANSITION_TIMEOUT)
+            {
+                TeleportToExploreArea(_exploreTransitionTargetLocation);
+                _exploreTransitionTicks = 0;
+            }
+        }
+
+        /// <summary>Start a single hop in the travel path.</summary>
+        private void BeginExploreTravelHop()
+        {
+            if (_pet?.currentLocation == null || _exploreTravelPath.Count == 0)
+                return;
+
+            string nextArea = _exploreTravelPath.Peek();
+            _exploreTransitionTargetLocation = nextArea;
+            _exploreTransitionTicks = 0;
+
+            var warp = FindWarpToLocation(_pet.currentLocation, nextArea);
+            if (warp == null)
+            {
+                TeleportToExploreArea(nextArea);
+                return;
+            }
+
+            _exploreTransitionWarpTile = new Vector2(warp.X, warp.Y);
+            _exploreTransitionTargetTile = new Vector2(warp.TargetX, warp.TargetY);
+
+            _pet.controller = new PathFindController(_pet, _pet.currentLocation, new Point(warp.X, warp.Y), 0);
+        }
+
+        /// <summary>Get a natural travel path between explore areas.</summary>
+        private List<string>? GetExploreTravelPath(string fromArea, string toArea)
+        {
+            if (string.Equals(fromArea, toArea, StringComparison.OrdinalIgnoreCase))
+                return new List<string>();
+
+            var graph = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "Town", new List<string> { "Mountain", "Forest", "Beach" } },
+                { "Mountain", new List<string> { "Town" } },
+                { "Forest", new List<string> { "Town" } },
+                { "Beach", new List<string> { "Town" } },
+            };
+
+            if (!graph.ContainsKey(fromArea) || !graph.ContainsKey(toArea))
+                return null;
+
+            var queue = new Queue<string>();
+            var cameFrom = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+            queue.Enqueue(fromArea);
+            cameFrom[fromArea] = null;
+
+            while (queue.Count > 0)
+            {
+                string current = queue.Dequeue();
+                if (string.Equals(current, toArea, StringComparison.OrdinalIgnoreCase))
+                    break;
+
+                foreach (string next in graph[current])
+                {
+                    if (cameFrom.ContainsKey(next))
+                        continue;
+                    cameFrom[next] = current;
+                    queue.Enqueue(next);
+                }
+            }
+
+            if (!cameFrom.ContainsKey(toArea))
+                return null;
+
+            var path = new List<string>();
+            string? step = toArea;
+            while (step != null && !string.Equals(step, fromArea, StringComparison.OrdinalIgnoreCase))
+            {
+                path.Add(step);
+                step = cameFrom[step];
+            }
+            path.Reverse();
+            return path;
+        }
+
+        /// <summary>Find a warp from the current location to the target location.</summary>
+        private Warp? FindWarpToLocation(GameLocation location, string targetLocationName)
+        {
+            if (location?.warps == null)
+                return null;
+
+            foreach (var warp in location.warps)
+            {
+                if (string.Equals(warp.TargetName, targetLocationName, StringComparison.OrdinalIgnoreCase))
+                    return warp;
+            }
+
+            return null;
+        }
         
         /// <summary>Check if an area is valid for exploration.</summary>
         private bool IsValidExploreArea(string locationName)
         {
-            // Exclude Ginger Island and Desert
-            if (locationName.Contains("Island") || locationName.Contains("Caldera") || 
-                locationName.Contains("Volcano") || locationName.Contains("FieldOffice"))
-                return false;
-            
-            if (locationName == "Desert" || locationName == "DesertFestival" || 
-                locationName == "SkullCave" || locationName == "Club")
-                return false;
-            
-            // Allow standard Stardew Valley areas
-            return true;
+            return EXPLORE_AREAS.Any(area => string.Equals(area, locationName, StringComparison.OrdinalIgnoreCase));
         }
         
         /// <summary>Get the next area to explore.</summary>
@@ -1659,40 +1869,23 @@ namespace WorkingPets.Behaviors
             return EXPLORE_AREAS[_currentExploreAreaIndex];
         }
         
-        /// <summary>Teleport pet to the next exploration area.</summary>
-        private void TeleportToNextExploreArea()
+        /// <summary>Teleport pet to a specific exploration area (fallback only).</summary>
+        private void TeleportToExploreArea(string targetArea)
         {
             if (_pet == null) return;
-            
-            string nextArea = GetNextExploreArea();
-            GameLocation? targetLocation = Game1.getLocationFromName(nextArea);
-            
-            // Keep trying until we find a valid location
-            int attempts = 0;
-            while (targetLocation == null && attempts < EXPLORE_AREAS.Length)
-            {
-                nextArea = GetNextExploreArea();
-                targetLocation = Game1.getLocationFromName(nextArea);
-                attempts++;
-            }
-            
+
+            GameLocation? targetLocation = Game1.getLocationFromName(targetArea);
             if (targetLocation != null)
             {
-                // Find a safe spawn point
                 Vector2 spawnTile = FindSafeSpawnTile(targetLocation);
-                
-                Game1.warpCharacter(_pet, targetLocation, spawnTile);
-                ResetExploreState();
-                _isExploring = true; // Keep exploring
-                
-
+                Vector2 arrival = GetSafeArrivalTile(targetLocation, spawnTile);
+                Game1.warpCharacter(_pet, targetLocation, arrival);
+                ResetExploreAreaState();
+                _isExploring = true;
             }
             else
             {
-                // Fallback to Farm
-                Game1.warpCharacter(_pet, "Farm", new Vector2(64, 15));
-                ResetExploreState();
-                _isExploring = true;
+                StopExploringReturnToFarm();
             }
         }
         
@@ -1711,7 +1904,7 @@ namespace WorkingPets.Behaviors
             
             foreach (var tile in commonSpawns)
             {
-                if (IsTileWalkable(location, tile))
+                if (IsTileWalkable(location, tile) && !IsTileOccupiedByPet(location, tile))
                     return tile;
             }
             
@@ -1722,12 +1915,49 @@ namespace WorkingPets.Behaviors
                 int y = _random.Next(5, Math.Min(50, location.Map?.Layers[0]?.LayerHeight ?? 50));
                 Vector2 tile = new Vector2(x, y);
                 
-                if (IsTileWalkable(location, tile))
+                if (IsTileWalkable(location, tile) && !IsTileOccupiedByPet(location, tile))
                     return tile;
             }
             
             // Fallback
             return new Vector2(10, 10);
+        }
+
+        /// <summary>Pick a safe arrival tile near a preferred tile, avoiding other pets.</summary>
+        private Vector2 GetSafeArrivalTile(GameLocation location, Vector2 preferredTile)
+        {
+            if (IsTileWalkable(location, preferredTile) && !IsTileOccupiedByPet(location, preferredTile))
+                return preferredTile;
+
+            for (int radius = 1; radius <= 4; radius++)
+            {
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    for (int dy = -radius; dy <= radius; dy++)
+                    {
+                        Vector2 tile = preferredTile + new Vector2(dx, dy);
+                        if (IsTileWalkable(location, tile) && !IsTileOccupiedByPet(location, tile))
+                            return tile;
+                    }
+                }
+            }
+
+            return FindSafeSpawnTile(location);
+        }
+
+        /// <summary>Check if a tile is already occupied by another pet.</summary>
+        private bool IsTileOccupiedByPet(GameLocation location, Vector2 tile)
+        {
+            var pets = MultiPetManager.GetAllPets();
+            foreach (var pet in pets)
+            {
+                if (pet == null || pet.currentLocation != location)
+                    continue;
+                if (Vector2.Distance(pet.Tile, tile) < 0.5f)
+                    return true;
+            }
+
+            return false;
         }
 
         /// <summary>Stop the pet's movement smoothly.</summary>
