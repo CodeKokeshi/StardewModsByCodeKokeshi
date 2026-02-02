@@ -1,135 +1,63 @@
-1.4.1
-=== Stability & Crash Fixes ===
-- FIXED: Crash when whistling an exploring pet! Warping now uses DelayedAction for safe async operation.
-- FIXED: Added null checks and try-catch around all warp operations to prevent crashes.
-- FIXED: StopExploring now safely handles edge cases (events, festivals, null locations).
-
-=== Inventory Full Handling ===
-- NEW: Pet automatically stops foraging/exploring when inventory is full!
-- NEW: Inventory full check runs before any pickup attempt - no wasted effort.
-- NEW: When inventory fills up during explore, pet returns to Farm and goes idle.
-- NEW: Pets won't chase forageables if they have no space to store them.
-- NEW: **ALWAYS** shows HUD notification when inventory is full (regardless of notification settings).
-
-=== Auto-Explore Feature ===
-- NEW: Pets will autonomously decide to explore ONCE per day when idle for too long!
-- NEW: After ~30 seconds of idle time, there's a chance the pet will start exploring on its own.
-- NEW: Auto-explore only happens once per day - resets at start of new day.
-- NEW: Requires inventory space - won't auto-explore if inventory is full.
-
-=== Notification Improvements ===
-- NEW: "Show Forage Notifications" config option - disabled by default!
-- NEW: "Show State Notifications" config option - disabled by default!
-- CHANGED: Forage pickup HUD messages now respect ShowForageNotifications config.
-- CHANGED: State change messages (follow/explore/work start/stop) respect ShowStateNotifications config.
-- IMPROVED: Less spam by default - only shows notifications when you enable them.
-
-=== Whistle Menu Improvements ===
-- CHANGED: "Exploring" status now shows location! e.g. "Exploring (Mountain)", "Exploring (Forest)"
-- CHANGED: Removed gold color from status - now uses normal text color for consistency.
-- IMPROVED: CurrentExploreLocation property tracks which area the pet is currently exploring.
-
-=== Debug Log Reduction ===
-- REMOVED: Verbose state change logs (started/stopped working/following/exploring).
-- REMOVED: Movement debug logs (wall-pass activation, arrival at target, scanning for work).
-- REMOVED: Forage pickup/inventory logs that cluttered the console.
-- IMPROVED: Debug logs now reserved for edge cases and errors only - cleaner console output!
-
 1.4.0
-=== NEW: Autonomous Explore Mode ===
-- NEW: "Go explore the valley!" - Pet autonomously forages across Stardew Valley without following you!
-- NEW: Pet scans entire area for forageables, collects them all, then teleports to the next area.
-- NEW: Explores only standard Stardew Valley areas - NO Ginger Island, NO Desert!
-- NEW: Valid explore areas include: Farm, Town, Mountain, Forest, Beach, BusStop, Backwoods, Railroad, Woods, and more.
-- NEW: "Come back home" option returns pet to your location instantly.
-- NEW: Separate from Follow mode - choose between following you OR exploring independently.
-- NEW: Uses same BLINK wall-pass system to reach forageables through obstacles.
-- NEW: Whistle menu shows "Exploring" status in gold color.
-- NEW: Whistling an exploring pet will stop exploration and make them follow you!
-
-=== MAJOR: Complete Follow System Rewrite ===
-- FIXED: Pet stuttering and left-right flickering completely eliminated! Movement is now buttery smooth.
-- FIXED: Pets no longer get stuck on ANY obstacles - EXTREME BLINK mode kicks in automatically.
-- FIXED: Vanilla pet behavior no longer interferes with mod-controlled movement.
-- FIXED: Pets won't randomly fall asleep or sit down while following you.
-- FIXED: "Moonwalking" bug (moving while facing opposite direction) after picking up forageables.
-- FIXED: Pets can now cross beaches, rivers, and any terrain without getting stuck!
-- FIXED: Pets now IMMEDIATELY look for the next forageable after pickup instead of returning to player!
-
-=== EXTREME BLINK Wall-Pass System (Stuck Recovery) ===
-- NEW: When stuck for ~0.5 seconds, pets activate EXTREME BLINK MODE with insane speed (50 px/frame)!
-- NEW: Wall-pass works for BOTH following AND foraging - pets blink through walls to reach anything.
-- NEW: Pets phase through **EVERYTHING** - water, walls, buildings, fences, rocks, trees, EVERYTHING!
-- NEW: No collision checks in blink mode - pets become ghosts until they reach their target.
-- NEW: Direction is LOCKED during wall-pass to prevent wobbling/flickering while phasing.
-- NEW: Wall-pass INSTANTLY accelerates (0.8 lerp) - looks like a true teleport/blink.
-- NEW: Wall-pass auto-exits when: reaching target, timeout (~4 sec max for long distances), or forage disappears.
-- NEW: Increased timeout to 4 seconds (240 ticks) to handle long distances like crossing beaches.
-- IMPROVED: Debug logging shows when blink activates, distance to target, and speed.
-- IMPROVED: Forage wall-pass marks unreachable items after timeout and moves to next target.
-
-=== Foraging Behavior Improvements ===
-- CHANGED: Foraging takes ABSOLUTE priority - pet completely ignores player while collecting items.
-- NEW: After picking up forage, pet IMMEDIATELY scans for the next forageable instead of returning to player!
-- NEW: Pet only returns to player when ALL nearby forageables have been collected.
-- NEW: Forage stuck activates WALL-PASS (0.5 sec) instead of marking unreachable immediately.
-- NEW: Unreachable forage tiles tracked and cleared every 10 seconds.
-- IMPROVED: Forage scanning every 12 ticks (was 15) for more responsive pickup.
-- NEW: 10-tile leash - won't chase forageables too far from player while following.
-
-=== Moonwalking Fix ===
-- NEW: Direction is synced to velocity when transitioning between states.
-- NEW: SyncDirectionToTarget() called when switching from forage to follow.
-- NEW: SyncDirectionToVelocity() called after wall-pass completion.
-- FIXED: Pet now faces the correct direction after picking up forageables.
-- FIXED: Pet faces player immediately when forage target disappears.
-
-=== Idle Roaming (NEW!) ===
-- NEW: When player is stationary and pet is close, pet will do small random movements!
-- NEW: Pet "roams" within 0.75 tiles of current position for natural behavior.
-- NEW: Roaming only triggers after player stationary for 1+ second.
-- NEW: 2% chance per tick to start a roam (not constant movement).
-- NEW: Roaming cancels immediately when player moves or pet needs to follow.
-- NEW: 30-tick cooldown between roams to prevent hyperactive behavior.
-
-=== Movement System Overhaul ===
-- NEW: State machine with 4 states: Idle, FollowingPlayer, Foraging, WallPassing.
-- NEW: Smooth velocity-based movement with Vector2.Lerp acceleration (0.2 factor).
-- NEW: Smooth deceleration when stopping (0.3 lerp toward zero instead of instant stop).
-- NEW: Direction locking with configurable threshold (0.4) - prevents flickering on diagonal movement.
-- NEW: Double direction lock time during wall-pass for extra stability.
-- IMPROVED: Obstacle avoidance tries angles: 25°, -25°, 45°, -45°, 70°, -70° before sliding.
-- IMPROVED: Slide movement at 60% speed along walls when angled approaches fail.
-- IMPROVED: Follow distances: stop at 1.25 tiles, start at 2.5 tiles (tighter follow).
-- IMPROVED: Speed scaling: 2.2x sprint (8+ tiles), 1.8x (6+ tiles), 1.4x (4+ tiles), 1.1x (2.5+ tiles).
-
-=== Foraging System ===
-- CHANGED: Foraging takes ABSOLUTE priority - pet completely ignores player while collecting items.
-- NEW: Forage stuck activates WALL-PASS (0.5 sec) instead of marking unreachable immediately.
-- NEW: Unreachable forage tiles tracked and cleared every 10 seconds.
-- IMPROVED: Forage scanning every 12 ticks (was 15) for more responsive pickup.
-- IMPROVED: Immediately scans for next forageable after pickup (no delay).
-- NEW: 10-tile leash - won't chase forageables too far from player.
-
-=== Harmony Patches ===
-- NEW: RunState_Prefix - completely suppresses vanilla pet AI when following/working.
-- NEW: BehaviorOnFarmerLocationEntry_Prefix - prevents random sleep behavior while following.
-- IMPROVED: Forces pet out of Sleep/SitDown behaviors when follow activates.
-- IMPROVED: Clears vanilla PathFindController to prevent conflicts.
-
-=== Edge Cases Handled ===
-- Location changes: Properly warps pet and resets all state.
-- Water navigation: Even in wall-pass, pets route around water tiles.
-- Forage stuck: After 0.5 sec, activates wall-pass to reach it (or marks unreachable after 2 sec timeout).
-- Wall-pass stuck: Times out after 2 seconds, gives normal movement another chance.
-- State transitions: Full state reset when toggling follow mode.
-- Animation: Proper animate calls, smooth stop animation on halt.
-- Direction sync: Facing direction always matches movement direction after state changes.
-
-=== Other Fixes ===
-- FIXED: Pet command menu no longer hijacks normal interaction (hold LeftShift to open).
-- IMPROVED: Overnight scavenging now happens regardless of pet state.
-- NEW: Added i18n support (English default) for pet menu and HUD messages.
+- Exploration system with simple teleport and circular route patterns
+- Pet follows a circular route (clockwise or counter-clockwise, randomly chosen each time)
+- Clockwise: Backwoods → Mountains → Railroad → Town → BusStop → Forest → Woods → Beach (loop)
+- Counter-clockwise: BusStop → Town → Mountains → Railroad → Backwoods → Forest → Woods → Beach (loop)
+- Pet teleports directly to areas with forageables (no complex pathing)
+- Exploration pre-scans all areas and only visits areas that have items to collect
+- When area is cleared, pet teleports to next area in the circular route
+- Exploration ends when all areas are cleared OR inventory is full
+- When done exploring, pet returns to farm and rests for the day
+- Explore option hidden when already explored today, inventory full, or no forage available
+- Pets can be whistled back during exploration (pauses exploration)
+- "Continue exploring" option available when exploration was paused
+- Only one pet can explore at a time (other pets show disabled option)
+- Each area is marked as "cleared" when no forageables remain, resets daily
+- Right-click pet to open command menu (dialogue only appears when stationary, not while walking)
+- Notifications added for exploration start, work start, and work stop
+- Each pet now has its own separate inventory (no longer shared between all pets)
+- Pet picks up foraged items with quality based on player's foraging level
+- Forage quality: 20% iridium at level 10+, 33% gold at level 8+, 50% silver at level 4+
+- Pet sounds now correctly match pet type (dogs bark, cats meow, turtles chirp, etc.)
+- Pet uses EXTREME BLINK wall-pass system to reach forageables through any obstacle
+- Complete follow system rewrite eliminates stuttering and left-right flickering
+- Pets no longer get stuck on obstacles with automatic EXTREME BLINK activation
+- EXTREME BLINK activates after 0.5 seconds stuck with 50 px/frame speed
+- Wall-pass works for both following and foraging, phases through everything
+- Direction locked during wall-pass to prevent wobbling while phasing
+- Wall-pass auto-exits when reaching target or 4 second timeout
+- Vanilla pet behavior no longer interferes with mod-controlled movement
+- Pets won't randomly fall asleep or sit down while following
+- Fixed moonwalking bug where pet moved while facing opposite direction
+- Pet immediately looks for next forageable after pickup instead of returning to player
+- Foraging takes absolute priority over following when items are nearby
+- After picking up forage, pet immediately scans for next item instead of returning to player
+- Pet only returns to player when all nearby forageables are collected
+- 10-tile forage leash prevents chasing items too far from player
+- Unreachable forage tiles tracked and cleared every 10 seconds
+- Forage scanning improved to every 12 ticks for more responsive pickup
+- Idle roaming behavior when player is stationary and pet is close
+- Pet does small random movements within 0.75 tiles for natural behavior
+- Roaming has 2% chance per tick with 30-tick cooldown between roams
+- State machine with 4 states: Idle, FollowingPlayer, Foraging, WallPassing
+- Smooth velocity-based movement with Vector2.Lerp acceleration
+- Smooth deceleration when stopping instead of instant halt
+- Direction locking with configurable threshold prevents flickering on diagonal movement
+- Follow distances: stop at 1.25 tiles, start at 2.5 tiles for tighter following
+- Speed scaling: 2.2x sprint (8+ tiles), 1.8x (6+ tiles), 1.4x (4+ tiles), 1.1x (2.5+ tiles)
+- Slide movement at 60% speed along walls when blocked
+- RunState_Prefix harmony patch suppresses vanilla pet AI when following/working
+- BehaviorOnFarmerLocationEntry_Prefix prevents random sleep behavior while following
+- Forces pet out of Sleep/SitDown behaviors when follow mode activates
+- Clears vanilla PathFindController to prevent conflicts with mod movement
+- "Show Forage Notifications" config option added (disabled by default)
+- "Show State Notifications" config option added (disabled by default)
+- Forage pickup HUD messages respect ShowForageNotifications config
+- State change messages respect ShowStateNotifications config
+- Removed verbose debug logs for cleaner console output
+- Pet command menu requires holding LeftShift to prevent hijacking normal interaction
+- Overnight scavenging works regardless of current pet state
+- Added i18n support for pet menu and HUD messages
 
 1.3.1
 - Fixed bug where SMAPI console window would flash repeatedly after naming a new pet during the adoption cutscene.

@@ -71,16 +71,30 @@ namespace WorkingPets.Behaviors
         private const float EXPLORE_FORAGE_SPEED = 6f;        // Speed when exploring
         private const int EXPLORE_TRANSITION_TIMEOUT = 900;   // 15 seconds before fallback teleport
         
-        // Valid exploration areas (no Ginger Island, no Desert, no special areas)
+        // Valid exploration areas (outdoor valley areas only - no Desert, no Ginger Island, no interiors)
+        // Clockwise route: Backwoods → Mountains → Town → BusStop → Forest → Beach
+        private static readonly string[] EXPLORE_ROUTE_CLOCKWISE = new[]
+        {
+            "Backwoods", "Mountain", "Railroad", "Town", "BusStop", "Forest", "Woods", "Beach"
+        };
+        
+        // Counter-clockwise route: BusStop → Town → Mountains → Backwoods → Forest → Beach
+        private static readonly string[] EXPLORE_ROUTE_COUNTERCLOCKWISE = new[]
+        {
+            "BusStop", "Town", "Mountain", "Railroad", "Backwoods", "Forest", "Woods", "Beach"
+        };
+        
+        // Legacy array for validation only
         private static readonly string[] EXPLORE_AREAS = new[]
         {
-            "Mountain", "Forest", "Town", "Beach"
+            "Mountain", "Forest", "Town", "Beach", "Farm", "BusStop", "Backwoods", "Railroad", "Woods"
         };
 
         /*********
         ** Fields
         *********/
         private Pet? _pet;
+        private PetInventoryManager? _inventoryManager;  // Per-pet inventory
         private bool _isWorking;
         private bool _isFollowing;
         private bool _isExploring;  // NEW: Autonomous explore mode
@@ -156,21 +170,21 @@ namespace WorkingPets.Behaviors
         private bool _exploreAreaComplete = false;
         private HashSet<Vector2> _exploreUnreachableTiles = new();
         private int _currentExploreAreaIndex = 0;
-        private string? _exploreStartArea;
-        private bool _exploreHasLeftStartArea = false;
-        private bool _exploreEndWhenArriveAtStart = false;
-        private bool _exploreInTransit = false;
-        private readonly Queue<string> _exploreTravelPath = new();
-        private string? _exploreTransitionTargetLocation;
-        private Vector2? _exploreTransitionWarpTile;
-        private Vector2? _exploreTransitionTargetTile;
-        private int _exploreTransitionTicks = 0;
+        private bool _exploreClockwise = true;  // True = clockwise, False = counter-clockwise
         // ===== END EXPLORE MODE STATE =====
         
         // ===== AUTO-EXPLORE STATE =====
         private bool _hasExploredToday = false;
+        private bool _explorePaused = false;  // True when exploration was interrupted (whistle) but can resume
         private int _idleTicks = 0;
-        private const int AUTO_EXPLORE_IDLE_THRESHOLD = 1800; // 30 seconds of idle before auto-explore
+        private const int AUTO_EXPLORE_IDLE_THRESHOLD = 3600; // 60 seconds (1 minute) of idle before auto-explore
+        
+        // Track which areas have been cleared of forageables
+        private static readonly HashSet<string> _clearedAreas = new(StringComparer.OrdinalIgnoreCase);
+        private static int _lastForageScanDay = -1;  // Reset cleared areas each day
+        
+        // Single explorer enforcement - only one pet can explore at a time
+        private static Guid? _currentExplorerPetId = null;
         // ===== END AUTO-EXPLORE STATE =====
 
         private readonly Random _random = new();
@@ -187,7 +201,43 @@ namespace WorkingPets.Behaviors
         public bool IsWorking => _isWorking;
         public bool IsFollowing => _isFollowing;
         public bool IsExploring => _isExploring;
+        public bool IsExplorePaused => _explorePaused;  // Exploration was interrupted but can resume
+        
+        /// <summary>Check if another pet is currently exploring.</summary>
+        public static bool IsAnyPetExploring => _currentExplorerPetId.HasValue;
+        
+        /// <summary>Check if THIS pet is the current explorer.</summary>
+        public bool IsCurrentExplorer => _pet != null && _currentExplorerPetId == _pet.petId.Value;
+        
+        /// <summary>Check if pet can explore - must have inventory space, areas with forage, and no other pet exploring.</summary>
+        public bool CanExplore
+        {
+            get
+            {
+                // Can't explore if inventory is full
+                if (InventoryManager.IsFull)
+                    return false;
+                
+                // Can't explore if already finished for the day (and not paused)
+                if (_hasExploredToday && !_explorePaused)
+                    return false;
+                
+                // Can't explore if all areas are cleared
+                if (!HasAnyAreaWithForage())
+                    return false;
+                
+                // Can't explore if another pet is already exploring (unless this pet is the paused explorer)
+                if (_currentExplorerPetId.HasValue && _pet != null && _currentExplorerPetId != _pet.petId.Value)
+                    return false;
+                
+                return true;
+            }
+        }
+        
         public Pet? Pet => _pet;
+        
+        /// <summary>Get this pet's inventory manager.</summary>
+        public PetInventoryManager InventoryManager => _inventoryManager ??= new PetInventoryManager();
         
         /// <summary>Get the current explore location name for display.</summary>
         public string? CurrentExploreLocation => _isExploring ? _pet?.currentLocation?.Name : null;
@@ -198,6 +248,7 @@ namespace WorkingPets.Behaviors
         public void Initialize(Pet pet)
         {
             _pet = pet;
+            _inventoryManager = new PetInventoryManager();
             LoadState(pet);
         }
         
@@ -205,13 +256,18 @@ namespace WorkingPets.Behaviors
         public void ResetDailyFlags()
         {
             _hasExploredToday = false;
+            _explorePaused = false;
             _idleTicks = 0;
+            
+            // Clear the areas that were marked as having no forage (they may have respawned)
+            _clearedAreas.Clear();
+            _lastForageScanDay = Game1.dayOfMonth;
         }
         
         /// <summary>Check if inventory is full and stop work/explore if needed.</summary>
         private bool CheckInventoryFull()
         {
-            if (!ModEntry.InventoryManager.IsFull)
+            if (!InventoryManager.IsFull)
                 return false;
             
             // Inventory is full - stop all collecting activities
@@ -245,6 +301,14 @@ namespace WorkingPets.Behaviors
             if (_isExploring)
             {
                 _isExploring = false;
+                _explorePaused = false; // Not paused, fully done
+                
+                // Release explorer slot so another pet can explore
+                if (_pet != null && _currentExplorerPetId == _pet.petId.Value)
+                {
+                    _currentExplorerPetId = null;
+                }
+                
                 ResetExploreState();
                 if (_pet != null)
                 {
@@ -279,12 +343,21 @@ namespace WorkingPets.Behaviors
 
             if (_isWorking)
             {
-
-
+                // Show work started notification
+                if (_pet != null)
+                {
+                    string petName = _pet.Name ?? "Your pet";
+                    Game1.addHUDMessage(new HUDMessage($"{petName} started working!", HUDMessage.newQuest_type));
+                }
             }
             else
             {
-
+                // Show work stopped notification
+                if (_pet != null)
+                {
+                    string petName = _pet.Name ?? "Your pet";
+                    Game1.addHUDMessage(new HUDMessage($"{petName} stopped working.", HUDMessage.newQuest_type));
+                }
                 StopWorkImmediately();
             }
         }
@@ -347,7 +420,15 @@ namespace WorkingPets.Behaviors
         {
             if (_isExploring)
             {
+                // Stop exploring (manual stop via dialogue = finished for the day)
                 _isExploring = false;
+                _explorePaused = false;  // Manual stop = done for day
+                _hasExploredToday = true;
+                
+                // Release explorer slot
+                if (_pet != null && _currentExplorerPetId == _pet.petId.Value)
+                    _currentExplorerPetId = null;
+                
                 ResetExploreState();
                 if (_pet != null)
                 {
@@ -358,50 +439,71 @@ namespace WorkingPets.Behaviors
                 return;
             }
 
-            if (_hasExploredToday)
+            // Check if we can explore (inventory space + areas with forage + no other explorer)
+            if (!CanExplore)
             {
-                return; // Only explore once per day
+                return; // Can't explore
             }
 
-            if (_pet?.currentLocation == null || !IsValidExploreArea(_pet.currentLocation.Name))
+            if (_pet?.currentLocation == null)
             {
-                return; // Only start exploring in allowed exterior areas
+                return;
             }
 
             _isExploring = true;
-            _hasExploredToday = true;
+            _hasExploredToday = false;  // Will be set to true when finished
+            _explorePaused = false;
             
-            if (_isExploring)
+            // Register as current explorer
+            _currentExplorerPetId = _pet.petId.Value;
+            
+            // Randomly pick exploration direction (50% chance each)
+            _exploreClockwise = _random.Next(2) == 0;
+            _currentExploreAreaIndex = 0;  // Start at beginning of chosen route
+            
+            // Stop other modes
+            _isWorking = false;
+            _isFollowing = false;
+            _targetTile = null;
+            _pendingAction = null;
+            ResetFollowState();
+            ResetExploreAreaState();
+            
+            // Find first area with forage and teleport there
+            string? targetArea = GetNextAreaWithForage();
+            if (targetArea == null)
             {
-                // Stop other modes
-                _isWorking = false;
-                _isFollowing = false;
-                _targetTile = null;
-                _pendingAction = null;
-                ResetFollowState();
-                ResetExploreAreaState();
-                _exploreStartArea = _pet.currentLocation.Name;
-                _exploreHasLeftStartArea = false;
-                _exploreEndWhenArriveAtStart = false;
-                _currentExploreAreaIndex = Array.IndexOf(EXPLORE_AREAS, _exploreStartArea);
-                if (_currentExploreAreaIndex < 0)
-                    _currentExploreAreaIndex = 0;
+                // No areas have forage
+                FinishExploringForDay("no forage found");
+                return;
+            }
+            
+            // Teleport to the area
+            TeleportToExploreArea(targetArea);
+            
+            if (_pet != null)
+            {
+                _pet.farmerPassesThrough = true;
+                _pet.controller = null;
+                _pet.Halt();
                 
-                if (_pet != null)
-                {
-                    _pet.farmerPassesThrough = true;
-                    _pet.controller = null;
-                    _pet.Halt();
-                }
+                // Show notification
+                string petName = _pet.Name ?? "Your pet";
+                string direction = _exploreClockwise ? "clockwise" : "counter-clockwise";
+                Game1.addHUDMessage(new HUDMessage($"{petName} started exploring ({direction} route)!", HUDMessage.newQuest_type));
             }
         }
         
-        /// <summary>Stop exploring and return to player.</summary>
+        /// <summary>Stop exploring and return to player (pauses exploration, can resume).</summary>
         public void StopExploring()
         {
             if (_isExploring)
             {
                 _isExploring = false;
+                _explorePaused = true;  // Paused, not finished - can resume via dialogue
+                
+                // Keep explorer slot for this pet so they can resume (don't release _currentExplorerPetId)
+                
                 ResetExploreState();
                 if (_pet != null)
                 {
@@ -510,16 +612,16 @@ namespace WorkingPets.Behaviors
 
             if (!_isWorking)
             {
-                // === AUTO-EXPLORE ONCE PER DAY ===
-                // If pet is idle for too long and hasn't explored today, start exploring
-                if (!_hasExploredToday && ModEntry.InventoryManager.HasSpace)
+                // === AUTO-EXPLORE ===
+                // If pet is idle for too long and CAN explore (has space + areas with forage), start exploring
+                if (CanExplore)
                 {
                     _idleTicks++;
                     if (_idleTicks >= AUTO_EXPLORE_IDLE_THRESHOLD)
                     {
                         _idleTicks = 0;
                         
-                        // Start exploring autonomously (silent - no debug log)
+                        // Start exploring autonomously
                         ToggleExplore();
                     }
                 }
@@ -559,12 +661,6 @@ namespace WorkingPets.Behaviors
             ScanForWork(farm);
         }
 
-        public void SaveState(Pet pet)
-        {
-            if (pet == null) return;
-            pet.modData["WorkingPets.IsWorking"] = _isWorking.ToString();
-        }
-
         public void LoadState(Pet pet)
         {
             if (pet == null) return;
@@ -572,6 +668,21 @@ namespace WorkingPets.Behaviors
             {
                 _isWorking = bool.TryParse(value, out bool result) && result;
             }
+            
+            // Load this pet's inventory
+            _inventoryManager?.Load(pet);
+        }
+        
+        /// <summary>Save this pet's state to modData.</summary>
+        public void SaveState(Pet pet)
+        {
+            if (pet == null) return;
+            
+            // Save work state
+            pet.modData["WorkingPets.IsWorking"] = _isWorking.ToString();
+            
+            // Save this pet's inventory
+            _inventoryManager?.Save(pet);
         }
 
         /*********
@@ -1443,15 +1554,6 @@ namespace WorkingPets.Behaviors
         private void ResetExploreState()
         {
             ResetExploreAreaState();
-            _exploreTravelPath.Clear();
-            _exploreInTransit = false;
-            _exploreTransitionTargetLocation = null;
-            _exploreTransitionWarpTile = null;
-            _exploreTransitionTargetTile = null;
-            _exploreTransitionTicks = 0;
-            _exploreStartArea = null;
-            _exploreHasLeftStartArea = false;
-            _exploreEndWhenArriveAtStart = false;
             _currentExploreAreaIndex = 0;
             // Note: _hasExploredToday is reset daily
         }
@@ -1461,10 +1563,10 @@ namespace WorkingPets.Behaviors
         {
             if (_pet == null) return;
 
-            // === HANDLE AREA TRANSITIONS ===
-            if (_exploreInTransit)
+            // === CHECK IF INVENTORY IS FULL ===
+            if (!InventoryManager.HasSpace)
             {
-                UpdateExploreTransition();
+                FinishExploringForDay("inventory full");
                 return;
             }
             
@@ -1484,7 +1586,16 @@ namespace WorkingPets.Behaviors
             // === CHECK IF IN VALID AREA ===
             if (!IsValidExploreArea(location.Name))
             {
-                StopExploringReturnToFarm();
+                // Teleport to first area with forage
+                string? targetArea = GetNextAreaWithForage();
+                if (targetArea != null)
+                {
+                    TeleportToExploreArea(targetArea);
+                }
+                else
+                {
+                    FinishExploringForDay("no forage found");
+                }
                 return;
             }
             
@@ -1596,7 +1707,7 @@ namespace WorkingPets.Behaviors
                 if (!moved || movedDist < STUCK_MOVEMENT_THRESHOLD)
                 {
                     _exploreStuckTicks++;
-                    if (_exploreStuckTicks >= STUCK_THRESHOLD_TICKS)
+                    if (_exploreStuckTicks >= STUCK_THRESHOLD_TICKS && _followState != FollowState.WallPassing)
                     {
                         // Activate wall-pass
                         _followState = FollowState.WallPassing;
@@ -1606,8 +1717,14 @@ namespace WorkingPets.Behaviors
                         if (_wallPassDirection != Vector2.Zero)
                             _wallPassDirection.Normalize();
                         _currentFollowSpeed = EXPLORE_FORAGE_SPEED;
-                        
-
+                    }
+                    else if (_exploreStuckTicks >= STUCK_THRESHOLD_TICKS * 4)
+                    {
+                        // Been stuck way too long (even with wall-pass) - mark as unreachable and move on
+                        _exploreUnreachableTiles.Add(_exploreTarget.Value);
+                        _exploreTarget = null;
+                        _exploreStuckTicks = 0;
+                        ExitWallPassMode();
                     }
                 }
                 else
@@ -1647,212 +1764,62 @@ namespace WorkingPets.Behaviors
             return nearestForage;
         }
 
-        /// <summary>Advance to the next explore area or finish if the loop completed.</summary>
+        /// <summary>Advance to the next explore area or finish if all areas are cleared.</summary>
         private void TryAdvanceExploreArea()
         {
             if (_pet?.currentLocation == null)
                 return;
 
-            string nextArea = GetNextExploreArea();
-
-            if (_exploreStartArea != null && !string.Equals(nextArea, _exploreStartArea, StringComparison.OrdinalIgnoreCase))
+            // Mark current area as cleared since we're done with it
+            MarkAreaCleared(_pet.currentLocation.Name);
+            
+            // Move to next area in route
+            _currentExploreAreaIndex = (_currentExploreAreaIndex + 1) % (_exploreClockwise ? EXPLORE_ROUTE_CLOCKWISE.Length : EXPLORE_ROUTE_COUNTERCLOCKWISE.Length);
+            
+            // Find next area that has forage
+            string? nextArea = GetNextAreaWithForage();
+            
+            if (nextArea == null)
             {
-                _exploreHasLeftStartArea = true;
+                // All areas are cleared! Exploration complete for today.
+                FinishExploringForDay("all areas cleared");
+                return;
             }
 
-            if (_exploreStartArea != null && string.Equals(nextArea, _exploreStartArea, StringComparison.OrdinalIgnoreCase) && _exploreHasLeftStartArea)
-            {
-                _exploreEndWhenArriveAtStart = true;
-            }
-
-            BeginExploreTravelToArea(nextArea);
+            // Teleport directly to the next area
+            TeleportToExploreArea(nextArea);
         }
 
-        /// <summary>Begin natural travel to the next explore area using map warps.</summary>
-        private void BeginExploreTravelToArea(string targetArea)
+        /// <summary>Finish exploring for the day - pet rests until tomorrow.</summary>
+        private void FinishExploringForDay(string reason)
         {
-            if (_pet?.currentLocation == null)
-                return;
-
-            string currentArea = _pet.currentLocation.Name;
-            if (string.Equals(currentArea, targetArea, StringComparison.OrdinalIgnoreCase))
+            if (_pet == null) return;
+            
+            _hasExploredToday = true;
+            _explorePaused = false;
+            
+            // Release explorer slot
+            if (_currentExplorerPetId == _pet.petId.Value)
             {
-                ResetExploreAreaState();
-                return;
+                _currentExplorerPetId = null;
             }
-
-            ResetExploreAreaState();
-
-            var path = GetExploreTravelPath(currentArea, targetArea);
-            if (path == null || path.Count == 0)
+            
+            _isExploring = false;
+            ResetExploreState();
+            
+            // Warp pet back to farm to rest
+            var farm = Game1.getFarm();
+            if (farm != null)
             {
-                TeleportToExploreArea(targetArea);
-                return;
+                Game1.warpCharacter(_pet, farm, new Vector2(64, 15));
             }
-
-            _exploreTravelPath.Clear();
-            foreach (var area in path)
-            {
-                _exploreTravelPath.Enqueue(area);
-            }
-
-            _exploreInTransit = true;
-            BeginExploreTravelHop();
-        }
-
-        /// <summary>Update natural travel between areas.</summary>
-        private void UpdateExploreTransition()
-        {
-            if (_pet == null || _pet.currentLocation == null)
-                return;
-
-            if (_exploreTransitionTargetLocation == null)
-            {
-                _exploreInTransit = false;
-                return;
-            }
-
-            _exploreTransitionTicks++;
-
-            if (string.Equals(_pet.currentLocation.Name, _exploreTransitionTargetLocation, StringComparison.OrdinalIgnoreCase))
-            {
-                _exploreTransitionTicks = 0;
-                _exploreTransitionWarpTile = null;
-                _exploreTransitionTargetTile = null;
-                _pet.controller = null;
-
-                // Arrived at this hop
-                if (_exploreTravelPath.Count > 0)
-                    _exploreTravelPath.Dequeue();
-
-                if (_exploreTravelPath.Count == 0)
-                {
-                    if (_exploreEndWhenArriveAtStart && _exploreStartArea != null &&
-                        string.Equals(_pet.currentLocation.Name, _exploreStartArea, StringComparison.OrdinalIgnoreCase))
-                    {
-                        StopExploringReturnToFarm();
-                        return;
-                    }
-
-                    _exploreInTransit = false;
-                    ResetExploreAreaState();
-                }
-                else
-                {
-                    BeginExploreTravelHop();
-                }
-                return;
-            }
-
-            if (_exploreTransitionWarpTile.HasValue)
-            {
-                float dist = Vector2.Distance(_pet.Tile, _exploreTransitionWarpTile.Value);
-                if (dist <= 0.5f)
-                {
-                    var targetLocation = Game1.getLocationFromName(_exploreTransitionTargetLocation);
-                    if (targetLocation != null)
-                    {
-                        Vector2 preferred = _exploreTransitionTargetTile ?? FindSafeSpawnTile(targetLocation);
-                        Vector2 arrival = GetSafeArrivalTile(targetLocation, preferred);
-                        Game1.warpCharacter(_pet, targetLocation, arrival);
-                    }
-                }
-            }
-
-            if (_exploreTransitionTicks >= EXPLORE_TRANSITION_TIMEOUT)
-            {
-                TeleportToExploreArea(_exploreTransitionTargetLocation);
-                _exploreTransitionTicks = 0;
-            }
-        }
-
-        /// <summary>Start a single hop in the travel path.</summary>
-        private void BeginExploreTravelHop()
-        {
-            if (_pet?.currentLocation == null || _exploreTravelPath.Count == 0)
-                return;
-
-            string nextArea = _exploreTravelPath.Peek();
-            _exploreTransitionTargetLocation = nextArea;
-            _exploreTransitionTicks = 0;
-
-            var warp = FindWarpToLocation(_pet.currentLocation, nextArea);
-            if (warp == null)
-            {
-                TeleportToExploreArea(nextArea);
-                return;
-            }
-
-            _exploreTransitionWarpTile = new Vector2(warp.X, warp.Y);
-            _exploreTransitionTargetTile = new Vector2(warp.TargetX, warp.TargetY);
-
-            _pet.controller = new PathFindController(_pet, _pet.currentLocation, new Point(warp.X, warp.Y), 0);
-        }
-
-        /// <summary>Get a natural travel path between explore areas.</summary>
-        private List<string>? GetExploreTravelPath(string fromArea, string toArea)
-        {
-            if (string.Equals(fromArea, toArea, StringComparison.OrdinalIgnoreCase))
-                return new List<string>();
-
-            var graph = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase)
-            {
-                { "Town", new List<string> { "Mountain", "Forest", "Beach" } },
-                { "Mountain", new List<string> { "Town" } },
-                { "Forest", new List<string> { "Town" } },
-                { "Beach", new List<string> { "Town" } },
-            };
-
-            if (!graph.ContainsKey(fromArea) || !graph.ContainsKey(toArea))
-                return null;
-
-            var queue = new Queue<string>();
-            var cameFrom = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-            queue.Enqueue(fromArea);
-            cameFrom[fromArea] = null;
-
-            while (queue.Count > 0)
-            {
-                string current = queue.Dequeue();
-                if (string.Equals(current, toArea, StringComparison.OrdinalIgnoreCase))
-                    break;
-
-                foreach (string next in graph[current])
-                {
-                    if (cameFrom.ContainsKey(next))
-                        continue;
-                    cameFrom[next] = current;
-                    queue.Enqueue(next);
-                }
-            }
-
-            if (!cameFrom.ContainsKey(toArea))
-                return null;
-
-            var path = new List<string>();
-            string? step = toArea;
-            while (step != null && !string.Equals(step, fromArea, StringComparison.OrdinalIgnoreCase))
-            {
-                path.Add(step);
-                step = cameFrom[step];
-            }
-            path.Reverse();
-            return path;
-        }
-
-        /// <summary>Find a warp from the current location to the target location.</summary>
-        private Warp? FindWarpToLocation(GameLocation location, string targetLocationName)
-        {
-            if (location?.warps == null)
-                return null;
-
-            foreach (var warp in location.warps)
-            {
-                if (string.Equals(warp.TargetName, targetLocationName, StringComparison.OrdinalIgnoreCase))
-                    return warp;
-            }
-
-            return null;
+            
+            _pet.farmerPassesThrough = false;
+            _pet.Halt();
+            _pet.controller = null;
+            
+            string petName = _pet.Name ?? "Your pet";
+            Game1.addHUDMessage(new HUDMessage($"{petName} finished exploring ({reason}) and is resting.", HUDMessage.newQuest_type));
         }
         
         /// <summary>Check if an area is valid for exploration.</summary>
@@ -1861,12 +1828,145 @@ namespace WorkingPets.Behaviors
             return EXPLORE_AREAS.Any(area => string.Equals(area, locationName, StringComparison.OrdinalIgnoreCase));
         }
         
+        /// <summary>Get the nearest explorable area from the current location.</summary>
+        private string GetNearestExplorableArea(string currentLocation)
+        {
+            if (string.IsNullOrEmpty(currentLocation))
+                return "Farm";
+            
+            string lower = currentLocation.ToLower();
+            
+            // Already in explorable area
+            if (IsValidExploreArea(currentLocation))
+                return currentLocation;
+            
+            // FarmHouse and other farm buildings -> Farm
+            if (lower.Contains("farmhouse") || lower.Contains("coop") || lower.Contains("barn") || 
+                lower.Contains("shed") || lower.Contains("slimehutch"))
+                return "Farm";
+            
+            // Town-related interiors -> Town
+            if (lower.Contains("town") || lower.Contains("saloon") || lower.Contains("blacksmith") || 
+                lower.Contains("pierres") || lower.Contains("joja") || lower.Contains("clinic") ||
+                lower.Contains("trailer") || lower.Contains("mayor") || lower.Contains("haley") ||
+                lower.Contains("alex"))
+                return "Town";
+            
+            // Beach-related interiors -> Beach
+            if (lower.Contains("beach") || lower.Contains("elliotthouse") || lower.Contains("fishshop"))
+                return "Beach";
+            
+            // Forest-related interiors -> Forest
+            if (lower.Contains("forest") || lower.Contains("wizardhouse") || lower.Contains("leah") ||
+                lower.Contains("marnie") || lower.Contains("ranch"))
+                return "Forest";
+            
+            // Mountain-related interiors -> Mountain
+            if (lower.Contains("mountain") || lower.Contains("tent") || lower.Contains("sciencehouse") || 
+                lower.Contains("mine") || lower.Contains("adventureguild") || lower.Contains("carpenter") ||
+                lower.Contains("sebastianroom") || lower.Contains("bathhouse"))
+                return "Mountain";
+            
+            // BusStop related -> BusStop
+            if (lower.Contains("busstop") || lower.Contains("bus"))
+                return "BusStop";
+            
+            // Railroad related -> Railroad
+            if (lower.Contains("railroad") || lower.Contains("bathhouse"))
+                return "Railroad";
+            
+            // Backwoods related -> Backwoods
+            if (lower.Contains("backwoods"))
+                return "Backwoods";
+            
+            // Secret Woods related -> Woods
+            if (lower.Contains("woods"))
+                return "Woods";
+            
+            // Default to Farm
+            return "Farm";
+        }
+        
         /// <summary>Get the next area to explore.</summary>
         private string GetNextExploreArea()
         {
             // Rotate through explore areas
             _currentExploreAreaIndex = (_currentExploreAreaIndex + 1) % EXPLORE_AREAS.Length;
             return EXPLORE_AREAS[_currentExploreAreaIndex];
+        }
+        
+        /// <summary>Check if any explore area has forageables.</summary>
+        private bool HasAnyAreaWithForage()
+        {
+            // Reset cleared areas at start of new day
+            if (Game1.dayOfMonth != _lastForageScanDay)
+            {
+                _clearedAreas.Clear();
+                _lastForageScanDay = Game1.dayOfMonth;
+            }
+            
+            foreach (string areaName in EXPLORE_AREAS)
+            {
+                if (_clearedAreas.Contains(areaName))
+                    continue;
+                    
+                if (AreaHasForage(areaName))
+                    return true;
+            }
+            
+            return false;
+        }
+        
+        /// <summary>Check if a specific area has any forageables.</summary>
+        private bool AreaHasForage(string areaName)
+        {
+            var location = Game1.getLocationFromName(areaName);
+            if (location == null)
+                return false;
+            
+            foreach (var pair in location.Objects.Pairs)
+            {
+                if (IsForageable(pair.Value))
+                    return true;
+            }
+            
+            return false;
+        }
+        
+        /// <summary>Mark an area as cleared (no more forageables).</summary>
+        private void MarkAreaCleared(string areaName)
+        {
+            _clearedAreas.Add(areaName);
+        }
+        
+        /// <summary>Get the next area with forage following the circular route (skips cleared areas).</summary>
+        private string? GetNextAreaWithForage()
+        {
+            // Get the current route based on direction
+            string[] route = _exploreClockwise ? EXPLORE_ROUTE_CLOCKWISE : EXPLORE_ROUTE_COUNTERCLOCKWISE;
+            
+            // Check areas in route order starting from current index
+            for (int i = 0; i < route.Length; i++)
+            {
+                int index = (_currentExploreAreaIndex + i) % route.Length;
+                string area = route[index];
+                
+                if (_clearedAreas.Contains(area))
+                    continue;
+                
+                if (AreaHasForage(area))
+                {
+                    _currentExploreAreaIndex = index;
+                    return area;
+                }
+                else
+                {
+                    // No forage in this area, mark as cleared
+                    MarkAreaCleared(area);
+                }
+            }
+            
+            return null; // All areas cleared
         }
         
         /// <summary>Teleport pet to a specific exploration area (fallback only).</summary>
@@ -2185,7 +2285,7 @@ namespace WorkingPets.Behaviors
             if (_pet == null || location == null) return;
             
             // Check if inventory has space before even trying
-            if (!ModEntry.InventoryManager.HasSpace)
+            if (!InventoryManager.HasSpace)
             {
                 ModEntry.Instance.Monitor.Log($"[WorkingPets] {_pet.Name}'s inventory is full, skipping pickup", LogLevel.Debug);
                 return;
@@ -2202,8 +2302,37 @@ namespace WorkingPets.Behaviors
             Item itemToAdd = obj.getOne();
             itemToAdd.Stack = obj.Stack;
             
+            // Apply foraging quality based on player's foraging level (just like when player picks it up)
+            if (itemToAdd is StardewValley.Object foragedItem && Game1.player != null)
+            {
+                // Use the player's foraging skill to determine quality
+                int foragingLevel = Game1.player.ForagingLevel;
+                
+                // Quality determination (matches game logic in GameLocation.checkAction)
+                // Base quality is 0 (normal)
+                int quality = 0;
+                
+                // Check for iridium quality (level 10+ with chance)
+                if (foragingLevel >= 10 && _random.NextDouble() < 0.2)
+                {
+                    quality = 4; // Iridium
+                }
+                // Check for gold quality (level 8+ with chance)
+                else if (foragingLevel >= 8 && _random.NextDouble() < 0.33)
+                {
+                    quality = 2; // Gold
+                }
+                // Check for silver quality (level 4+ with chance)
+                else if (foragingLevel >= 4 && _random.NextDouble() < 0.5)
+                {
+                    quality = 1; // Silver
+                }
+                
+                foragedItem.Quality = quality;
+            }
+            
             // Try to add to pet inventory
-            if (ModEntry.InventoryManager.AddItem(itemToAdd))
+            if (InventoryManager.AddItem(itemToAdd))
             {
                 // Remove the object from the world
                 location.Objects.Remove(tile);
@@ -2670,7 +2799,7 @@ namespace WorkingPets.Behaviors
             
             ModEntry.Instance.Monitor.Log($"[WorkingPets] Removed {obj.Name} at {tile}, got {drops.Count} drops", LogLevel.Info);
 
-            foreach (var item in drops) ModEntry.InventoryManager.AddItem(item);
+            foreach (var item in drops) InventoryManager.AddItem(item);
         }
 
         private void ChopTreeAt(Farm farm, Vector2 tile, Tree tree)
@@ -2721,7 +2850,7 @@ namespace WorkingPets.Behaviors
                     farm.terrainFeatures.Remove(tile);
                     
                     // Small trees give less wood
-                    ModEntry.InventoryManager.AddItem(ItemRegistry.Create("(O)388", _random.Next(1, 3)));
+                    InventoryManager.AddItem(ItemRegistry.Create("(O)388", _random.Next(1, 3)));
                 }
                 else
                 {
@@ -2737,9 +2866,9 @@ namespace WorkingPets.Behaviors
                     tree.health.Value = 5f;
 
                     // Add drops to pet inventory
-                    ModEntry.InventoryManager.AddItem(ItemRegistry.Create("(O)388", _random.Next(8, 15)));
+                    InventoryManager.AddItem(ItemRegistry.Create("(O)388", _random.Next(8, 15)));
                     if (_random.NextDouble() < 0.5)
-                        ModEntry.InventoryManager.AddItem(ItemRegistry.Create("(O)92", _random.Next(1, 3)));
+                        InventoryManager.AddItem(ItemRegistry.Create("(O)92", _random.Next(1, 3)));
                 }
                 
                 // Reset our hit tracking
@@ -2773,7 +2902,7 @@ namespace WorkingPets.Behaviors
                 farm.terrainFeatures.Remove(tile);
                 _objectDamage.Remove(tile);
 
-                ModEntry.InventoryManager.AddItem(ItemRegistry.Create("(O)388", _random.Next(3, 6)));
+                InventoryManager.AddItem(ItemRegistry.Create("(O)388", _random.Next(3, 6)));
             }
         }
 
@@ -2815,7 +2944,7 @@ namespace WorkingPets.Behaviors
 
                 // Hardwood drops (game gives 2-8 for stump, 8-10 for log)
                 int hardwoodAmount = (clump.parentSheetIndex.Value == 602) ? _random.Next(6, 10) : _random.Next(2, 4);
-                ModEntry.InventoryManager.AddItem(ItemRegistry.Create("(O)709", hardwoodAmount));
+                InventoryManager.AddItem(ItemRegistry.Create("(O)709", hardwoodAmount));
             }
         }
 
@@ -2864,13 +2993,13 @@ namespace WorkingPets.Behaviors
 
                 // Drop stone - game gives 15 for regular boulder, 10 for mine boulders
                 int stoneAmount = (clump.parentSheetIndex.Value == 672) ? _random.Next(12, 18) : _random.Next(8, 12);
-                ModEntry.InventoryManager.AddItem(ItemRegistry.Create("(O)390", stoneAmount));
+                InventoryManager.AddItem(ItemRegistry.Create("(O)390", stoneAmount));
                 
                 // Chance for ores
                 if (_random.NextDouble() < 0.25)
-                    ModEntry.InventoryManager.AddItem(ItemRegistry.Create("(O)380", _random.Next(1, 3))); // Copper
+                    InventoryManager.AddItem(ItemRegistry.Create("(O)380", _random.Next(1, 3))); // Copper
                 if (_random.NextDouble() < 0.1)
-                    ModEntry.InventoryManager.AddItem(ItemRegistry.Create("(O)384", _random.Next(1, 2))); // Gold
+                    InventoryManager.AddItem(ItemRegistry.Create("(O)384", _random.Next(1, 2))); // Gold
             }
         }
 

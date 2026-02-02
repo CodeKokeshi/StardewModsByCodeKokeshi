@@ -12,6 +12,7 @@
   "petMenu.option.follow.stop": "That's enough following for now, {{petName}}",
   
   "petMenu.option.explore.start": "Go explore the valley, {{petName}}!",
+  "petMenu.option.explore.resume": "Continue exploring, {{petName}}!",
   "petMenu.option.explore.stop": "Come back home, {{petName}}",
 
   "petMenu.option.work.start": "Ask {{petName}} to help around the farm",

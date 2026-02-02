@@ -24,6 +24,19 @@ namespace WorkingPets.UI
         private static Pet? _currentDialoguePet;
 
         /*********
+        ** Private methods
+        *********/
+        /// <summary>Play a sound appropriate for the pet type (dog barks, cat meows, turtle chirps, etc.).</summary>
+        private static void PlayPetSound(Pet? pet, string soundType = "BARK")
+        {
+            if (pet == null) return;
+            
+            // Use the pet's built-in PlaySound method which handles type-specific sounds
+            // "BARK" gets converted to the appropriate sound for each pet type
+            pet.PlaySound(soundType, true, -1, -1);
+        }
+
+        /*********
         ** Public methods
         *********/
         /// <summary>Show the custom pet interaction menu.</summary>
@@ -42,7 +55,7 @@ namespace WorkingPets.UI
             bool isWorking = manager?.IsWorking ?? false;
             bool isFollowing = manager?.IsFollowing ?? false;
             bool isExploring = manager?.IsExploring ?? false;
-            int totalItems = ModEntry.InventoryManager.TotalItemCount;
+            int totalItems = manager?.InventoryManager?.TotalItemCount ?? 0;
 
             // Build response options - natural dialogue style
             var responses = new List<Response>();
@@ -62,10 +75,19 @@ namespace WorkingPets.UI
             {
                 responses.Add(new Response("ToggleExplore", ModEntry.I18n.Get("petMenu.option.explore.stop", new { petName })));
             }
-            else
+            else if (manager?.CanExplore == true)
             {
-                responses.Add(new Response("ToggleExplore", ModEntry.I18n.Get("petMenu.option.explore.start", new { petName })));
+                // Can explore (hasn't explored today OR exploration was paused)
+                if (manager?.IsExplorePaused == true)
+                {
+                    responses.Add(new Response("ToggleExplore", ModEntry.I18n.Get("petMenu.option.explore.resume", new { petName })));
+                }
+                else
+                {
+                    responses.Add(new Response("ToggleExplore", ModEntry.I18n.Get("petMenu.option.explore.start", new { petName })));
+                }
             }
+            // If !CanExplore, don't show the explore option (already done for today)
 
             // Work option (always available - selecting it cancels follow mode)
             if (isWorking)
@@ -169,13 +191,13 @@ namespace WorkingPets.UI
 
             if (manager.IsFollowing)
             {
-                Game1.playSound("dog_pant");
+                PlayPetSound(pet, "BARK");
                 if (ModEntry.Config.ShowStateNotifications)
                     Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.follow.start", new { petName }), HUDMessage.newQuest_type));
             }
             else
             {
-                Game1.playSound("cat");
+                PlayPetSound(pet, "BARK");
                 if (ModEntry.Config.ShowStateNotifications)
                     Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.follow.stop", new { petName }), HUDMessage.newQuest_type));
             }
@@ -191,13 +213,13 @@ namespace WorkingPets.UI
 
             if (manager.IsExploring)
             {
-                Game1.playSound("questcomplete");
+                PlayPetSound(pet, "BARK");
                 if (ModEntry.Config.ShowStateNotifications)
                     Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.explore.start", new { petName }), HUDMessage.newQuest_type));
             }
             else
             {
-                Game1.playSound("cat");
+                PlayPetSound(pet, "BARK");
                 if (ModEntry.Config.ShowStateNotifications)
                     Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.explore.stop", new { petName }), HUDMessage.newQuest_type));
             }
@@ -220,13 +242,13 @@ namespace WorkingPets.UI
             // Play sound and show message
             if (manager.IsWorking)
             {
-                Game1.playSound("questcomplete");
+                PlayPetSound(pet, "BARK");
                 if (ModEntry.Config.ShowStateNotifications)
                     Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.work.start", new { petName }), HUDMessage.newQuest_type));
             }
             else
             {
-                Game1.playSound("breathout");
+                PlayPetSound(pet, "BARK");
                 if (ModEntry.Config.ShowStateNotifications)
                     Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.work.stop", new { petName }), HUDMessage.newQuest_type));
             }
@@ -237,9 +259,13 @@ namespace WorkingPets.UI
             try
             {
                 string petName = pet?.Name ?? ModEntry.I18n.Get("pet.genericName");
+                
+                // Get the manager for this specific pet
+                var manager = ModEntry.PetManager?.GetManagerForPet(pet!);
+                if (manager == null) return;
 
                 // Create inventory list for ItemGrabMenu
-                var inventoryList = ModEntry.InventoryManager.Inventory;
+                var inventoryList = manager.InventoryManager.Inventory;
 
                 // Open chest-like menu
                 Game1.activeClickableMenu = new ItemGrabMenu(

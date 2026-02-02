@@ -397,11 +397,9 @@ namespace WorkingPets
             // Initialize all pets in the game
             PetManager.InitializeAllPets();
             
-            // Load inventory (shared across all pets)
             var allPets = MultiPetManager.GetAllPets();
             if (allPets.Count > 0)
             {
-                InventoryManager.Load(allPets[0]); // Load from first pet's modData
                 this.Monitor.Log($"Found {allPets.Count} pet(s). Working Pets initialized!", LogLevel.Info);
                 foreach (var pet in allPets)
                 {
@@ -425,15 +423,8 @@ namespace WorkingPets
         /// <summary>Raised before the game saves.</summary>
         private void OnSaving(object? sender, SavingEventArgs e)
         {
-            // Save state for all pets
+            // Save state for all pets (includes their individual inventories)
             PetManager.SaveAllStates();
-            
-            // Save inventory (shared across all pets, stored in first pet's modData)
-            var allPets = MultiPetManager.GetAllPets();
-            if (allPets.Count > 0)
-            {
-                InventoryManager.Save(allPets[0]);
-            }
         }
 
         /// <summary>Raised every game tick (~60 times per second).</summary>
@@ -468,40 +459,53 @@ namespace WorkingPets
                 }
             }
 
-            // Auto-deposit pet inventory items to matching chests
-            if (Config.AutoDepositToChests && InventoryManager.ItemCount > 0)
+            // Auto-deposit pet inventory items to matching chests (for each pet)
+            if (Config.AutoDepositToChests)
             {
                 try
                 {
-                    // Get all items from pet inventory
-                    var itemsToDeposit = new List<Item>();
-                    for (int i = 0; i < InventoryManager.Inventory.Count; i++)
+                    int totalDepositedCount = 0;
+                    
+                    foreach (var pet in allPets)
                     {
-                        if (InventoryManager.Inventory[i] != null)
+                        var manager = PetManager.GetManagerForPet(pet);
+                        if (manager == null || manager.InventoryManager.ItemCount == 0)
+                            continue;
+                        
+                        // Get all items from this pet's inventory
+                        var itemsToDeposit = new List<Item>();
+                        for (int i = 0; i < manager.InventoryManager.Inventory.Count; i++)
                         {
-                            itemsToDeposit.Add(InventoryManager.Inventory[i]!);
+                            if (manager.InventoryManager.Inventory[i] != null)
+                            {
+                                itemsToDeposit.Add(manager.InventoryManager.Inventory[i]!);
+                            }
+                        }
+
+                        // Try to deposit items to matching chests
+                        var remainingItems = ChestManager.DepositItemsToMatchingChests(itemsToDeposit);
+
+                        // Clear inventory and add back only remaining items
+                        manager.InventoryManager.Clear();
+                        int depositedCount = itemsToDeposit.Count - remainingItems.Count;
+                        totalDepositedCount += depositedCount;
+                        
+                        foreach (var item in remainingItems)
+                        {
+                            manager.InventoryManager.AddItem(item);
+                        }
+
+                        if (depositedCount > 0)
+                        {
+                            Game1.addHUDMessage(new HUDMessage(
+                                I18n.Get("hud.chestDeposit.morning", new { petName = pet.Name, depositedCount }), 
+                                HUDMessage.newQuest_type));
                         }
                     }
-
-                    // Try to deposit items to matching chests
-                    var remainingItems = ChestManager.DepositItemsToMatchingChests(itemsToDeposit);
-
-                    // Clear inventory and add back only remaining items
-                    InventoryManager.Clear();
-                    int depositedCount = itemsToDeposit.Count - remainingItems.Count;
                     
-                    foreach (var item in remainingItems)
+                    if (totalDepositedCount > 0)
                     {
-                        InventoryManager.AddItem(item);
-                    }
-
-                    if (depositedCount > 0)
-                    {
-                        string petName = allPets.Count > 0 ? allPets[0].Name : "Pet";
-                        Game1.addHUDMessage(new HUDMessage(
-                            I18n.Get("hud.chestDeposit.morning", new { petName, depositedCount }), 
-                            HUDMessage.newQuest_type));
-                        this.Monitor.Log($"Auto-deposited {depositedCount} items from pet inventory to matching chests.", LogLevel.Debug);
+                        this.Monitor.Log($"Auto-deposited {totalDepositedCount} items from pet inventories to matching chests.", LogLevel.Debug);
                     }
                 }
                 catch (Exception ex)
