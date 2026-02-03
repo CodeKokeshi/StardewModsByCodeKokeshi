@@ -1,10 +1,5 @@
 1. Always Max Quality - A person reached out to me saying that I should add a toggle on the max quality. So they can turn it on, buy something then turn it off again and go on about their day. And also keep in mind the integration of Item Bags and shit. For some reason also, rabbit's foot and wool doesn't get affected by this mod
 2. Bountiful Foraging - One of the commentors said I should check out this mod Wildflour's Atelier Goods to see if my foraging mod will work with other mods.
-3. Helpful Pets
-	[ ] - Foraging Mechanics - Make it realistic than when player is picking things up give time window for the pet to pick up things.  
-	[ ] - Add a notification that pet's pouch is full. Remove the exploration option in the dialogue if so. And do not give way to activate the scavenge. But it will go like this. First the pet will activate the auto stack. Before activating the scavenge so we know that the pet's storage optimization will happen first before the disabling of scavenging.
-	[ ] - Next for the auto put to chest items. No matter the rarity. Even if it needs converting a for example a no star grape into an iridium one just to stack them into a chest. Then do so. We're trying to empty our pet's pouch after all.
-	[ ] After finding nothing work to do, return to idle state.
-	multipet follow system should work perfectly but as i see it, animals combine because they have the same speed and shit. While "exploring" we could also make the cut do stuff like cut trees and so on. like cut weeds, stones and boulders! This'll make us help clear the stardew valley but make sure that it is not by default in the gmcm. Next! The pets should return to idle state the next day! To lessen the dialogue option even more, if a cat was already petted, why not remove the option to pet it? the next time dialogue is opened? Also we can call the cat anywhere when it's exploring but why not when idle and working as well. That would be a good addition. We really need to consider those stuff.
+3. Helpful Pets - For now, it's fine. 1.4.0 is a massive update afterall.
 4. Fix Museum Inventory - this one is still unconfirmed but I know someone will definitely write a bug encounter. This one is about recreating the Museum Inventory from scratch after all.
 5. 
