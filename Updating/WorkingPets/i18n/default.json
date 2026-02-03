@@ -1,5 +1,5 @@
 {
-  "log.loaded": "Working Pets loaded! Hold LeftShift and interact with your pet to open commands, or press your Whistle key to call pets.",
+  "log.loaded": "Working Pets loaded! Right-click your pet to open commands, or press your Whistle key to call pets.",
 
   "pet.genericName": "Your pet",
 
