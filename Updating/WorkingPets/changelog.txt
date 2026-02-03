@@ -64,32 +64,27 @@
 - Pets now use vanilla interaction behavior during events, cutscenes, and when menus/dialogues are active to prevent conflicts.
 
 1.3.0
-=== Follow Mode - Now Fully Functional! ===
-- MAJOR: Follow mode upgraded from experimental to fully functional!
-- CHANGED: "Follow Outside Farm" is now enabled by default - pets will follow you everywhere!
-- NEW: Pets now forage while following you! They automatically pick up forageable items (berries, mushrooms, spring onions, etc.) nearby and store them in their inventory.
-- NEW: HUD notification appears whenever your pet picks up a forageable item showing what they found.
-- NEW: "No work to do" notification when your pet can't find any debris, trees, or boulders to clear.
-- IMPROVED: Stuck pet detection now uses ultra-fast speed to bypass obstacles instead of awkward teleporting.
-- IMPROVED: Pets smoothly accelerate through walls when stuck, then slow back down once clear - no more jarring warps!
-- IMPROVED: Message changed from "too far away" to "not on the same area" for clarity when pets are in different locations.
-- Added "Forage While Following" config option (enabled by default) to toggle pet foraging behavior.
-- Fast mode automatically deactivates when pet reaches player or makes good progress.
-
-=== Whistle & Menu System ===
-- Whistle keybind system! Press V (default, configurable) to open/close pet selection menu.
-- NEW: Whistle Key is now configurable directly in Generic Mod Config Menu! No more editing config.json manually.
-- Whistle menu features full-body pet sprites (like Animals page), scrolling for many pets, and clear status indicators.
-- Menu shows pet name, current status (Idle/Working/Following), and disables pets already following or in different areas.
-- Pet tracking arrows now display pet icons next to them (separated, larger scale, biased toward center).
-
-=== Quality of Life ===
-- Pets in follow mode are now passable - you can walk through them to get through doors easily.
-- Pets automatically exit resting/sleeping state when you change locations while following.
-- Trees at ALL growth stages (0-5) can now be removed by working pets, including seeds (stage 0).
-- Small trees (stages 0-4) use appropriate twig effects instead of full tree chopping effects.
-- Fixed stuck loop counter not accumulating properly after warps.
-- Removed "(Experimental)" label from Follow Outside Farm option - the feature is now stable!
+- Follow mode upgraded from experimental to fully functional
+- "Follow Outside Farm" now enabled by default - pets follow everywhere
+- Pets forage while following (automatically pick up berries, mushrooms, spring onions, etc.)
+- HUD notification when pet picks up forageable item
+- "No work to do" notification when no debris/trees/boulders found
+- Stuck detection uses ultra-fast speed to bypass obstacles (no teleporting)
+- Pets smoothly accelerate through walls when stuck, then slow down
+- Message changed from "too far away" to "not on the same area" for clarity
+- Added "Forage While Following" config option (enabled by default)
+- Fast mode automatically deactivates when pet reaches player
+- Whistle keybind system - press V (default, configurable) to open pet menu
+- Whistle Key configurable in Generic Mod Config Menu
+- Whistle menu shows full-body pet sprites with scrolling for many pets
+- Menu shows pet name, status (Idle/Working/Following), disables unavailable pets
+- Pet tracking arrows display pet icons (larger scale, center-biased)
+- Pets in follow mode are passable (walk through them for doorways)
+- Pets exit resting/sleeping when changing locations while following
+- Trees at ALL growth stages (0-5) can be removed, including seeds
+- Small trees (stages 0-4) use twig effects instead of full tree effects
+- Fixed stuck loop counter not accumulating after warps
+- Removed "(Experimental)" label from Follow Outside Farm option
 
 1.2.0
 - Multi-pet support! Each pet now works independently (Pet Licenses compatible).
