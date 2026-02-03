@@ -28,12 +28,34 @@
   "petMenu.inventory.title": "{{petName}}'s Finds",
 
   "hud.explore.start": "{{petName}} is now exploring the valley! They'll collect forageables on their own.",
+  "hud.explore.startWithRoute": "{{petName}} started exploring ({{direction}} route)!",
   "hud.explore.stop": "{{petName}} has returned from exploring.",
+  "hud.explore.finished": "{{petName}} finished exploring ({{reason}}) and is resting.",
   "hud.follow.start": "{{petName}} is now following you!",
   "hud.follow.stop": "{{petName}} is no longer following you.",
   "hud.work.start": "{{petName}} is now helping on the farm!",
   "hud.work.stop": "{{petName}} is taking a break.",
+  "hud.work.noWork": "{{petName}} looked around but found nothing to do!",
   "hud.scavenge.morning": "{{petName}} found {{addedCount}} item(s) overnight!",
   "hud.chestDeposit.morning": "{{petName}} deposited {{depositedCount}} item(s) into your chests!",
-  "hud.genericError": "Something went wrong!"
+  "hud.genericError": "Something went wrong!",
+
+  "hud.whistle.coming": "{{petName}} is coming to you!",
+  "hud.whistle.alreadyFollowing": "{{petName}} is already following you!",
+  "hud.rename.success": "{{oldName}} is now known as {{newName}}!",
+  "hud.inventory.full": "{{petName}}'s inventory is full!",
+  "hud.pet.atLocation": "{{petName}} is at {{location}}.",
+  "hud.follow.anotherFollowing": "Another pet is already following you!",
+
+  "whistleMenu.title": "Whistle Pet",
+  "whistleMenu.noPets": "You don't have any pets yet!",
+  "whistleMenu.hover.whistle": "Whistle {{petName}} to follow you",
+  "whistleMenu.hover.alreadyFollowing": "{{petName}} is already following you!",
+  "whistleMenu.hover.anotherFollowing": "Another pet is already following you!",
+  "whistleMenu.hover.atLocation": "{{petName}} is at {{location}}",
+  
+  "whistleMenu.status.idle": "Idle",
+  "whistleMenu.status.exploring": "Exploring ({{location}})",
+  "whistleMenu.status.following": "Following",
+  "whistleMenu.status.working": "Working"
 }

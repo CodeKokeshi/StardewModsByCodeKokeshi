@@ -100,7 +100,6 @@ namespace WorkingPets.Behaviors
                     int remaining = _inventory[i]!.addToStack(item);
                     if (remaining <= 0)
                     {
-                        ModEntry.Instance.Monitor.Log($"Added {item.Stack} {item.Name} to pet inventory (stacked)", LogLevel.Trace);
                         return true;
                     }
                     item.Stack = remaining;
@@ -113,13 +112,11 @@ namespace WorkingPets.Behaviors
                 if (_inventory[i] == null)
                 {
                     _inventory[i] = item;
-                    ModEntry.Instance.Monitor.Log($"Added {item.Stack} {item.Name} to pet inventory (new slot)", LogLevel.Trace);
                     return true;
                 }
             }
 
             // Inventory full - drop on ground
-            ModEntry.Instance.Monitor.Log($"Pet inventory full! Dropping {item.Name} on ground.", LogLevel.Debug);
             Pet? pet = ModEntry.GetPlayerPet();
             if (pet != null && pet.currentLocation != null)
             {
@@ -175,8 +172,6 @@ namespace WorkingPets.Behaviors
 
                 string json = JsonSerializer.Serialize(saveData);
                 pet.modData[INVENTORY_KEY] = json;
-
-                ModEntry.Instance.Monitor.Log($"Saved {ItemCount} items to pet inventory.", LogLevel.Debug);
             }
             catch (Exception ex)
             {
@@ -193,7 +188,6 @@ namespace WorkingPets.Behaviors
 
                 if (!pet.modData.TryGetValue(INVENTORY_KEY, out string? json) || string.IsNullOrEmpty(json))
                 {
-                    ModEntry.Instance.Monitor.Log("No saved pet inventory found.", LogLevel.Debug);
                     return;
                 }
 
@@ -214,8 +208,6 @@ namespace WorkingPets.Behaviors
                         _inventory[i] = item;
                     }
                 }
-
-                ModEntry.Instance.Monitor.Log($"Loaded {ItemCount} items from pet inventory.", LogLevel.Debug);
             }
             catch (Exception ex)
             {

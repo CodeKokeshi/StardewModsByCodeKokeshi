@@ -93,7 +93,7 @@ public static class AnimalPagePatch
         // Check if already following
         if (manager.IsFollowing && !manager.IsWorking)
         {
-            Game1.showGlobalMessage($"{pet.displayName} is already following you!");
+            Game1.showGlobalMessage(ModEntry.I18n.Get("hud.whistle.alreadyFollowing", new { petName = pet.displayName }));
             Game1.playSound("breathin");
             return;
         }
@@ -110,10 +110,8 @@ public static class AnimalPagePatch
         }
         
         // Show success message
-        Game1.showGlobalMessage($"{pet.displayName} is coming to you!");
+        Game1.showGlobalMessage(ModEntry.I18n.Get("hud.whistle.coming", new { petName = pet.displayName }));
         Game1.playSound("whistle"); // Nice whistle sound effect
-        
-        ModEntry.Instance?.Monitor.Log($"Whistled {pet.displayName} to follow mode", LogLevel.Debug);
     }
 
     /// <summary>

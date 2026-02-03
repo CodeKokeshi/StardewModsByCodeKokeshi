@@ -276,6 +276,31 @@ public class WhistleMenu : IClickableMenu
         Scrolling = false;
     }
     
+    public override void receiveKeyPress(Microsoft.Xna.Framework.Input.Keys key)
+    {
+        base.receiveKeyPress(key);
+        
+        // Close on Escape
+        if (key == Microsoft.Xna.Framework.Input.Keys.Escape)
+        {
+            exitThisMenu();
+            Game1.playSound("bigDeSelect");
+            return;
+        }
+        
+        // Scroll with arrow keys
+        if (key == Microsoft.Xna.Framework.Input.Keys.Up && SlotPosition > 0)
+        {
+            UpArrowPressed();
+            Game1.playSound("shiny4");
+        }
+        else if (key == Microsoft.Xna.Framework.Input.Keys.Down && SlotPosition < Math.Max(0, PetSprites.Count - SlotsPerPage))
+        {
+            DownArrowPressed();
+            Game1.playSound("shiny4");
+        }
+    }
+    
     public override void receiveScrollWheelAction(int direction)
     {
         base.receiveScrollWheelAction(direction);
@@ -320,20 +345,20 @@ public class WhistleMenu : IClickableMenu
                 var entry = PetEntries[i];
                 if (entry.IsEnabled)
                 {
-                    HoverText = $"Whistle {entry.DisplayName} to follow you";
+                    HoverText = ModEntry.I18n.Get("whistleMenu.hover.whistle", new { petName = entry.DisplayName });
                 }
                 else
                 {
                     var manager = ModEntry.PetManager?.GetManagerForPet(entry.Pet);
                     if (manager?.IsFollowing == true)
-                        HoverText = $"{entry.DisplayName} is already following you!";
+                        HoverText = ModEntry.I18n.Get("whistleMenu.hover.alreadyFollowing", new { petName = entry.DisplayName });
                     else if (Behaviors.PetWorkManager.IsAnyPetFollowing)
-                        HoverText = "Another pet is already following you!";
+                        HoverText = ModEntry.I18n.Get("whistleMenu.hover.anotherFollowing");
                     else
                     {
                         // Show where the pet actually is
                         string locationName = entry.Pet.currentLocation?.DisplayName ?? entry.Pet.currentLocation?.Name ?? "unknown";
-                        HoverText = $"{entry.DisplayName} is at {locationName}.";
+                        HoverText = ModEntry.I18n.Get("whistleMenu.hover.atLocation", new { petName = entry.DisplayName, location = locationName });
                     }
                 }
                 break;
@@ -359,7 +384,7 @@ public class WhistleMenu : IClickableMenu
         if (!manager.IsFollowing)
             manager.ToggleFollow();
         
-        Game1.showGlobalMessage($"{pet.displayName} is coming to you!");
+        Game1.showGlobalMessage(ModEntry.I18n.Get("hud.whistle.coming", new { petName = pet.displayName }));
         Game1.playSound("whistle");
     }
     
@@ -379,7 +404,7 @@ public class WhistleMenu : IClickableMenu
         );
         
         // Title with background container
-        string title = "Whistle Pet";
+        string title = ModEntry.I18n.Get("whistleMenu.title");
         Vector2 titleSize = Game1.dialogueFont.MeasureString(title);
         int titleX = xPositionOnScreen + width / 2 - (int)titleSize.X / 2;
         int titleY = yPositionOnScreen + IClickableMenu.borderWidth + 12;
@@ -405,40 +430,58 @@ public class WhistleMenu : IClickableMenu
             Game1.textColor
         );
         
-        // Draw horizontal dividers (like Animals page)
-        int dividerY = yPositionOnScreen + IClickableMenu.borderWidth + 128 + 4;
-        for (int i = 0; i < Math.Min(SlotsPerPage - 1, PetEntries.Count - 1); i++)
+        // Handle no pets case
+        if (PetEntries.Count == 0)
         {
-            drawHorizontalPartition(b, dividerY + i * SlotHeight, true);
-        }
-        
-        // Draw pet slots
-        for (int i = SlotPosition; i < SlotPosition + SlotsPerPage && i < PetEntries.Count; i++)
-        {
-            DrawPetSlot(b, i);
-        }
-        
-        // Draw scroll buttons if needed
-        if (PetEntries.Count > SlotsPerPage)
-        {
-            UpButton?.draw(b);
-            DownButton?.draw(b);
-            
-            // Draw scrollbar track
-            drawTextureBox(
-                b,
-                Game1.mouseCursors,
-                new Rectangle(403, 383, 6, 6),
-                ScrollBarRunner.X,
-                ScrollBarRunner.Y,
-                ScrollBarRunner.Width,
-                ScrollBarRunner.Height,
-                Color.White,
-                4f,
-                false
+            string noPetsText = ModEntry.I18n.Get("whistleMenu.noPets");
+            Vector2 noPetsSize = Game1.dialogueFont.MeasureString(noPetsText);
+            b.DrawString(
+                Game1.dialogueFont,
+                noPetsText,
+                new Vector2(
+                    xPositionOnScreen + width / 2 - noPetsSize.X / 2,
+                    yPositionOnScreen + height / 2 - noPetsSize.Y / 2
+                ),
+                Game1.textColor * 0.6f
             );
+        }
+        else
+        {
+            // Draw horizontal dividers (like Animals page)
+            int dividerY = yPositionOnScreen + IClickableMenu.borderWidth + 128 + 4;
+            for (int i = 0; i < Math.Min(SlotsPerPage - 1, PetEntries.Count - 1); i++)
+            {
+                drawHorizontalPartition(b, dividerY + i * SlotHeight, true);
+            }
             
-            ScrollBar?.draw(b);
+            // Draw pet slots
+            for (int i = SlotPosition; i < SlotPosition + SlotsPerPage && i < PetEntries.Count; i++)
+            {
+                DrawPetSlot(b, i);
+            }
+            
+            // Draw scroll buttons if needed
+            if (PetEntries.Count > SlotsPerPage)
+            {
+                UpButton?.draw(b);
+                DownButton?.draw(b);
+                
+                // Draw scrollbar track
+                drawTextureBox(
+                    b,
+                    Game1.mouseCursors,
+                    new Rectangle(403, 383, 6, 6),
+                    ScrollBarRunner.X,
+                    ScrollBarRunner.Y,
+                    ScrollBarRunner.Width,
+                    ScrollBarRunner.Height,
+                    Color.White,
+                    4f,
+                    false
+                );
+                
+                ScrollBar?.draw(b);
+            }
         }
         
         // Hover text
@@ -491,7 +534,7 @@ public class WhistleMenu : IClickableMenu
         
         // Draw status text instead of icons
         var manager = ModEntry.PetManager?.GetManagerForPet(entry.Pet);
-        string statusText = "Idle";
+        string statusText = ModEntry.I18n.Get("whistleMenu.status.idle");
         Color statusColor = Game1.textColor;
         
         if (manager != null)
@@ -500,17 +543,17 @@ public class WhistleMenu : IClickableMenu
             {
                 // Show current explore location in status
                 string locationName = manager.CurrentExploreLocation ?? "Valley";
-                statusText = $"Exploring ({locationName})";
+                statusText = ModEntry.I18n.Get("whistleMenu.status.exploring", new { location = locationName });
                 statusColor = Game1.textColor; // No gold, just normal text color
             }
             else if (manager.IsFollowing)
             {
-                statusText = "Following";
+                statusText = ModEntry.I18n.Get("whistleMenu.status.following");
                 statusColor = Game1.textColor;
             }
             else if (manager.IsWorking)
             {
-                statusText = "Working";
+                statusText = ModEntry.I18n.Get("whistleMenu.status.working");
                 statusColor = Game1.textColor;
             }
         }

@@ -238,7 +238,7 @@ namespace WorkingPets.UI
                 if (!PetWorkManager.HasAnyWorkOnFarm())
                 {
                     PlayPetSound(pet, "BARK");
-                    Game1.addHUDMessage(new HUDMessage($"{petName} looked around but found nothing to do!", HUDMessage.newQuest_type));
+                    Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.work.noWork", new { petName }), HUDMessage.newQuest_type));
                     return; // Don't start work mode
                 }
             }
@@ -366,7 +366,7 @@ namespace WorkingPets.UI
                         pet.modData[RENAME_USED_KEY] = "true";
 
                         Game1.playSound("newArtifact");
-                        Game1.addHUDMessage(new HUDMessage($"{oldName} is now known as {newName}!", HUDMessage.newQuest_type));
+                        Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.rename.success", new { oldName, newName }), HUDMessage.newQuest_type));
                     }
                     
                     // Force close menu and ensure player can move

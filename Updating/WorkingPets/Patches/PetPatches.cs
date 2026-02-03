@@ -34,8 +34,6 @@ namespace WorkingPets.Patches
                 original: AccessTools.Method(typeof(Pet), "behaviorOnFarmerLocationEntry"),
                 prefix: new HarmonyMethod(typeof(PetPatches), nameof(BehaviorOnFarmerLocationEntry_Prefix))
             );
-
-            Monitor.Log("Pet patches applied successfully.", LogLevel.Debug);
         }
 
         /// <summary>Suppress vanilla RunState when pet is following or working (prevents movement interference).</summary>

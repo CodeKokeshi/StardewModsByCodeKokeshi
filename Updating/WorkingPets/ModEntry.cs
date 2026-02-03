@@ -43,6 +43,12 @@ namespace WorkingPets
         public static ITranslationHelper I18n { get; private set; } = null!;
 
         /*********
+        ** Private fields
+        *********/
+        /// <summary>Whether the 'no pets' notification has been shown today.</summary>
+        private bool HasShownNoPetsNotifToday = false;
+
+        /*********
         ** Public methods
         *********/
         /// <summary>The mod entry point.</summary>
@@ -87,10 +93,10 @@ namespace WorkingPets
         /// <summary>Raised when a button is pressed.</summary>
         private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
         {
-            if (!Context.IsWorldReady || Game1.activeClickableMenu != null)
+            if (!Context.IsWorldReady)
                 return;
 
-            // Toggle whistle menu
+            // Toggle whistle menu (allow closing even when menu is open)
             if (Config.WhistleKey.JustPressed())
             {
                 if (Game1.activeClickableMenu is WhistleMenu)
@@ -98,10 +104,38 @@ namespace WorkingPets
                     Game1.activeClickableMenu.exitThisMenu();
                     Game1.playSound("bigDeSelect");
                 }
-                else
+                else if (Game1.activeClickableMenu == null)
                 {
-                    Game1.activeClickableMenu = new WhistleMenu();
-                    Game1.playSound("bigSelect");
+                    // Check if player has any pets
+                    bool hasPets = false;
+                    Utility.ForEachLocation(location =>
+                    {
+                        foreach (var character in location.characters)
+                        {
+                            if (character is Pet)
+                            {
+                                hasPets = true;
+                                return false; // Stop searching
+                            }
+                        }
+                        return true;
+                    });
+
+                    if (!hasPets)
+                    {
+                        // Show notification only once per day
+                        if (!HasShownNoPetsNotifToday)
+                        {
+                            Game1.showGlobalMessage(I18n.Get("whistleMenu.noPets"));
+                            HasShownNoPetsNotifToday = true;
+                        }
+                        // Don't play sound or open menu
+                    }
+                    else
+                    {
+                        Game1.activeClickableMenu = new WhistleMenu();
+                        Game1.playSound("bigSelect");
+                    }
                 }
             }
         }
@@ -374,8 +408,6 @@ namespace WorkingPets
                 min: 1,
                 max: 99
             );
-
-            this.Monitor.Log("Generic Mod Config Menu integration complete!", LogLevel.Debug);
         }
 
         /// <summary>Validate that all priorities are unique. If not, auto-fix them.</summary>
@@ -459,6 +491,9 @@ namespace WorkingPets
         /// <summary>Raised when a new day starts.</summary>
         private void OnDayStarted(object? sender, DayStartedEventArgs e)
         {
+            // Reset daily notification flag
+            HasShownNoPetsNotifToday = false;
+            
             var allPets = MultiPetManager.GetAllPets();
             
             // Trigger daily scavenge for each pet
@@ -474,7 +509,6 @@ namespace WorkingPets
                 if (manager?.IsWorking == true && pet.currentLocation?.Name != "Farm")
                 {
                     Game1.warpCharacter(pet, "Farm", new Microsoft.Xna.Framework.Vector2(54, 8));
-                    this.Monitor.Log($"Warped {pet.Name} back to the farm.", LogLevel.Debug);
                 }
             }
 
@@ -520,11 +554,6 @@ namespace WorkingPets
                                 I18n.Get("hud.chestDeposit.morning", new { petName = pet.Name, depositedCount }), 
                                 HUDMessage.newQuest_type));
                         }
-                    }
-                    
-                    if (totalDepositedCount > 0)
-                    {
-                        this.Monitor.Log($"Auto-deposited {totalDepositedCount} items from pet inventories to matching chests.", LogLevel.Debug);
                     }
                 }
                 catch (Exception ex)

@@ -48,8 +48,6 @@ namespace WorkingPets.Behaviors
             {
                 InitializePet(pet);
             }
-
-            ModEntry.Instance.Monitor.Log($"[MultiPetManager] Initialized {_petManagers.Count} pet(s).", LogLevel.Info);
         }
 
         /// <summary>Initialize a single pet (adds to manager if not already tracked).</summary>
@@ -64,7 +62,6 @@ namespace WorkingPets.Behaviors
                 var manager = new PetWorkManager();
                 manager.Initialize(pet);
                 _petManagers[petGuid] = manager;
-                ModEntry.Instance.Monitor.Log($"[MultiPetManager] Added pet: {pet.Name} (ID: {petGuid})", LogLevel.Debug);
             }
         }
 
@@ -301,8 +298,6 @@ namespace WorkingPets.Behaviors
             
             ReleaseAllTargetsForPet(pet);
             _petManagers.Remove(petGuid);
-            
-            ModEntry.Instance.Monitor.Log($"[MultiPetManager] Removed pet: {pet.Name}", LogLevel.Debug);
         }
     }
 }

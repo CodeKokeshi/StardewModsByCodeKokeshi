@@ -37,14 +37,10 @@ namespace WorkingPets.Behaviors
 
             if (allChests.Count == 0)
             {
-                _monitor?.Log("[ChestStorageManager] No chests found in game.", LogLevel.Trace);
                 return new List<Item>(petInventory);
             }
 
-            _monitor?.Log($"[ChestStorageManager] Found {allChests.Count} chests to scan.", LogLevel.Trace);
-
             List<Item> remainingItems = new List<Item>();
-            int depositedCount = 0;
 
             foreach (Item item in petInventory)
             {
@@ -52,19 +48,11 @@ namespace WorkingPets.Behaviors
 
                 bool deposited = TryDepositItem(item, allChests);
                 
-                if (deposited)
-                {
-                    depositedCount++;
-                    _monitor?.Log($"[ChestStorageManager] Deposited {item.Stack}x {item.DisplayName} (Quality: {item.Quality}) to matching chest.", LogLevel.Debug);
-                }
-                else
+                if (!deposited)
                 {
                     remainingItems.Add(item);
-                    _monitor?.Log($"[ChestStorageManager] No matching chest found for {item.DisplayName} (Quality: {item.Quality}).", LogLevel.Trace);
                 }
             }
-
-            _monitor?.Log($"[ChestStorageManager] Deposited {depositedCount} items, {remainingItems.Count} items remain.", LogLevel.Debug);
 
             return remainingItems;
         }
@@ -87,7 +75,6 @@ namespace WorkingPets.Behaviors
             // If we need to change quality to match chest contents, do so
             if (result.MatchedQuality >= 0 && item is StardewValley.Object obj && obj.Quality != result.MatchedQuality)
             {
-                _monitor?.Log($"[ChestStorageManager] Adjusting {item.DisplayName} quality from {obj.Quality} to {result.MatchedQuality} to match chest.", LogLevel.Trace);
                 obj.Quality = result.MatchedQuality;
             }
 

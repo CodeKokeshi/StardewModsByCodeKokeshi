@@ -29,7 +29,11 @@
 - Follow distances: stop at 1.25 tiles, start at 2.5 tiles
 - Speed scaling based on distance to player
 - Various config options for notifications and behavior
-- Full i18n support for all text
+- Full i18n support for all text (all hardcoded strings replaced with translation keys)
+- Whistle menu can be toggled with same hotkey (open and close)
+- Whistle menu supports scrolling for many pets (up/down buttons, mouse wheel, arrow keys, scrollbar drag)
+- Whistle menu shows empty state when no pets exist
+- "No pets" notification shown once per day when whistle key pressed with no pets available
 
 1.3.1
 - Fixed bug where SMAPI console window would flash repeatedly after naming a new pet during the adoption cutscene.

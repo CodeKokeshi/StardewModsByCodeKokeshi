@@ -442,7 +442,6 @@ namespace WorkingPets.Behaviors
                 // If deposit freed up space, continue working
                 if (!InventoryManager.IsFull)
                 {
-                    ModEntry.Instance.Monitor.Log($"[WorkingPets] {_pet?.Name} auto-deposited items, continuing work.", LogLevel.Debug);
                     return false;
                 }
             }
@@ -450,19 +449,19 @@ namespace WorkingPets.Behaviors
             // Still full after deposit attempt - stop collecting activities
             if (_isExploring)
             {
-                Game1.addHUDMessage(new HUDMessage($"{_pet?.Name}'s inventory is full!", HUDMessage.error_type));
+                Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.inventory.full", new { petName = _pet?.Name ?? ModEntry.I18n.Get("pet.genericName") }), HUDMessage.error_type));
                 StopExploringReturnToFarm();
             }
             else if (_isWorking)
             {
-                Game1.addHUDMessage(new HUDMessage($"{_pet?.Name}'s inventory is full!", HUDMessage.error_type));
+                Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.inventory.full", new { petName = _pet?.Name ?? ModEntry.I18n.Get("pet.genericName") }), HUDMessage.error_type));
                 _isWorking = false;
                 StopWorkImmediately();
             }
             else if (_foragingTarget != null)
             {
                 // Only show notification once when stopping forage during follow
-                Game1.addHUDMessage(new HUDMessage($"{_pet?.Name}'s inventory is full!", HUDMessage.error_type));
+                Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.inventory.full", new { petName = _pet?.Name ?? ModEntry.I18n.Get("pet.genericName") }), HUDMessage.error_type));
             }
             
             // Clear forage target if following
@@ -505,8 +504,6 @@ namespace WorkingPets.Behaviors
                     {
                         InventoryManager.AddItem(item);
                     }
-                    
-                    ModEntry.Instance.Monitor.Log($"[WorkingPets] {_pet.Name} auto-deposited {depositedCount} items mid-work.", LogLevel.Debug);
                 }
             }
             catch (Exception ex)
@@ -566,8 +563,8 @@ namespace WorkingPets.Behaviors
                 // Show work started notification
                 if (_pet != null)
                 {
-                    string petName = _pet.Name ?? "Your pet";
-                    Game1.addHUDMessage(new HUDMessage($"{petName} started working!", HUDMessage.newQuest_type));
+                    string petName = _pet.Name ?? ModEntry.I18n.Get("pet.genericName");
+                    Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.work.start", new { petName }), HUDMessage.newQuest_type));
                 }
             }
             else
@@ -575,8 +572,8 @@ namespace WorkingPets.Behaviors
                 // Show work stopped notification
                 if (_pet != null)
                 {
-                    string petName = _pet.Name ?? "Your pet";
-                    Game1.addHUDMessage(new HUDMessage($"{petName} stopped working.", HUDMessage.newQuest_type));
+                    string petName = _pet.Name ?? ModEntry.I18n.Get("pet.genericName");
+                    Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.work.stop", new { petName }), HUDMessage.newQuest_type));
                 }
                 StopWorkImmediately();
             }
@@ -593,14 +590,15 @@ namespace WorkingPets.Behaviors
                 if (_pet.currentLocation?.Name != Game1.player?.currentLocation?.Name)
                 {
                     string locationName = _pet.currentLocation?.DisplayName ?? _pet.currentLocation?.Name ?? "unknown";
-                    Game1.addHUDMessage(new HUDMessage($"{_pet.Name ?? "Pet"} is at {locationName}.", HUDMessage.error_type));
+                    string petName = _pet.Name ?? ModEntry.I18n.Get("pet.genericName");
+                    Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.pet.atLocation", new { petName, location = locationName }), HUDMessage.error_type));
                     return;
                 }
                 
                 // Check if another pet is already following
                 if (_currentFollowerPetId.HasValue && _currentFollowerPetId != _pet.petId.Value)
                 {
-                    Game1.addHUDMessage(new HUDMessage("Another pet is already following you!", HUDMessage.error_type));
+                    Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.follow.anotherFollowing"), HUDMessage.error_type));
                     return;
                 }
             }
@@ -631,8 +629,8 @@ namespace WorkingPets.Behaviors
                 _pet.controller = null; // Clear any vanilla pathfinding
                 _pet.Halt();
                 
-                string petName = _pet.Name ?? "Your pet";
-                Game1.addHUDMessage(new HUDMessage($"{petName} is now following you!", HUDMessage.newQuest_type));
+                string petName = _pet.Name ?? ModEntry.I18n.Get("pet.genericName");
+                Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.follow.start", new { petName }), HUDMessage.newQuest_type));
             }
             else
             {
@@ -644,8 +642,8 @@ namespace WorkingPets.Behaviors
                 _pet.farmerPassesThrough = false; // Restore collision when not following
                 _pet.Halt();
                 
-                string petName = _pet.Name ?? "Your pet";
-                Game1.addHUDMessage(new HUDMessage($"{petName} stopped following.", HUDMessage.newQuest_type));
+                string petName = _pet.Name ?? ModEntry.I18n.Get("pet.genericName");
+                Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.follow.stop", new { petName }), HUDMessage.newQuest_type));
             }
         }
 
@@ -738,9 +736,9 @@ namespace WorkingPets.Behaviors
                 _pet.Halt();
                 
                 // Show notification
-                string petName = _pet.Name ?? "Your pet";
+                string petName = _pet.Name ?? ModEntry.I18n.Get("pet.genericName");
                 string direction = _exploreClockwise ? "clockwise" : "counter-clockwise";
-                Game1.addHUDMessage(new HUDMessage($"{petName} started exploring ({direction} route)!", HUDMessage.newQuest_type));
+                Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.explore.startWithRoute", new { petName, direction }), HUDMessage.newQuest_type));
             }
         }
         
@@ -798,6 +796,7 @@ namespace WorkingPets.Behaviors
         public void PauseForDialogue()
         {
             _isPausedForDialogue = true;
+            _idleTicks = 0; // Reset idle ticks to prevent auto-explore from triggering immediately after dialogue
             if (_pet != null)
             {
                 _pet.Halt();
@@ -864,7 +863,8 @@ namespace WorkingPets.Behaviors
             {
                 // === AUTO-EXPLORE ===
                 // If pet is idle for too long and CAN explore (has space + areas with forage), start exploring
-                if (CanExplore)
+                // BUT don't start if player has a menu open (they might be interacting with this pet!)
+                if (CanExplore && Game1.activeClickableMenu == null)
                 {
                     _idleTicks++;
                     if (_idleTicks >= AUTO_EXPLORE_IDLE_THRESHOLD)
@@ -874,6 +874,11 @@ namespace WorkingPets.Behaviors
                         // Start exploring autonomously
                         ToggleExplore();
                     }
+                }
+                else
+                {
+                    // Menu is open or can't explore - reset idle ticks
+                    _idleTicks = 0;
                 }
                 return;
             }
@@ -887,7 +892,6 @@ namespace WorkingPets.Behaviors
             // Ensure pet is on farm when working
             if (_pet.currentLocation?.Name != "Farm")
             {
-                ModEntry.Instance.Monitor.Log($"[WorkingPets] Pet not on farm, warping. Current location: {_pet.currentLocation?.Name ?? "null"}", LogLevel.Debug);
                 Game1.warpCharacter(_pet, "Farm", new Vector2(64, 15));
                 return;
             }
@@ -895,7 +899,6 @@ namespace WorkingPets.Behaviors
             // If we have a target, move towards it
             if (_targetTile.HasValue)
             {
-                ModEntry.Instance.Monitor.Log($"[WorkingPets] Moving to target: {_targetTile.Value}, HasController: {_pet.controller != null}", LogLevel.Trace);
                 MoveTowardTarget();
                 return;
             }
@@ -1026,8 +1029,6 @@ namespace WorkingPets.Behaviors
                     _isInFastMode = true;
                     _currentSpeed = _moveSpeed * 6f; // Ultra-fast speed to pass through walls
                     
-                    ModEntry.Instance.Monitor.Log($"[WorkingPets] Stuck detected; activating fast-speed bypass (attempt {_consecutiveFastAttempts}/{MAX_FAST_ATTEMPTS}) for target {_targetTile.Value}", LogLevel.Debug);
-                    
                     // After 3 fast attempts, give up on pathfinding and just destroy the target
                     if (_consecutiveFastAttempts >= MAX_FAST_ATTEMPTS)
                     {
@@ -1100,7 +1101,6 @@ namespace WorkingPets.Behaviors
                     _consecutiveFastAttempts++;
                     _isInFastMode = true;
                     _currentSpeed = _moveSpeed * 6f;
-                    ModEntry.Instance.Monitor.Log($"[WorkingPets] Obstacle detected; activating fast-speed bypass for target {_targetTile.Value}", LogLevel.Debug);
                 }
                 return;
             }
@@ -2065,8 +2065,8 @@ namespace WorkingPets.Behaviors
             _pet.Halt();
             _pet.controller = null;
             
-            string petName = _pet.Name ?? "Your pet";
-            Game1.addHUDMessage(new HUDMessage($"{petName} finished exploring ({reason}) and is resting.", HUDMessage.newQuest_type));
+            string petName = _pet.Name ?? ModEntry.I18n.Get("pet.genericName");
+            Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.explore.finished", new { petName, reason }), HUDMessage.newQuest_type));
         }
         
         /// <summary>Check if an area is valid for exploration.</summary>
@@ -2534,7 +2534,6 @@ namespace WorkingPets.Behaviors
             // Check if inventory has space before even trying
             if (!InventoryManager.HasSpace)
             {
-                ModEntry.Instance.Monitor.Log($"[WorkingPets] {_pet.Name}'s inventory is full, skipping pickup", LogLevel.Debug);
                 return;
             }
             
@@ -2650,8 +2649,8 @@ namespace WorkingPets.Behaviors
             else if (!_noWorkNotificationShown && config.ShowWorkingMessages)
             {
                 _noWorkNotificationShown = true;
-                string petName = _pet?.Name ?? "Your pet";
-                Game1.addHUDMessage(new HUDMessage($"{petName} found nothing to do.", HUDMessage.newQuest_type));
+                string petName = _pet?.Name ?? ModEntry.I18n.Get("pet.genericName");
+                Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.work.noWork", new { petName }), HUDMessage.newQuest_type));
             }
         }
 
@@ -2926,14 +2925,12 @@ namespace WorkingPets.Behaviors
             // Skip if another pet already reserved this target
             if (_pet != null && MultiPetManager.IsTargetReservedByOther(_pet, tile))
             {
-                ModEntry.Instance.Monitor.Log($"[WorkingPets] {_pet.Name}: Target {tile} already reserved by another pet, skipping.", LogLevel.Trace);
                 return;
             }
             
             // Try to reserve this target
             if (_pet != null && !MultiPetManager.TryReserveTarget(_pet, tile))
             {
-                ModEntry.Instance.Monitor.Log($"[WorkingPets] {_pet.Name}: Failed to reserve target {tile}.", LogLevel.Trace);
                 return;
             }
             
@@ -2944,8 +2941,6 @@ namespace WorkingPets.Behaviors
             }
             _reservedTarget = tile;
 
-            ModEntry.Instance.Monitor.Log($"[WorkingPets] SetJob: {_pet?.Name} moving to tile {tile}", LogLevel.Debug);
-            
             _targetTile = tile;
             _pendingAction = action;
 
@@ -2991,7 +2986,6 @@ namespace WorkingPets.Behaviors
                 if (!location.isTilePassable(new xTile.Dimensions.Location(x, y), Game1.viewport))
                     continue;
 
-                ModEntry.Instance.Monitor.Log($"[WorkingPets] Stuck detected; warping {_pet.Name} near target {targetTile} -> {tile}", LogLevel.Debug);
                 Game1.warpCharacter(_pet, location.NameOrUniqueName, tile);
                 _pet.Halt();
                 _pet.controller = null;
@@ -3003,11 +2997,8 @@ namespace WorkingPets.Behaviors
 
         private void ClearDebrisAt(Farm farm, Vector2 tile, StardewValley.Object obj)
         {
-            ModEntry.Instance.Monitor.Log($"[WorkingPets] ClearDebrisAt called: tile={tile}, object={obj.Name}", LogLevel.Info);
-            
             if (!farm.objects.ContainsKey(tile))
             {
-                ModEntry.Instance.Monitor.Log($"[WorkingPets] Object no longer exists at {tile}!", LogLevel.Warn);
                 return;
             }
 
@@ -3055,8 +3046,6 @@ namespace WorkingPets.Behaviors
 
             var drops = GetDropsForObject(obj);
             farm.objects.Remove(tile);
-            
-            ModEntry.Instance.Monitor.Log($"[WorkingPets] Removed {obj.Name} at {tile}, got {drops.Count} drops", LogLevel.Info);
 
             foreach (var item in drops) InventoryManager.AddItem(item);
         }
