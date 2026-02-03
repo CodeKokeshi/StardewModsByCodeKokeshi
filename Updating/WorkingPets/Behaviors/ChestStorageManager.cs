@@ -4,6 +4,7 @@ using StardewValley;
 using StardewValley.Objects;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace WorkingPets.Behaviors
 {
@@ -70,34 +71,46 @@ namespace WorkingPets.Behaviors
 
         /// <summary>
         /// Try to deposit an item into a matching chest.
+        /// Will match item quality to existing chest items if needed.
         /// </summary>
         /// <param name="item">The item to deposit.</param>
         /// <param name="chests">List of all chests to check.</param>
         /// <returns>True if the item was fully deposited, false otherwise.</returns>
         private bool TryDepositItem(Item item, List<Chest> chests)
         {
-            // Find a chest that already contains this item with matching quality
-            Chest? matchingChest = FindMatchingChest(item, chests);
+            // Find a chest that already contains this item type (any quality)
+            var result = FindMatchingChestAndQuality(item, chests);
 
-            if (matchingChest == null)
+            if (result.Chest == null)
                 return false;
+
+            // If we need to change quality to match chest contents, do so
+            if (result.MatchedQuality >= 0 && item is StardewValley.Object obj && obj.Quality != result.MatchedQuality)
+            {
+                _monitor?.Log($"[ChestStorageManager] Adjusting {item.DisplayName} quality from {obj.Quality} to {result.MatchedQuality} to match chest.", LogLevel.Trace);
+                obj.Quality = result.MatchedQuality;
+            }
 
             // Try to add the item to the chest
             // Chest.addItem returns null if fully added, or the remaining item if partial/failed
-            Item remaining = matchingChest.addItem(item);
+            Item? remaining = result.Chest.addItem(item);
 
             return remaining == null;
         }
 
         /// <summary>
-        /// Find a chest that contains at least one item that can stack with the given item.
-        /// This ensures items only go to chests that already have the same item type and quality.
+        /// Find a chest that contains at least one item of the same type (ignoring quality).
+        /// Returns the chest and the quality of the matching item so we can adjust.
         /// </summary>
         /// <param name="item">The item to find a matching chest for.</param>
         /// <param name="chests">List of all chests to search.</param>
-        /// <returns>The first matching chest, or null if none found.</returns>
-        private Chest? FindMatchingChest(Item item, List<Chest> chests)
+        /// <returns>The matching chest and the quality to use, or null if none found.</returns>
+        private (Chest? Chest, int MatchedQuality) FindMatchingChestAndQuality(Item item, List<Chest> chests)
         {
+            int itemQuality = 0;
+            if (item is StardewValley.Object obj)
+                itemQuality = obj.Quality;
+
             foreach (Chest chest in chests)
             {
                 // Skip special chest types that shouldn't be used for storage
@@ -107,44 +120,75 @@ namespace WorkingPets.Behaviors
                     continue;
                 }
 
-                // Check if this chest contains an item that can stack with our item
+                // Collect all qualities of this item type in the chest
+                var qualitiesInChest = new List<int>();
                 foreach (Item chestItem in chest.Items)
                 {
                     if (chestItem == null) continue;
 
-                    // canStackWith checks: type, quality, itemId, name, etc.
-                    if (chestItem.canStackWith(item))
+                    // Check if same item type by qualified ID
+                    if (chestItem.QualifiedItemId == item.QualifiedItemId)
                     {
-                        // Found a chest with matching item - check if there's room
-                        if (HasRoomForItem(chest, item))
-                        {
-                            return chest;
-                        }
+                        int chestItemQuality = 0;
+                        if (chestItem is StardewValley.Object chestObj)
+                            chestItemQuality = chestObj.Quality;
+                        
+                        if (!qualitiesInChest.Contains(chestItemQuality))
+                            qualitiesInChest.Add(chestItemQuality);
                     }
+                }
+
+                if (qualitiesInChest.Count == 0)
+                    continue;
+
+                // Prefer exact quality match, otherwise choose highest quality
+                int targetQuality = itemQuality;
+                if (!qualitiesInChest.Contains(itemQuality))
+                {
+                    // No exact match - use highest quality in chest
+                    targetQuality = qualitiesInChest.Max();
+                }
+
+                // Check if there's room (either stacking with adjusted quality or new slot)
+                if (HasRoomForItemWithQuality(chest, item, targetQuality))
+                {
+                    return (chest, targetQuality);
                 }
             }
 
-            return null;
+            return (null, -1);
         }
 
         /// <summary>
-        /// Check if a chest has room for an item (either stacking or new slot).
+        /// Check if a chest has room for an item with a specific quality.
         /// </summary>
         /// <param name="chest">The chest to check.</param>
         /// <param name="item">The item to check room for.</param>
+        /// <param name="quality">The quality the item will have when deposited.</param>
         /// <returns>True if there's room, false otherwise.</returns>
-        private bool HasRoomForItem(Chest chest, Item item)
+        private bool HasRoomForItemWithQuality(Chest chest, Item item, int quality)
         {
-            // Check if any existing stack has room
+            // Check if any existing stack of same item and target quality has room
             foreach (Item chestItem in chest.Items)
             {
-                if (chestItem != null && chestItem.canStackWith(item))
+                if (chestItem != null && 
+                    chestItem.QualifiedItemId == item.QualifiedItemId)
                 {
-                    // Check if this stack has room
-                    int maxStack = chestItem.maximumStackSize();
-                    if (chestItem.Stack < maxStack)
+                    // Check if this item has the target quality
+                    int chestItemQuality = 0;
+                    if (chestItem is StardewValley.Object chestObj)
                     {
-                        return true;
+                        chestItemQuality = chestObj.Quality;
+                    }
+
+                    if (chestItemQuality == quality)
+                    {
+                        // Check if this stack has room
+                        int maxStack = chestItem.maximumStackSize();
+                        if (chestItem.Stack < maxStack)
+                        {
+                            return true;
+                        }
                     }
                 }
             }
@@ -237,11 +281,11 @@ namespace WorkingPets.Behaviors
             {
                 if (item == null) continue;
 
-                Chest? matchingChest = FindMatchingChest(item, allChests);
+                var result = FindMatchingChestAndQuality(item, allChests);
                 
-                if (matchingChest != null)
+                if (result.Chest != null)
                 {
-                    string location = matchingChest.Location?.DisplayName ?? "Unknown";
+                    string location = result.Chest.Location?.DisplayName ?? "Unknown";
                     string key = $"{item.DisplayName} (Q{item.Quality})";
                     preview[key] = location;
                 }

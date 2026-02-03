@@ -61,12 +61,18 @@ public class WhistleMenu : IClickableMenu
             var manager = ModEntry.PetManager?.GetManagerForPet(pet);
             bool isAlreadyFollowing = manager?.IsFollowing == true;
             bool isExploring = manager?.IsExploring == true;
+            bool canFollow = manager?.CanFollow == true;
+            
+            // Can only whistle if:
+            // 1. Pet is exploring (whistle to stop exploring and follow), OR
+            // 2. Pet is in same location AND not already following AND no other pet is following
+            bool canWhistle = isExploring || (isInSameLocation && !isAlreadyFollowing && canFollow);
             
             PetEntries.Add(new PetEntry
             {
                 Pet = pet,
                 DisplayName = displayName,
-                IsEnabled = (isInSameLocation && !isAlreadyFollowing) || isExploring, // Can whistle exploring pets
+                IsEnabled = canWhistle,
                 Sprite = pet.Sprite.Texture,
                 SpriteSourceRect = new Rectangle(0, pet.Sprite.SourceRect.Height * 2 - 24, pet.Sprite.SourceRect.Width, 24)
             });
@@ -319,12 +325,16 @@ public class WhistleMenu : IClickableMenu
                 else
                 {
                     var manager = ModEntry.PetManager?.GetManagerForPet(entry.Pet);
-                    if (manager?.IsExploring == true)
-                        HoverText = $"{entry.DisplayName} is exploring the valley.";
-                    else if (manager?.IsFollowing == true)
+                    if (manager?.IsFollowing == true)
                         HoverText = $"{entry.DisplayName} is already following you!";
+                    else if (Behaviors.PetWorkManager.IsAnyPetFollowing)
+                        HoverText = "Another pet is already following you!";
                     else
-                        HoverText = $"{entry.DisplayName} is not on the same area.";
+                    {
+                        // Show where the pet actually is
+                        string locationName = entry.Pet.currentLocation?.DisplayName ?? entry.Pet.currentLocation?.Name ?? "unknown";
+                        HoverText = $"{entry.DisplayName} is at {locationName}.";
+                    }
                 }
                 break;
             }

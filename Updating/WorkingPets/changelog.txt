@@ -1,63 +1,35 @@
 1.4.0
-- Exploration system with simple teleport and circular route patterns
-- Pet follows a circular route (clockwise or counter-clockwise, randomly chosen each time)
-- Clockwise: Backwoods → Mountains → Railroad → Town → BusStop → Forest → Woods → Beach (loop)
-- Counter-clockwise: BusStop → Town → Mountains → Railroad → Backwoods → Forest → Woods → Beach (loop)
-- Pet teleports directly to areas with forageables (no complex pathing)
-- Exploration pre-scans all areas and only visits areas that have items to collect
-- When area is cleared, pet teleports to next area in the circular route
-- Exploration ends when all areas are cleared OR inventory is full
-- When done exploring, pet returns to farm and rests for the day
-- Explore option hidden when already explored today, inventory full, or no forage available
-- Pets can be whistled back during exploration (pauses exploration)
-- "Continue exploring" option available when exploration was paused
-- Only one pet can explore at a time (other pets show disabled option)
-- Each area is marked as "cleared" when no forageables remain, resets daily
-- Right-click pet to open command menu (dialogue only appears when stationary, not while walking)
-- Notifications added for exploration start, work start, and work stop
-- Each pet now has its own separate inventory (no longer shared between all pets)
-- Pet picks up foraged items with quality based on player's foraging level
-- Forage quality: 20% iridium at level 10+, 33% gold at level 8+, 50% silver at level 4+
-- Pet sounds now correctly match pet type (dogs bark, cats meow, turtles chirp, etc.)
-- Pet uses EXTREME BLINK wall-pass system to reach forageables through any obstacle
-- Complete follow system rewrite eliminates stuttering and left-right flickering
-- Pets no longer get stuck on obstacles with automatic EXTREME BLINK activation
-- EXTREME BLINK activates after 0.5 seconds stuck with 50 px/frame speed
-- Wall-pass works for both following and foraging, phases through everything
-- Direction locked during wall-pass to prevent wobbling while phasing
-- Wall-pass auto-exits when reaching target or 4 second timeout
-- Vanilla pet behavior no longer interferes with mod-controlled movement
-- Pets won't randomly fall asleep or sit down while following
-- Fixed moonwalking bug where pet moved while facing opposite direction
-- Pet immediately looks for next forageable after pickup instead of returning to player
-- Foraging takes absolute priority over following when items are nearby
-- After picking up forage, pet immediately scans for next item instead of returning to player
-- Pet only returns to player when all nearby forageables are collected
-- 10-tile forage leash prevents chasing items too far from player
-- Unreachable forage tiles tracked and cleared every 10 seconds
-- Forage scanning improved to every 12 ticks for more responsive pickup
-- Idle roaming behavior when player is stationary and pet is close
-- Pet does small random movements within 0.75 tiles for natural behavior
-- Roaming has 2% chance per tick with 30-tick cooldown between roams
-- State machine with 4 states: Idle, FollowingPlayer, Foraging, WallPassing
-- Smooth velocity-based movement with Vector2.Lerp acceleration
-- Smooth deceleration when stopping instead of instant halt
-- Direction locking with configurable threshold prevents flickering on diagonal movement
-- Follow distances: stop at 1.25 tiles, start at 2.5 tiles for tighter following
-- Speed scaling: 2.2x sprint (8+ tiles), 1.8x (6+ tiles), 1.4x (4+ tiles), 1.1x (2.5+ tiles)
-- Slide movement at 60% speed along walls when blocked
-- RunState_Prefix harmony patch suppresses vanilla pet AI when following/working
-- BehaviorOnFarmerLocationEntry_Prefix prevents random sleep behavior while following
-- Forces pet out of Sleep/SitDown behaviors when follow mode activates
-- Clears vanilla PathFindController to prevent conflicts with mod movement
-- "Show Forage Notifications" config option added (disabled by default)
-- "Show State Notifications" config option added (disabled by default)
-- Forage pickup HUD messages respect ShowForageNotifications config
-- State change messages respect ShowStateNotifications config
-- Removed verbose debug logs for cleaner console output
-- Pet command menu requires holding LeftShift to prevent hijacking normal interaction
-- Overnight scavenging works regardless of current pet state
-- Added i18n support for pet menu and HUD messages
+- Exploration system with circular routes (clockwise/counter-clockwise, randomly chosen)
+- Pet teleports directly to areas with forageables, pre-scans all areas first
+- When area is cleared, pet teleports to next area in route
+- Exploration ends when all areas cleared or inventory full, pet returns to farm
+- Only one pet can explore at a time, explore option hidden when unavailable
+- Pets can be whistled back during exploration (pauses, can resume via dialogue)
+- Right-click pet to open command menu (only when stationary, not while walking)
+- Each pet now has its own separate inventory (no longer shared)
+- Forage quality based on player's foraging level (iridium/gold/silver chances)
+- Pet sounds correctly match pet type (dogs bark, cats meow, turtles chirp)
+- Only one pet can follow at a time (single follower enforcement)
+- Whistle disabled for pets not in same area or when another pet is following
+- Pet foraging while following now requires player to forage first
+- Pet only forages nearby items (within 5 tiles) when player is within 8 tiles
+- Foraging cancels immediately when player moves away or changes location
+- All pets reset to idle state at start of each new day
+- Auto-deposit matches item quality intelligently: prefers same quality, otherwise chooses highest quality in chest
+- Auto-deposit attempts before inventory full error (pets continue working if space freed)
+- Sounds only play when player is in same area as pet
+- Instant farm scan for work detection (no more slow realization)
+- Pet location shown with display name (e.g., "Pierre's General Store" not "SeedShop")
+- Pet markers hidden during cutscenes, events, and dialogue
+- Inventory size and auto-deposit fully configurable in GMCM
+- EXTREME BLINK wall-pass system for obstacle navigation
+- Complete follow system rewrite eliminates stuttering and flickering
+- State machine: Idle, FollowingPlayer, Foraging, WallPassing
+- Smooth velocity-based movement with proper acceleration/deceleration
+- Follow distances: stop at 1.25 tiles, start at 2.5 tiles
+- Speed scaling based on distance to player
+- Various config options for notifications and behavior
+- Full i18n support for all text
 
 1.3.1
 - Fixed bug where SMAPI console window would flash repeatedly after naming a new pet during the adoption cutscene.

@@ -229,6 +229,20 @@ namespace WorkingPets.UI
         {
             if (manager == null) return;
             
+            string petName = pet?.Name ?? "Your pet";
+            
+            // If trying to start work, do a quick pre-check
+            if (!manager.IsWorking)
+            {
+                // Check if there's any work to do BEFORE starting
+                if (!PetWorkManager.HasAnyWorkOnFarm())
+                {
+                    PlayPetSound(pet, "BARK");
+                    Game1.addHUDMessage(new HUDMessage($"{petName} looked around but found nothing to do!", HUDMessage.newQuest_type));
+                    return; // Don't start work mode
+                }
+            }
+            
             // If currently following, stop following first
             if (manager.IsFollowing)
             {
@@ -236,8 +250,6 @@ namespace WorkingPets.UI
             }
             
             manager.ToggleWork();
-
-            string petName = pet?.Name ?? "Your pet";
 
             // Play sound and show message
             if (manager.IsWorking)

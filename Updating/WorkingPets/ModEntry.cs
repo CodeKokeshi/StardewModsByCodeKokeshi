@@ -76,6 +76,7 @@ namespace WorkingPets
             helper.Events.Display.RenderingHud += OnRenderingHud; // Draw pet map icons
             helper.Events.Input.ButtonPressed += OnButtonPressed;
             helper.Events.Player.Warped += OnPlayerWarped; // Exit resting on location change
+            helper.Events.Player.InventoryChanged += OnInventoryChanged; // Track player foraging
 
             this.Monitor.Log(I18n.Get("log.loaded"), LogLevel.Info);
         }
@@ -211,6 +212,24 @@ namespace WorkingPets
                 setValue: value => Config.WorkRadius = value,
                 min: 5,
                 max: 100
+            );
+
+            configMenu.AddNumberOption(
+                mod: this.ModManifest,
+                name: () => "Pet Inventory Size",
+                tooltip: () => "Number of inventory slots each pet has (max 36). Applies to new items only.",
+                getValue: () => Config.InventorySize,
+                setValue: value => Config.InventorySize = value,
+                min: 1,
+                max: 36
+            );
+
+            configMenu.AddBoolOption(
+                mod: this.ModManifest,
+                name: () => "Auto-Deposit to Chests",
+                tooltip: () => "Each morning, automatically deposit pet inventory items to matching chests on your farm.",
+                getValue: () => Config.AutoDepositToChests,
+                setValue: value => Config.AutoDepositToChests = value
             );
 
             configMenu.AddBoolOption(
@@ -523,6 +542,34 @@ namespace WorkingPets
             {
                 PetManager.ResumeAllFromDialogue();
             }
+        }
+        
+        /// <summary>Raised when player's inventory changes - track foraging activity.</summary>
+        private void OnInventoryChanged(object? sender, InventoryChangedEventArgs e)
+        {
+            if (!Context.IsWorldReady || e.Player != Game1.player)
+                return;
+            
+            // Check if player added a forageable item
+            foreach (var item in e.Added)
+            {
+                if (item != null && IsForageable(item))
+                {
+                    // Player just picked up a forageable - notify the pet system
+                    PetWorkManager.NotifyPlayerForaged();
+                    break; // Only need to notify once
+                }
+            }
+        }
+        
+        /// <summary>Check if an item is a forageable.</summary>
+        private bool IsForageable(Item item)
+        {
+            if (item is not StardewValley.Object obj)
+                return false;
+            
+            // Check if it's tagged as a forage item
+            return obj.HasContextTag("forage_item");
         }
 
         /// <summary>Raised before the HUD is drawn to screen - draw pet map icons.</summary>

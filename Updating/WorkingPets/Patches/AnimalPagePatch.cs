@@ -75,8 +75,9 @@ public static class AnimalPagePatch
         // Check if pet is in the same location
         if (pet.currentLocation != player.currentLocation)
         {
-            // Pet is in a different location - show message
-            Game1.showRedMessage($"{pet.displayName} is not on the same area.");
+            // Pet is in a different location - show where it is
+            string locationName = pet.currentLocation?.DisplayName ?? pet.currentLocation?.Name ?? "unknown";
+            Game1.showRedMessage($"{pet.displayName} is at {locationName}.");
             Game1.playSound("cancel");
             return;
         }

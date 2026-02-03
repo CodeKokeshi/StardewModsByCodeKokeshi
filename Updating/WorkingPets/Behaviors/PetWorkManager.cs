@@ -185,6 +185,15 @@ namespace WorkingPets.Behaviors
         
         // Single explorer enforcement - only one pet can explore at a time
         private static Guid? _currentExplorerPetId = null;
+        
+        // Single follower enforcement - only one pet can follow at a time
+        private static Guid? _currentFollowerPetId = null;
+        
+        // Track player foraging activity - pets only forage when player is actively foraging
+        private static int _playerLastForagedTick = -99999;  // Tick when player last picked up a forageable
+        private static string? _playerForageLocation = null;  // Location where player last foraged
+        private const int PLAYER_FORAGE_WINDOW = 1800;  // 30 seconds - pet will forage if player foraged within this window
+        private const float FORAGE_ABANDON_DISTANCE = 8f;  // Abandon forage if player moves this far while pet is foraging
         // ===== END AUTO-EXPLORE STATE =====
 
         private readonly Random _random = new();
@@ -208,6 +217,31 @@ namespace WorkingPets.Behaviors
         
         /// <summary>Check if THIS pet is the current explorer.</summary>
         public bool IsCurrentExplorer => _pet != null && _currentExplorerPetId == _pet.petId.Value;
+        
+        /// <summary>Check if another pet is currently following.</summary>
+        public static bool IsAnyPetFollowing => _currentFollowerPetId.HasValue;
+        
+        /// <summary>Check if THIS pet is the current follower.</summary>
+        public bool IsCurrentFollower => _pet != null && _currentFollowerPetId == _pet.petId.Value;
+        
+        /// <summary>Check if pet can start following - must be in same location as player and no other pet following.</summary>
+        public bool CanFollow
+        {
+            get
+            {
+                if (_pet == null) return false;
+                
+                // Must be in same location as player
+                if (_pet.currentLocation?.Name != Game1.player?.currentLocation?.Name)
+                    return false;
+                
+                // Can't follow if another pet is already following (unless this pet is the follower)
+                if (_currentFollowerPetId.HasValue && _currentFollowerPetId != _pet.petId.Value)
+                    return false;
+                
+                return true;
+            }
+        }
         
         /// <summary>Check if pet can explore - must have inventory space, areas with forage, and no other pet exploring.</summary>
         public bool CanExplore
@@ -241,6 +275,94 @@ namespace WorkingPets.Behaviors
         
         /// <summary>Get the current explore location name for display.</summary>
         public string? CurrentExploreLocation => _isExploring ? _pet?.currentLocation?.Name : null;
+        
+        /// <summary>Quick check if there's any work available on the farm (instant scan).</summary>
+        public static bool HasAnyWorkOnFarm()
+        {
+            var farm = Game1.getFarm();
+            if (farm == null) return false;
+            
+            var config = ModEntry.Config;
+            
+            // Check debris (weeds, twigs, stones)
+            if (config.ClearDebris)
+            {
+                foreach (var obj in farm.objects.Values)
+                {
+                    if (obj.Name.Contains("Weed") || obj.Name.Contains("Twig") || 
+                        obj.Name.Contains("Stone") || obj.ParentSheetIndex == 294 || 
+                        obj.ParentSheetIndex == 295 || obj.ParentSheetIndex == 343 ||
+                        obj.ParentSheetIndex == 450)
+                    {
+                        return true;
+                    }
+                }
+            }
+            
+            // Check trees
+            if (config.ChopTrees)
+            {
+                foreach (var feature in farm.terrainFeatures.Values)
+                {
+                    if (feature is Tree tree && tree.growthStage.Value >= 0 && !tree.stump.Value)
+                    {
+                        return true;
+                    }
+                }
+            }
+            
+            // Check stumps and logs
+            if (config.ClearStumpsAndLogs)
+            {
+                foreach (var feature in farm.resourceClumps)
+                {
+                    if (feature.parentSheetIndex.Value == 600 || feature.parentSheetIndex.Value == 602)
+                    {
+                        return true;
+                    }
+                }
+            }
+            
+            // Check boulders
+            if (config.BreakBoulders)
+            {
+                foreach (var feature in farm.resourceClumps)
+                {
+                    if (feature.parentSheetIndex.Value == 672)
+                    {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+        
+        /// <summary>Notify that the player just picked up a forageable - enables pet foraging for the next 30 seconds.</summary>
+        public static void NotifyPlayerForaged()
+        {
+            _playerLastForagedTick = Game1.ticks;
+            _playerForageLocation = Game1.player?.currentLocation?.Name;
+        }
+        
+        /// <summary>Check if the player has recently foraged (within the last 30 seconds) in the same location.</summary>
+        private bool IsPlayerActivelyForaging()
+        {
+            // Check time window
+            int ticksSinceForage = Game1.ticks - _playerLastForagedTick;
+            if (ticksSinceForage > PLAYER_FORAGE_WINDOW)
+                return false;
+            
+            // Must have a valid forage location recorded
+            if (string.IsNullOrEmpty(_playerForageLocation))
+                return false;
+            
+            // Pet must be in the same location where player foraged
+            if (_pet?.currentLocation?.Name != _playerForageLocation)
+                return false;
+            
+            return true;
+        }
 
         /*********
         ** Public methods
@@ -252,25 +374,80 @@ namespace WorkingPets.Behaviors
             LoadState(pet);
         }
         
-        /// <summary>Reset daily flags (call at start of new day).</summary>
+        /// <summary>Reset daily flags and return pet to idle state (call at start of new day).</summary>
         public void ResetDailyFlags()
         {
             _hasExploredToday = false;
             _explorePaused = false;
             _idleTicks = 0;
             
+            // Stop ALL modes - return to idle
+            if (_isFollowing)
+            {
+                _isFollowing = false;
+                ResetFollowState();
+            }
+            
+            if (_isWorking)
+            {
+                _isWorking = false;
+                _targetTile = null;
+                _pendingAction = null;
+            }
+            
+            if (_isExploring)
+            {
+                _isExploring = false;
+                ResetExploreState();
+            }
+            
+            // Ensure pet is back to normal state
+            if (_pet != null)
+            {
+                _pet.farmerPassesThrough = false;
+                _pet.controller = null;
+                _pet.Halt();
+                _pet.IsInvisible = false;
+            }
+            
+            // Release slots for this pet
+            if (_pet != null)
+            {
+                if (_currentFollowerPetId == _pet.petId.Value)
+                    _currentFollowerPetId = null;
+                if (_currentExplorerPetId == _pet.petId.Value)
+                    _currentExplorerPetId = null;
+            }
+            
             // Clear the areas that were marked as having no forage (they may have respawned)
             _clearedAreas.Clear();
             _lastForageScanDay = Game1.dayOfMonth;
+            
+            // Clear player forage tracking
+            _playerLastForagedTick = -99999;
+            _playerForageLocation = null;
         }
         
-        /// <summary>Check if inventory is full and stop work/explore if needed.</summary>
+        /// <summary>Check if inventory is full and try to deposit to chests first. Stop work/explore only if still full.</summary>
         private bool CheckInventoryFull()
         {
             if (!InventoryManager.IsFull)
                 return false;
             
-            // Inventory is full - stop all collecting activities
+            // === TRY AUTO-DEPOSIT FIRST ===
+            if (ModEntry.Config.AutoDepositToChests)
+            {
+                TryAutoDepositNow();
+                
+                // If deposit freed up space, continue working
+                if (!InventoryManager.IsFull)
+                {
+                    ModEntry.Instance.Monitor.Log($"[WorkingPets] {_pet?.Name} auto-deposited items, continuing work.", LogLevel.Debug);
+                    return false;
+                }
+            }
+            
+            // Still full after deposit attempt - stop collecting activities
             if (_isExploring)
             {
                 Game1.addHUDMessage(new HUDMessage($"{_pet?.Name}'s inventory is full!", HUDMessage.error_type));
@@ -293,6 +470,49 @@ namespace WorkingPets.Behaviors
             _exploreTarget = null;
             
             return true;
+        }
+        
+        /// <summary>Try to auto-deposit current inventory items to matching chests immediately.</summary>
+        private void TryAutoDepositNow()
+        {
+            if (_pet == null) return;
+            
+            try
+            {
+                // Collect all items from inventory
+                var itemsToDeposit = new List<Item>();
+                for (int i = 0; i < InventoryManager.Inventory.Count; i++)
+                {
+                    if (InventoryManager.Inventory[i] != null)
+                    {
+                        itemsToDeposit.Add(InventoryManager.Inventory[i]!);
+                    }
+                }
+                
+                if (itemsToDeposit.Count == 0) return;
+                
+                // Try to deposit items
+                var chestManager = new ChestStorageManager(ModEntry.Instance.Monitor);
+                var remainingItems = chestManager.DepositItemsToMatchingChests(itemsToDeposit);
+                
+                int depositedCount = itemsToDeposit.Count - remainingItems.Count;
+                
+                if (depositedCount > 0)
+                {
+                    // Clear and refill inventory with remaining items
+                    InventoryManager.Clear();
+                    foreach (var item in remainingItems)
+                    {
+                        InventoryManager.AddItem(item);
+                    }
+                    
+                    ModEntry.Instance.Monitor.Log($"[WorkingPets] {_pet.Name} auto-deposited {depositedCount} items mid-work.", LogLevel.Debug);
+                }
+            }
+            catch (Exception ex)
+            {
+                ModEntry.Instance.Monitor.Log($"[WorkingPets] Error during mid-work auto-deposit: {ex.Message}", LogLevel.Error);
+            }
         }
         
         /// <summary>Stop exploring and return to farm (not player).</summary>
@@ -364,54 +584,84 @@ namespace WorkingPets.Behaviors
 
         public void ToggleFollow()
         {
+            if (_pet == null) return;
+            
+            // If starting to follow, check if allowed
+            if (!_isFollowing)
+            {
+                // Must be in same location as player
+                if (_pet.currentLocation?.Name != Game1.player?.currentLocation?.Name)
+                {
+                    string locationName = _pet.currentLocation?.DisplayName ?? _pet.currentLocation?.Name ?? "unknown";
+                    Game1.addHUDMessage(new HUDMessage($"{_pet.Name ?? "Pet"} is at {locationName}.", HUDMessage.error_type));
+                    return;
+                }
+                
+                // Check if another pet is already following
+                if (_currentFollowerPetId.HasValue && _currentFollowerPetId != _pet.petId.Value)
+                {
+                    Game1.addHUDMessage(new HUDMessage("Another pet is already following you!", HUDMessage.error_type));
+                    return;
+                }
+            }
+            
             _isFollowing = !_isFollowing;
             
             // Stop exploring if we start following (same as whistle behavior)
             if (_isFollowing && _isExploring)
             {
                 _isExploring = false;
+                // Release explorer slot
+                if (_currentExplorerPetId == _pet.petId.Value)
+                    _currentExplorerPetId = null;
                 ResetExploreState();
             }
             
             // Stop working if we start following
             if (_isFollowing)
             {
+                // Register as current follower
+                _currentFollowerPetId = _pet.petId.Value;
+                
                 _isWorking = false;
                 _targetTile = null;
                 _pendingAction = null;
                 ResetFollowState(); // Initialize follow state
-                if (_pet != null)
-                {
-                    _pet.farmerPassesThrough = true; // Make passable when following
-                    _pet.controller = null; // Clear any vanilla pathfinding
-                    _pet.Halt();
-                }
-
+                _pet.farmerPassesThrough = true; // Make passable when following
+                _pet.controller = null; // Clear any vanilla pathfinding
+                _pet.Halt();
+                
+                string petName = _pet.Name ?? "Your pet";
+                Game1.addHUDMessage(new HUDMessage($"{petName} is now following you!", HUDMessage.newQuest_type));
             }
             else
             {
+                // Release follower slot
+                if (_currentFollowerPetId == _pet.petId.Value)
+                    _currentFollowerPetId = null;
+                
                 ResetFollowState(); // Clear follow state
-                if (_pet != null)
-                {
-                    _pet.farmerPassesThrough = false; // Restore collision when not following
-                    _pet.Halt();
-                }
-
+                _pet.farmerPassesThrough = false; // Restore collision when not following
+                _pet.Halt();
+                
+                string petName = _pet.Name ?? "Your pet";
+                Game1.addHUDMessage(new HUDMessage($"{petName} stopped following.", HUDMessage.newQuest_type));
             }
         }
 
         public void StopFollowing()
         {
-            if (_isFollowing)
+            if (_isFollowing && _pet != null)
             {
                 _isFollowing = false;
+                
+                // Release follower slot
+                if (_currentFollowerPetId == _pet.petId.Value)
+                    _currentFollowerPetId = null;
+                
                 ResetFollowState();
-                if (_pet != null)
-                {
-                    _pet.farmerPassesThrough = false; // Restore collision
-                    _pet.Halt();
-                }
-
+                _pet.farmerPassesThrough = false; // Restore collision
+                _pet.Halt();
             }
         }
 
@@ -924,16 +1174,19 @@ namespace WorkingPets.Behaviors
             // === HANDLE LOCATION CHANGES ===
             if (player.currentLocation?.Name != "Farm" && !ModEntry.Config.FollowOutsideFarm)
             {
-                _isFollowing = false;
-                _pet.farmerPassesThrough = false;
-                _followState = FollowState.Idle;
-                ExitWallPassMode();
+                // Stop following if player leaves farm and config doesn't allow
+                StopFollowing();
                 return;
             }
             
             // Warp pet to player's location if different
             if (_pet.currentLocation != player.currentLocation)
             {
+                // IMPORTANT: Cancel any foraging when warping to new location
+                _foragingTarget = null;
+                _forageStuckTicks = 0;
+                _followState = FollowState.Idle;
+                
                 if (player.currentLocation?.Name == "Farm" || ModEntry.Config.FollowOutsideFarm)
                 {
                     Game1.warpCharacter(_pet, player.currentLocation, player.Tile);
@@ -1034,51 +1287,62 @@ namespace WorkingPets.Behaviors
                 }
             }
 
-            // === SCAN FOR FORAGEABLES (TAKES PRIORITY) ===
-            if (ModEntry.Config.ForageWhileFollowing && petLocation != null && _followState != FollowState.WallPassing)
+            // === SCAN FOR FORAGEABLES (ONLY IF PLAYER IS ACTIVELY FORAGING) ===
+            // This is a simple scan - pet picks up nearby items only when player is actively foraging
+            bool playerForaging = IsPlayerActivelyForaging();
+            if (ModEntry.Config.ForageWhileFollowing && playerForaging && petLocation != null && _followState != FollowState.WallPassing && !_foragingTarget.HasValue)
             {
                 _forageScanTimer++;
                 if (_forageScanTimer >= FORAGE_SCAN_INTERVAL)
                 {
                     _forageScanTimer = 0;
                     
-                    if (distanceToPlayer <= FORAGE_LEASH_DISTANCE && !_foragingTarget.HasValue)
+                    // Only scan if close to player (within 8 tiles) - pet should stay near player
+                    if (distanceToPlayer <= FORAGE_ABANDON_DISTANCE * 64f)
                     {
                         var nearestForage = FindNearbyForageableSmooth(petLocation, _pet.Tile);
                         if (nearestForage.HasValue)
                         {
-                            _foragingTarget = nearestForage.Value;
-                            _followState = FollowState.Foraging;
-                            _forageStuckTicks = 0;
-                            _stuckTicks = 0;
-                            SyncDirectionToTarget(_foragingTarget.Value * 64f + new Vector2(32f, 32f)); // Face new target
+                            // Only pick up forageables that are close (within 5 tiles of pet)
+                            float distToForage = Vector2.Distance(_pet.Tile, nearestForage.Value);
+                            if (distToForage <= 5f)
+                            {
+                                _foragingTarget = nearestForage.Value;
+                                _followState = FollowState.Foraging;
+                                _forageStuckTicks = 0;
+                                _stuckTicks = 0;
+                                SyncDirectionToTarget(_foragingTarget.Value * 64f + new Vector2(32f, 32f));
+                            }
                         }
                     }
                 }
             }
 
-            // === FORAGING TAKES ABSOLUTE PRIORITY ===
+            // === FORAGING STATE - PICK UP NEARBY ITEM THEN RETURN TO FOLLOWING ===
             if (_foragingTarget.HasValue && ModEntry.Config.ForageWhileFollowing && petLocation != null)
             {
+                // CANCEL CONDITIONS - abandon forage and return to following
+                bool shouldCancel = false;
+                
+                // 1. Player stopped foraging (time expired or changed location)
+                if (!IsPlayerActivelyForaging())
+                    shouldCancel = true;
+                
+                // 2. Player moved too far away (more than 8 tiles from pet)
+                if (distanceToPlayer > FORAGE_ABANDON_DISTANCE * 64f)
+                    shouldCancel = true;
+                
+                // 3. Target no longer exists
                 if (!IsForageTargetStillValid(petLocation, _foragingTarget.Value))
+                    shouldCancel = true;
+                
+                if (shouldCancel)
                 {
-                    // Target gone, immediately scan for another forage
                     _foragingTarget = null;
                     _forageStuckTicks = 0;
-                    
-                    // IMMEDIATELY look for next forageable before returning to player
-                    var nextForage = FindNearbyForageableSmooth(petLocation, _pet.Tile);
-                    if (nextForage.HasValue)
-                    {
-                        _foragingTarget = nextForage.Value;
-                        _followState = FollowState.Foraging;
-                        SyncDirectionToTarget(_foragingTarget.Value * 64f + new Vector2(32f, 32f));
-                    }
-                    else
-                    {
-                        _followState = FollowState.Idle;
-                        SyncDirectionToTarget(playerPos);
-                    }
+                    _followState = FollowState.Idle;
+                    SyncDirectionToTarget(playerPos);
+                    // Don't return - continue to normal following logic below
                 }
                 else if (Vector2.Distance(_pet.Tile, _foragingTarget.Value) < 1.5f)
                 {
@@ -1086,30 +1350,13 @@ namespace WorkingPets.Behaviors
                     TryPickupForageableAt(petLocation, _foragingTarget.Value);
                     _foragingTarget = null;
                     _forageStuckTicks = 0;
-                    
-                    // IMMEDIATELY look for next forageable - DON'T go back to player yet!
-                    var nextForage = FindNearbyForageableSmooth(petLocation, _pet.Tile);
-                    if (nextForage.HasValue)
-                    {
-                        _foragingTarget = nextForage.Value;
-                        _followState = FollowState.Foraging;
-                        _forageScanTimer = 0;
-                        SyncDirectionToTarget(_foragingTarget.Value * 64f + new Vector2(32f, 32f));
-                        // Don't stop moving - keep going!
-                        return;
-                    }
-                    else
-                    {
-                        // No more forageables, NOW go back to player
-                        _followState = FollowState.Idle;
-                        _forageScanTimer = 0;
-                        SyncDirectionToTarget(playerPos);
-                        StopMovingSmooth();
-                    }
+                    _followState = FollowState.Idle;
+                    SyncDirectionToTarget(playerPos);
+                    // Return to following - don't chain foraging
                 }
                 else
                 {
-                    // Move to forage - PET IGNORES PLAYER COMPLETELY
+                    // Move toward forage target
                     _followState = FollowState.Foraging;
                     Vector2 targetPos = _foragingTarget.Value * 64f + new Vector2(32f, 32f);
                     bool moved = MoveTowardTarget(targetPos, BASE_FORAGE_SPEED, false);
@@ -2337,11 +2584,23 @@ namespace WorkingPets.Behaviors
                 // Remove the object from the world
                 location.Objects.Remove(tile);
                 
-                // Play pickup sound
-                Game1.playSound("pickUpItem");
+                // Play pickup sound only if player is in same location
+                PlaySoundIfPlayerNearby(location, "pickUpItem");
                 
                 // Show notification (respects config)
                 ShowForagePickupNotification(obj.DisplayName);
+            }
+        }
+        
+        /// <summary>Play a sound only if the player is in the same location as the pet.</summary>
+        private void PlaySoundIfPlayerNearby(GameLocation? location, string soundName)
+        {
+            if (location == null) return;
+            
+            // Only play sound if player is in the same location
+            if (Game1.player?.currentLocation?.Name == location.Name)
+            {
+                location.playSound(soundName);
             }
         }
         

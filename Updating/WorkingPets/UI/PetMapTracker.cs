@@ -18,7 +18,10 @@ public class PetMapTracker
     /// </summary>
     public static void DrawPetIcons(SpriteBatch spriteBatch)
     {
-        if (!Context.IsWorldReady || Game1.eventUp || Game1.isFestival())
+        // Don't draw during cutscenes, events, festivals, or dialogue
+        if (!Context.IsWorldReady || Game1.eventUp || Game1.isFestival() || 
+            Game1.currentMinigame != null || Game1.dialogueUp || 
+            Game1.globalFade || Game1.currentLocation?.currentEvent != null)
             return;
 
         var player = Game1.player;
