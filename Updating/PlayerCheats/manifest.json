@@ -1,0 +1,10 @@
+{
+  "Name": "Player Cheats",
+  "Author": "CodeKokeshi",
+  "Version": "1.0.0",
+  "Description": "Ultimate player customization mod with GMCM integration. Customize movement speed, stamina, health, damage, pickup radius, tool power, skill levels, invincibility, and much more. All features disabled/default by default.",
+  "UniqueID": "CodeKokeshi.PlayerCheats",
+  "EntryDll": "PlayerCheats.dll",
+  "MinimumApiVersion": "4.0.0",
+  "UpdateKeys": []
+}

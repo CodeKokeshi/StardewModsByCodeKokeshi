@@ -125,12 +125,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "TODOs and Update Plans.md",
+                "file": "itch.io.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "TODOs and Update Plans"
+              "title": "itch.io"
             }
           },
           {
@@ -327,22 +327,24 @@
   "active": "aac39470e0ee51a1",
   "lastOpenFiles": [
     "Larger Pickup Radius (Planned).md",
+    "Mod Plans - Conceptualized While Playing.md",
+    "MOD_IDEAS.md",
+    "Unnamed Mod - Easier Farm Design (Conceptualizing).md",
+    "Unnamed Mod - Easier Passive Farming (Conceptualizing).md",
+    "Unnamed Mod - Easier Way to Mine (Conceptualizing).md",
+    "Assistant Farmer (Planned).md",
+    "Fully Automated Coops, Barns and Animal enclosures (Planned).md",
+    "Always Max Quality (Done).md",
+    "Community Topics.md",
+    "TODOs and Update Plans.md",
+    "WORKING_PETS_PLAN.md",
+    "itch.io.md",
     "Infinite Stamina (Done).md",
     "Helpful Pets (Done + Update Plans).md",
-    "TODOs and Update Plans.md",
-    "Mod Plans - Conceptualized While Playing.md",
-    "Fully Automated Coops, Barns and Animal enclosures (Planned).md",
     "CHANGELOG.md",
     "Buy Animals Fully Matured or Production Ready (In Progress).md",
     "Bountiful Foraging (Planned).md",
     "AUTOMATED_FARMING_ANALYSIS.md",
-    "Assistant Farmer (Planned).md",
-    "Always Max Quality (Done).md",
-    "WORKING_PETS_PLAN.md",
-    "Unnamed Mod - Easier Way to Mine (Conceptualizing).md",
-    "Unnamed Mod - Easier Farm Design (Conceptualizing).md",
-    "Unnamed Mod - Easier Passive Farming (Conceptualizing).md",
-    "MOD_IDEAS.md",
     "Welcome.md"
   ]
 }
