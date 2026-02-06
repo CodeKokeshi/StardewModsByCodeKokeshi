@@ -515,6 +515,9 @@ namespace PlayerCheats
             // Store reference for hotkey use
             gmcmApi = configMenu;
 
+            // Helper for translations
+            var i18n = this.Helper.Translation;
+
             // Register mod
             configMenu.Register(
                 mod: this.ModManifest,
@@ -526,21 +529,21 @@ namespace PlayerCheats
             // === Master Toggle ===
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,
-                text: () => "Master Toggle"
+                text: () => i18n.Get("section.master")
             );
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "Mod Enabled",
-                tooltip: () => "Enable or disable all cheats.",
+                name: () => i18n.Get("option.modEnabled.name"),
+                tooltip: () => i18n.Get("option.modEnabled.tooltip"),
                 getValue: () => Config.ModEnabled,
                 setValue: value => Config.ModEnabled = value
             );
 
             configMenu.AddKeybindList(
                 mod: this.ModManifest,
-                name: () => "Open Menu Hotkey",
-                tooltip: () => "Press this key to open this config menu directly.",
+                name: () => i18n.Get("option.openMenuKey.name"),
+                tooltip: () => i18n.Get("option.openMenuKey.tooltip"),
                 getValue: () => Config.OpenMenuKey,
                 setValue: value => Config.OpenMenuKey = value
             );
@@ -548,13 +551,13 @@ namespace PlayerCheats
             // === Movement & Speed ===
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,
-                text: () => "Movement & Speed"
+                text: () => i18n.Get("section.movement")
             );
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "Speed Multiplier",
-                tooltip: () => "Movement speed multiplier. 1.0 = normal, 2.0 = 2x speed, 10.0 = 10x speed.",
+                name: () => i18n.Get("option.speedMultiplier.name"),
+                tooltip: () => i18n.Get("option.speedMultiplier.tooltip"),
                 getValue: () => Config.SpeedMultiplier,
                 setValue: value => Config.SpeedMultiplier = value,
                 min: 0.5f,
@@ -564,8 +567,8 @@ namespace PlayerCheats
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "Added Speed Bonus",
-                tooltip: () => "Flat speed bonus added to base movement. Like having permanent speed buff.",
+                name: () => i18n.Get("option.addedSpeedBonus.name"),
+                tooltip: () => i18n.Get("option.addedSpeedBonus.tooltip"),
                 getValue: () => Config.AddedSpeedBonus,
                 setValue: value => Config.AddedSpeedBonus = value,
                 min: 0f,
@@ -575,16 +578,16 @@ namespace PlayerCheats
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "No Clip",
-                tooltip: () => "Walk through walls, buildings, and all obstacles.",
+                name: () => i18n.Get("option.noClip.name"),
+                tooltip: () => i18n.Get("option.noClip.tooltip"),
                 getValue: () => Config.NoClip,
                 setValue: value => Config.NoClip = value
             );
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "Always Run",
-                tooltip: () => "Always running, never walking.",
+                name: () => i18n.Get("option.alwaysRun.name"),
+                tooltip: () => i18n.Get("option.alwaysRun.tooltip"),
                 getValue: () => Config.AlwaysRun,
                 setValue: value => Config.AlwaysRun = value
             );
@@ -592,29 +595,29 @@ namespace PlayerCheats
             // === Health & Stamina ===
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,
-                text: () => "Health & Stamina"
+                text: () => i18n.Get("section.healthStamina")
             );
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "Infinite Stamina",
-                tooltip: () => "Never get tired. Stamina always stays at max.",
+                name: () => i18n.Get("option.infiniteStamina.name"),
+                tooltip: () => i18n.Get("option.infiniteStamina.tooltip"),
                 getValue: () => Config.InfiniteStamina,
                 setValue: value => Config.InfiniteStamina = value
             );
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "Infinite Health (Invincibility)",
-                tooltip: () => "Never die. Health always stays at max. Complete invincibility!",
+                name: () => i18n.Get("option.infiniteHealth.name"),
+                tooltip: () => i18n.Get("option.infiniteHealth.tooltip"),
                 getValue: () => Config.InfiniteHealth,
                 setValue: value => Config.InfiniteHealth = value
             );
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "Max Stamina Override",
-                tooltip: () => "Override max stamina. 0 = use default.",
+                name: () => i18n.Get("option.maxStaminaOverride.name"),
+                tooltip: () => i18n.Get("option.maxStaminaOverride.tooltip"),
                 getValue: () => Config.MaxStaminaOverride,
                 setValue: value => Config.MaxStaminaOverride = value,
                 min: 0,
@@ -624,8 +627,8 @@ namespace PlayerCheats
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "Max Health Override",
-                tooltip: () => "Override max health. 0 = use default.",
+                name: () => i18n.Get("option.maxHealthOverride.name"),
+                tooltip: () => i18n.Get("option.maxHealthOverride.tooltip"),
                 getValue: () => Config.MaxHealthOverride,
                 setValue: value => Config.MaxHealthOverride = value,
                 min: 0,
@@ -635,8 +638,8 @@ namespace PlayerCheats
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "Stamina Regen Per Second",
-                tooltip: () => "How much stamina regenerates every second. 0 = none.",
+                name: () => i18n.Get("option.staminaRegenPerSecond.name"),
+                tooltip: () => i18n.Get("option.staminaRegenPerSecond.tooltip"),
                 getValue: () => Config.StaminaRegenPerSecond,
                 setValue: value => Config.StaminaRegenPerSecond = value,
                 min: 0f,
@@ -646,8 +649,8 @@ namespace PlayerCheats
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "Health Regen Per Second",
-                tooltip: () => "How much health regenerates every second. 0 = none.",
+                name: () => i18n.Get("option.healthRegenPerSecond.name"),
+                tooltip: () => i18n.Get("option.healthRegenPerSecond.tooltip"),
                 getValue: () => Config.HealthRegenPerSecond,
                 setValue: value => Config.HealthRegenPerSecond = value,
                 min: 0f,
@@ -658,29 +661,29 @@ namespace PlayerCheats
             // === Combat ===
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,
-                text: () => "Combat"
+                text: () => i18n.Get("section.combat")
             );
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "One Hit Kill",
-                tooltip: () => "All enemies die in one hit.",
+                name: () => i18n.Get("option.oneHitKill.name"),
+                tooltip: () => i18n.Get("option.oneHitKill.tooltip"),
                 getValue: () => Config.OneHitKill,
                 setValue: value => Config.OneHitKill = value
             );
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "100% Critical Chance",
-                tooltip: () => "All attacks are critical hits.",
+                name: () => i18n.Get("option.alwaysCrit.name"),
+                tooltip: () => i18n.Get("option.alwaysCrit.tooltip"),
                 getValue: () => Config.AlwaysCrit,
                 setValue: value => Config.AlwaysCrit = value
             );
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "Damage Multiplier",
-                tooltip: () => "Multiply all weapon damage. 1.0 = normal, 5.0 = 5x damage.",
+                name: () => i18n.Get("option.damageMultiplier.name"),
+                tooltip: () => i18n.Get("option.damageMultiplier.tooltip"),
                 getValue: () => Config.DamageMultiplier,
                 setValue: value => Config.DamageMultiplier = value,
                 min: 1f,
@@ -690,8 +693,8 @@ namespace PlayerCheats
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "Crit Damage Multiplier",
-                tooltip: () => "Multiply critical hit damage. 1.0 = normal.",
+                name: () => i18n.Get("option.critDamageMultiplier.name"),
+                tooltip: () => i18n.Get("option.critDamageMultiplier.tooltip"),
                 getValue: () => Config.CritDamageMultiplier,
                 setValue: value => Config.CritDamageMultiplier = value,
                 min: 1f,
@@ -701,8 +704,8 @@ namespace PlayerCheats
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "Added Attack",
-                tooltip: () => "Flat bonus attack points.",
+                name: () => i18n.Get("option.addedAttack.name"),
+                tooltip: () => i18n.Get("option.addedAttack.tooltip"),
                 getValue: () => Config.AddedAttack,
                 setValue: value => Config.AddedAttack = value,
                 min: 0,
@@ -712,8 +715,8 @@ namespace PlayerCheats
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "Added Defense",
-                tooltip: () => "Flat bonus defense points.",
+                name: () => i18n.Get("option.addedDefense.name"),
+                tooltip: () => i18n.Get("option.addedDefense.tooltip"),
                 getValue: () => Config.AddedDefense,
                 setValue: value => Config.AddedDefense = value,
                 min: 0,
@@ -723,8 +726,8 @@ namespace PlayerCheats
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "Added Immunity",
-                tooltip: () => "Flat bonus immunity points.",
+                name: () => i18n.Get("option.addedImmunity.name"),
+                tooltip: () => i18n.Get("option.addedImmunity.tooltip"),
                 getValue: () => Config.AddedImmunity,
                 setValue: value => Config.AddedImmunity = value,
                 min: 0,
@@ -734,8 +737,8 @@ namespace PlayerCheats
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "Invincibility Duration (ms)",
-                tooltip: () => "How long you're invincible after getting hit. Default 1200ms.",
+                name: () => i18n.Get("option.invincibilityDuration.name"),
+                tooltip: () => i18n.Get("option.invincibilityDuration.tooltip"),
                 getValue: () => Config.InvincibilityDuration,
                 setValue: value => Config.InvincibilityDuration = value,
                 min: 0,
@@ -745,8 +748,8 @@ namespace PlayerCheats
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "No Monster Spawns",
-                tooltip: () => "Removes all monsters from the current location.",
+                name: () => i18n.Get("option.noMonsterSpawns.name"),
+                tooltip: () => i18n.Get("option.noMonsterSpawns.tooltip"),
                 getValue: () => Config.NoMonsterSpawns,
                 setValue: value => Config.NoMonsterSpawns = value
             );
@@ -754,13 +757,13 @@ namespace PlayerCheats
             // === Tools & Farming ===
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,
-                text: () => "Tools & Farming"
+                text: () => i18n.Get("section.tools")
             );
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "Tool Area Multiplier",
-                tooltip: () => "Multiply the area affected by hoe/watering can. 1 = normal, 3 = 3x3, 5 = 5x5.",
+                name: () => i18n.Get("option.toolAreaMultiplier.name"),
+                tooltip: () => i18n.Get("option.toolAreaMultiplier.tooltip"),
                 getValue: () => Config.ToolAreaMultiplier,
                 setValue: value => Config.ToolAreaMultiplier = value,
                 min: 1,
@@ -770,8 +773,8 @@ namespace PlayerCheats
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "Tool Power Override",
-                tooltip: () => "Force tool charge level. -1 = normal, 0-5 = power level.",
+                name: () => i18n.Get("option.toolPowerOverride.name"),
+                tooltip: () => i18n.Get("option.toolPowerOverride.tooltip"),
                 getValue: () => Config.ToolPowerOverride,
                 setValue: value => Config.ToolPowerOverride = value,
                 min: -1,
@@ -780,24 +783,24 @@ namespace PlayerCheats
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "No Tool Stamina Cost",
-                tooltip: () => "Using tools doesn't cost stamina.",
+                name: () => i18n.Get("option.noToolStaminaCost.name"),
+                tooltip: () => i18n.Get("option.noToolStaminaCost.tooltip"),
                 getValue: () => Config.NoToolStaminaCost,
                 setValue: value => Config.NoToolStaminaCost = value
             );
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "Infinite Water",
-                tooltip: () => "Watering can never runs out.",
+                name: () => i18n.Get("option.infiniteWater.name"),
+                tooltip: () => i18n.Get("option.infiniteWater.tooltip"),
                 getValue: () => Config.InfiniteWater,
                 setValue: value => Config.InfiniteWater = value
             );
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "Axe Power Bonus",
-                tooltip: () => "Additional power for axe. Makes chopping easier.",
+                name: () => i18n.Get("option.axePowerBonus.name"),
+                tooltip: () => i18n.Get("option.axePowerBonus.tooltip"),
                 getValue: () => Config.AxePowerBonus,
                 setValue: value => Config.AxePowerBonus = value,
                 min: 0,
@@ -806,8 +809,8 @@ namespace PlayerCheats
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "Pickaxe Power Bonus",
-                tooltip: () => "Additional power for pickaxe. Makes mining easier.",
+                name: () => i18n.Get("option.pickaxePowerBonus.name"),
+                tooltip: () => i18n.Get("option.pickaxePowerBonus.tooltip"),
                 getValue: () => Config.PickaxePowerBonus,
                 setValue: value => Config.PickaxePowerBonus = value,
                 min: 0,
@@ -817,13 +820,13 @@ namespace PlayerCheats
             // === Item Pickup & Inventory ===
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,
-                text: () => "Items & Inventory"
+                text: () => i18n.Get("section.items")
             );
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "Magnetic Radius Multiplier",
-                tooltip: () => "Item pickup range multiplier. 1.0 = normal, 5.0 = 5x range.",
+                name: () => i18n.Get("option.magneticRadiusMultiplier.name"),
+                tooltip: () => i18n.Get("option.magneticRadiusMultiplier.tooltip"),
                 getValue: () => Config.MagneticRadiusMultiplier,
                 setValue: value => Config.MagneticRadiusMultiplier = value,
                 min: 1f,
@@ -833,8 +836,8 @@ namespace PlayerCheats
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "Added Magnetic Radius",
-                tooltip: () => "Flat bonus to pickup range in pixels. 128 = 2 tiles.",
+                name: () => i18n.Get("option.addedMagneticRadius.name"),
+                tooltip: () => i18n.Get("option.addedMagneticRadius.tooltip"),
                 getValue: () => Config.AddedMagneticRadius,
                 setValue: value => Config.AddedMagneticRadius = value,
                 min: 0,
@@ -844,8 +847,8 @@ namespace PlayerCheats
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "Infinite Items",
-                tooltip: () => "Items don't get consumed when used. (Experimental)",
+                name: () => i18n.Get("option.infiniteItems.name"),
+                tooltip: () => i18n.Get("option.infiniteItems.tooltip"),
                 getValue: () => Config.InfiniteItems,
                 setValue: value => Config.InfiniteItems = value
             );
@@ -853,13 +856,13 @@ namespace PlayerCheats
             // === Skills & Levels ===
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,
-                text: () => "Skills & Levels"
+                text: () => i18n.Get("section.skills")
             );
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "XP Multiplier",
-                tooltip: () => "Multiply all XP gains. 1.0 = normal, 100 = 100x XP, 1000 = instant level ups!",
+                name: () => i18n.Get("option.xpMultiplier.name"),
+                tooltip: () => i18n.Get("option.xpMultiplier.tooltip"),
                 getValue: () => Config.XPMultiplier,
                 setValue: value => Config.XPMultiplier = value,
                 min: 1f,
@@ -869,8 +872,8 @@ namespace PlayerCheats
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "Farming Level Override",
-                tooltip: () => "Force farming level. -1 = normal.",
+                name: () => i18n.Get("option.farmingLevelOverride.name"),
+                tooltip: () => i18n.Get("option.farmingLevelOverride.tooltip"),
                 getValue: () => Config.FarmingLevelOverride,
                 setValue: value => Config.FarmingLevelOverride = value,
                 min: -1,
@@ -879,8 +882,8 @@ namespace PlayerCheats
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "Mining Level Override",
-                tooltip: () => "Force mining level. -1 = normal.",
+                name: () => i18n.Get("option.miningLevelOverride.name"),
+                tooltip: () => i18n.Get("option.miningLevelOverride.tooltip"),
                 getValue: () => Config.MiningLevelOverride,
                 setValue: value => Config.MiningLevelOverride = value,
                 min: -1,
@@ -889,8 +892,8 @@ namespace PlayerCheats
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "Foraging Level Override",
-                tooltip: () => "Force foraging level. -1 = normal.",
+                name: () => i18n.Get("option.foragingLevelOverride.name"),
+                tooltip: () => i18n.Get("option.foragingLevelOverride.tooltip"),
                 getValue: () => Config.ForagingLevelOverride,
                 setValue: value => Config.ForagingLevelOverride = value,
                 min: -1,
@@ -899,8 +902,8 @@ namespace PlayerCheats
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "Fishing Level Override",
-                tooltip: () => "Force fishing level. -1 = normal.",
+                name: () => i18n.Get("option.fishingLevelOverride.name"),
+                tooltip: () => i18n.Get("option.fishingLevelOverride.tooltip"),
                 getValue: () => Config.FishingLevelOverride,
                 setValue: value => Config.FishingLevelOverride = value,
                 min: -1,
@@ -909,8 +912,8 @@ namespace PlayerCheats
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "Combat Level Override",
-                tooltip: () => "Force combat level. -1 = normal.",
+                name: () => i18n.Get("option.combatLevelOverride.name"),
+                tooltip: () => i18n.Get("option.combatLevelOverride.tooltip"),
                 getValue: () => Config.CombatLevelOverride,
                 setValue: value => Config.CombatLevelOverride = value,
                 min: -1,
@@ -920,21 +923,21 @@ namespace PlayerCheats
             // === Luck ===
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,
-                text: () => "Luck"
+                text: () => i18n.Get("section.luck")
             );
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "Always Max Luck",
-                tooltip: () => "Every day is the luckiest day possible. Applies immediately.",
+                name: () => i18n.Get("option.alwaysMaxLuck.name"),
+                tooltip: () => i18n.Get("option.alwaysMaxLuck.tooltip"),
                 getValue: () => Config.AlwaysMaxLuck,
                 setValue: value => Config.AlwaysMaxLuck = value
             );
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "Daily Luck Override",
-                tooltip: () => "Set exact daily luck. -1.0 = disabled, range -0.1 to 0.12. Applies immediately.",
+                name: () => i18n.Get("option.dailyLuckOverride.name"),
+                tooltip: () => i18n.Get("option.dailyLuckOverride.tooltip"),
                 getValue: () => Config.DailyLuckOverride,
                 setValue: value => Config.DailyLuckOverride = value,
                 min: -1f,
@@ -945,37 +948,37 @@ namespace PlayerCheats
             // === Fishing ===
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,
-                text: () => "Fishing"
+                text: () => i18n.Get("section.fishing")
             );
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "Instant Fish Bite",
-                tooltip: () => "Fish bite immediately when you cast.",
+                name: () => i18n.Get("option.instantFishBite.name"),
+                tooltip: () => i18n.Get("option.instantFishBite.tooltip"),
                 getValue: () => Config.InstantFishBite,
                 setValue: value => Config.InstantFishBite = value
             );
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "Instant Catch",
-                tooltip: () => "Skip the fishing minigame entirely.",
+                name: () => i18n.Get("option.instantCatch.name"),
+                tooltip: () => i18n.Get("option.instantCatch.tooltip"),
                 getValue: () => Config.InstantCatch,
                 setValue: value => Config.InstantCatch = value
             );
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "Max Fish Quality",
-                tooltip: () => "All caught fish are iridium quality.",
+                name: () => i18n.Get("option.maxFishQuality.name"),
+                tooltip: () => i18n.Get("option.maxFishQuality.tooltip"),
                 getValue: () => Config.MaxFishQuality,
                 setValue: value => Config.MaxFishQuality = value
             );
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "Always Find Treasure",
-                tooltip: () => "Always find treasure when fishing.",
+                name: () => i18n.Get("option.alwaysFindTreasure.name"),
+                tooltip: () => i18n.Get("option.alwaysFindTreasure.tooltip"),
                 getValue: () => Config.AlwaysFindTreasure,
                 setValue: value => Config.AlwaysFindTreasure = value
             );
@@ -983,13 +986,13 @@ namespace PlayerCheats
             // === Quality & Prices ===
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,
-                text: () => "Quality & Prices"
+                text: () => i18n.Get("section.quality")
             );
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "Force Forage Quality",
-                tooltip: () => "Force quality of all foraged items. -1=disabled, 0=normal, 1=silver, 2=gold, 4=iridium. Only affects forageables that naturally have quality.",
+                name: () => i18n.Get("option.forceForageQuality.name"),
+                tooltip: () => i18n.Get("option.forceForageQuality.tooltip"),
                 getValue: () => Config.ForceForageQuality,
                 setValue: value => Config.ForceForageQuality = value,
                 min: -1,
@@ -998,8 +1001,8 @@ namespace PlayerCheats
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "Sell Price Multiplier",
-                tooltip: () => "Multiply prices when selling. 1.0 = normal, 2.0 = 2x profit.",
+                name: () => i18n.Get("option.sellPriceMultiplier.name"),
+                tooltip: () => i18n.Get("option.sellPriceMultiplier.tooltip"),
                 getValue: () => Config.SellPriceMultiplier,
                 setValue: value => Config.SellPriceMultiplier = value,
                 min: 1f,
@@ -1009,8 +1012,8 @@ namespace PlayerCheats
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "Buy Price Multiplier",
-                tooltip: () => "Multiply prices when buying. 1.0 = normal, 0.5 = half price, 0 = free.",
+                name: () => i18n.Get("option.buyPriceMultiplier.name"),
+                tooltip: () => i18n.Get("option.buyPriceMultiplier.tooltip"),
                 getValue: () => Config.BuyPriceMultiplier,
                 setValue: value => Config.BuyPriceMultiplier = value,
                 min: 0f,
@@ -1021,13 +1024,13 @@ namespace PlayerCheats
             // === Relationships ===
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,
-                text: () => "Relationships"
+                text: () => i18n.Get("section.relationships")
             );
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
-                name: () => "Friendship Multiplier",
-                tooltip: () => "Multiply friendship gains. 1.0 = normal, 10.0 = 10x faster.",
+                name: () => i18n.Get("option.friendshipMultiplier.name"),
+                tooltip: () => i18n.Get("option.friendshipMultiplier.tooltip"),
                 getValue: () => Config.FriendshipMultiplier,
                 setValue: value => Config.FriendshipMultiplier = value,
                 min: 1f,
@@ -1037,8 +1040,8 @@ namespace PlayerCheats
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "No Friendship Decay",
-                tooltip: () => "Friendship never decreases.",
+                name: () => i18n.Get("option.noFriendshipDecay.name"),
+                tooltip: () => i18n.Get("option.noFriendshipDecay.tooltip"),
                 getValue: () => Config.NoFriendshipDecay,
                 setValue: value => Config.NoFriendshipDecay = value
             );
@@ -1046,29 +1049,29 @@ namespace PlayerCheats
             // === Time ===
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,
-                text: () => "Time"
+                text: () => i18n.Get("section.time")
             );
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "Freeze Time",
-                tooltip: () => "Time never passes.",
+                name: () => i18n.Get("option.freezeTime.name"),
+                tooltip: () => i18n.Get("option.freezeTime.tooltip"),
                 getValue: () => Config.FreezeTime,
                 setValue: value => Config.FreezeTime = value
             );
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "Freeze Time Indoors",
-                tooltip: () => "Time stops when you're inside buildings.",
+                name: () => i18n.Get("option.freezeTimeIndoors.name"),
+                tooltip: () => i18n.Get("option.freezeTimeIndoors.tooltip"),
                 getValue: () => Config.FreezeTimeIndoors,
                 setValue: value => Config.FreezeTimeIndoors = value
             );
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "Never Pass Out",
-                tooltip: () => "Stay awake past 2am without passing out.",
+                name: () => i18n.Get("option.neverPassOut.name"),
+                tooltip: () => i18n.Get("option.neverPassOut.tooltip"),
                 getValue: () => Config.NeverPassOut,
                 setValue: value => Config.NeverPassOut = value
             );
@@ -1076,45 +1079,45 @@ namespace PlayerCheats
             // === Misc ===
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,
-                text: () => "Miscellaneous"
+                text: () => i18n.Get("section.misc")
             );
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "Max Animal Happiness",
-                tooltip: () => "All farm animals are always at max happiness and friendship.",
+                name: () => i18n.Get("option.maxAnimalHappiness.name"),
+                tooltip: () => i18n.Get("option.maxAnimalHappiness.tooltip"),
                 getValue: () => Config.MaxAnimalHappiness,
                 setValue: value => Config.MaxAnimalHappiness = value
             );
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "Crops Never Die",
-                tooltip: () => "Crops survive season changes and lack of water.",
+                name: () => i18n.Get("option.cropsNeverDie.name"),
+                tooltip: () => i18n.Get("option.cropsNeverDie.tooltip"),
                 getValue: () => Config.CropsNeverDie,
                 setValue: value => Config.CropsNeverDie = value
             );
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "Instant Crop Growth",
-                tooltip: () => "All crops across all locations grow to full harvest in real-time.",
+                name: () => i18n.Get("option.instantCropGrowth.name"),
+                tooltip: () => i18n.Get("option.instantCropGrowth.tooltip"),
                 getValue: () => Config.InstantCropGrowth,
                 setValue: value => Config.InstantCropGrowth = value
             );
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "Instant Tree Growth",
-                tooltip: () => "All regular trees (oak, maple, pine, etc.) grow to full size in real-time.",
+                name: () => i18n.Get("option.instantTreeGrowth.name"),
+                tooltip: () => i18n.Get("option.instantTreeGrowth.tooltip"),
                 getValue: () => Config.InstantTreeGrowth,
                 setValue: value => Config.InstantTreeGrowth = value
             );
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "Instant Fruit Tree Growth",
-                tooltip: () => "All fruit trees grow to full maturity in real-time.",
+                name: () => i18n.Get("option.instantFruitTreeGrowth.name"),
+                tooltip: () => i18n.Get("option.instantFruitTreeGrowth.tooltip"),
                 getValue: () => Config.InstantFruitTreeGrowth,
                 setValue: value => Config.InstantFruitTreeGrowth = value
             );
