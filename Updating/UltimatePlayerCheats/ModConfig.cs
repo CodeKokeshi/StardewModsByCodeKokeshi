@@ -184,6 +184,9 @@ namespace PlayerCheats
         /// <summary>Force quality for all harvested crops (0=normal, 1=silver, 2=gold, 4=iridium, -1=disabled).</summary>
         public int ForceHarvestQuality { get; set; } = -1;
 
+        /// <summary>Force quality for foraged items (-1=disabled, 0=normal, 1=silver, 2=gold, 4=iridium).</summary>
+        public int ForceForageQuality { get; set; } = -1;
+
         /// <summary>Sell price multiplier (1.0 = normal).</summary>
         public float SellPriceMultiplier { get; set; } = 1.0f;
 
@@ -243,5 +246,11 @@ namespace PlayerCheats
 
         /// <summary>Instant crop growth (grows to harvest in one day).</summary>
         public bool InstantCropGrowth { get; set; } = false;
+
+        /// <summary>Instant tree growth — regular trees (oak, maple, pine, etc.) grow to full size immediately.</summary>
+        public bool InstantTreeGrowth { get; set; } = false;
+
+        /// <summary>Instant fruit tree growth — fruit trees grow to full maturity immediately.</summary>
+        public bool InstantFruitTreeGrowth { get; set; } = false;
     }
 }

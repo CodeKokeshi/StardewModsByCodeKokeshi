@@ -258,6 +258,13 @@ namespace PlayerCheats
                 description: "Farmer.Immunity getter"
             );
 
+            // === Forage Quality Override ===
+            TryPatch(
+                original: AccessTools.Method(typeof(GameLocation), nameof(GameLocation.GetHarvestSpawnedObjectQuality)),
+                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.GameLocation_GetHarvestSpawnedObjectQuality_Postfix)),
+                description: "GameLocation.GetHarvestSpawnedObjectQuality"
+            );
+
             // === Sell Price Multiplier ===
             TryPatch(
                 original: AccessTools.Method(typeof(StardewValley.Object), nameof(StardewValley.Object.sellToStorePrice)),
@@ -316,6 +323,10 @@ namespace PlayerCheats
             if (Config.NoClip)
             {
                 player.ignoreCollisions = true;
+            }
+            else
+            {
+                player.ignoreCollisions = false;
             }
 
             // No monster spawns - remove all monsters
@@ -389,6 +400,52 @@ namespace PlayerCheats
                         if (pair.Value is HoeDirt dirt && dirt.crop != null && !dirt.crop.fullyGrown.Value)
                         {
                             dirt.crop.growCompletely();
+                        }
+                    }
+                }
+            }
+
+            // Real-time instant tree growth (regular trees)
+            if (Config.InstantTreeGrowth)
+            {
+                foreach (var location in Game1.locations)
+                {
+                    foreach (var pair in location.terrainFeatures.Pairs)
+                    {
+                        if (pair.Value is Tree tree && tree.growthStage.Value < Tree.treeStage)
+                        {
+                            tree.growthStage.Value = Tree.treeStage;
+                        }
+                    }
+                }
+            }
+
+            // Real-time instant fruit tree growth
+            if (Config.InstantFruitTreeGrowth)
+            {
+                foreach (var location in Game1.locations)
+                {
+                    foreach (var pair in location.terrainFeatures.Pairs)
+                    {
+                        if (pair.Value is FruitTree fruitTree && fruitTree.growthStage.Value < FruitTree.treeStage)
+                        {
+                            fruitTree.growthStage.Value = FruitTree.treeStage;
+                            fruitTree.daysUntilMature.Value = 0;
+                        }
+                    }
+                }
+            }
+
+            // Force forage quality on world objects
+            if (Config.ForceForageQuality >= 0)
+            {
+                foreach (var location in Game1.locations)
+                {
+                    foreach (var obj in location.objects.Values)
+                    {
+                        if (obj.IsSpawnedObject && obj.isForage() && obj.Quality != Config.ForceForageQuality)
+                        {
+                            obj.Quality = Config.ForceForageQuality;
                         }
                     }
                 }
@@ -931,6 +988,16 @@ namespace PlayerCheats
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
+                name: () => "Force Forage Quality",
+                tooltip: () => "Force quality of all foraged items. -1=disabled, 0=normal, 1=silver, 2=gold, 4=iridium. Only affects forageables that naturally have quality.",
+                getValue: () => Config.ForceForageQuality,
+                setValue: value => Config.ForceForageQuality = value,
+                min: -1,
+                max: 4
+            );
+
+            configMenu.AddNumberOption(
+                mod: this.ModManifest,
                 name: () => "Sell Price Multiplier",
                 tooltip: () => "Multiply prices when selling. 1.0 = normal, 2.0 = 2x profit.",
                 getValue: () => Config.SellPriceMultiplier,
@@ -1034,6 +1101,22 @@ namespace PlayerCheats
                 tooltip: () => "All crops across all locations grow to full harvest in real-time.",
                 getValue: () => Config.InstantCropGrowth,
                 setValue: value => Config.InstantCropGrowth = value
+            );
+
+            configMenu.AddBoolOption(
+                mod: this.ModManifest,
+                name: () => "Instant Tree Growth",
+                tooltip: () => "All regular trees (oak, maple, pine, etc.) grow to full size in real-time.",
+                getValue: () => Config.InstantTreeGrowth,
+                setValue: value => Config.InstantTreeGrowth = value
+            );
+
+            configMenu.AddBoolOption(
+                mod: this.ModManifest,
+                name: () => "Instant Fruit Tree Growth",
+                tooltip: () => "All fruit trees grow to full maturity in real-time.",
+                getValue: () => Config.InstantFruitTreeGrowth,
+                setValue: value => Config.InstantFruitTreeGrowth = value
             );
 
             Monitor.Log("Generic Mod Config Menu integration complete!", LogLevel.Debug);

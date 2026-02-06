@@ -418,6 +418,18 @@ namespace PlayerCheats
             }
         }
 
+        /// <summary>Patch to force forage quality at pickup.</summary>
+        public static void GameLocation_GetHarvestSpawnedObjectQuality_Postfix(ref int __result, bool isForage)
+        {
+            if (!Context.IsWorldReady || !ModEntry.Config.ModEnabled)
+                return;
+
+            if (isForage && ModEntry.Config.ForceForageQuality >= 0)
+            {
+                __result = ModEntry.Config.ForceForageQuality;
+            }
+        }
+
         /// <summary>Patch to multiply sell prices (Object.sellToStorePrice postfix).</summary>
         public static void Object_SellToStorePrice_Postfix(StardewValley.Object __instance, ref int __result)
         {

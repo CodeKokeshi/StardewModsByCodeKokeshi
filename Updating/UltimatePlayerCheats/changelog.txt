@@ -1,4 +1,4 @@
-v1.1.0
+v1.0.0
 
 Master Toggle
 - Mod Enabled: Enable or disable all cheats
@@ -62,6 +62,7 @@ Fishing
 
 Quality & Prices
 - Force Harvest Quality: Force quality of all harvested crops (-1=disabled, 0=normal, 1=silver, 2=gold, 4=iridium)
+- Force Forage Quality: Force quality of all foraged items (-1=disabled, 0=normal, 1=silver, 2=gold, 4=iridium), only affects forageables that naturally have quality
 - Sell Price Multiplier: Multiply prices when selling (1.0 = normal, 2.0 = 2x profit)
 - Buy Price Multiplier: Multiply prices when buying (1.0 = normal, 0.5 = half price, 0 = free)
 
@@ -78,3 +79,5 @@ Miscellaneous
 - Max Animal Happiness: All farm animals are always at max happiness and friendship
 - Crops Never Die: Crops survive season changes and lack of water
 - Instant Crop Growth: All crops across all locations grow to full harvest in real-time
+- Instant Tree Growth: All regular trees (oak, maple, pine, etc.) grow to full size in real-time
+- Instant Fruit Tree Growth: All fruit trees grow to full maturity in real-time
