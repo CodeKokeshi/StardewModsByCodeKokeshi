@@ -1,0 +1,16 @@
+{
+  "Name": "Ultimate World Cheats",
+  "Author": "CodeKokeshi",
+  "Version": "1.0.0",
+  "Description": "Ultimate world & economy cheat mod with GMCM integration. Instant buildings, instant tool upgrades, instant machines, free shops, free crafting, free building costs, weather control, free geode processing, and more. All features disabled by default.",
+  "UniqueID": "CodeKokeshi.UltimateWorldCheats",
+  "EntryDll": "UltimateWorldCheats.dll",
+  "MinimumApiVersion": "4.0.0",
+  "UpdateKeys": [],
+  "Dependencies": [
+    {
+      "UniqueID": "spacechase0.GenericModConfigMenu",
+      "IsRequired": true
+    }
+  ]
+}

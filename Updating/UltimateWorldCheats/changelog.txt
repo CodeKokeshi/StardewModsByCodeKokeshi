@@ -1,0 +1,26 @@
+v1.0.0
+
+Master Toggle
+- Mod Enabled: Enable or disable all world cheats
+- Open Menu Hotkey: Press this key to open this config menu directly (default: L)
+
+Buildings & Construction
+- Instant Building Construction: New buildings finish constructing immediately when placed, Robin goes home right away (skips on festival days and Green Rain year 1)
+- Instant Building Upgrades: Building upgrades (e.g., barn to big barn) complete instantly instead of waiting days
+- Instant House Upgrades: Farmhouse upgrades from Robin complete instantly, your house expands immediately after purchase
+- Instant Community Upgrades: Community upgrades like Pam's house and town shortcuts complete instantly
+- Free Building Construction: Buildings cost no gold or materials to construct, works with Robin and the Wizard
+
+Tool Upgrades
+- Instant Tool Upgrade: Tool upgrades at Clint's blacksmith complete instantly, your upgraded tool is ready the same day you drop it off
+
+Machines & Processing
+- Instant Machine Processing: All machines (kegs, preserves jars, furnaces, cheese press, etc.) produce output instantly with zero processing time
+- Free Geode Processing: Processing geodes at Clint's blacksmith is free (normally costs 25g each)
+
+Shopping & Economy
+- Free Shop Purchases: All shop purchases cost nothing, works with Pierre, Robin, Clint, Marnie, Willy, Sandy, Krobus, the Traveling Cart, and all other shops
+- Free Crafting: Crafting recipes do not consume ingredients, you can craft anything even without the materials
+
+Weather Control
+- Tomorrow's Weather: Override tomorrow's weather forecast (Sun, Rain, Storm, Snow, Wind), set to No Override to let the game decide normally
