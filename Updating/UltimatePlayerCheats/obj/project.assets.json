@@ -271,11 +271,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\December 2025 OS\\Development\\StardewModding\\Updating\\PlayerCheats\\PlayerCheats.csproj",
-      "projectName": "PlayerCheats",
-      "projectPath": "D:\\December 2025 OS\\Development\\StardewModding\\Updating\\PlayerCheats\\PlayerCheats.csproj",
+      "projectUniqueName": "D:\\December 2025 OS\\Development\\StardewModding\\Updating\\UltimatePlayerCheats\\UltimatePlayerCheats.csproj",
+      "projectName": "UltimatePlayerCheats",
+      "projectPath": "D:\\December 2025 OS\\Development\\StardewModding\\Updating\\UltimatePlayerCheats\\UltimatePlayerCheats.csproj",
       "packagesPath": "C:\\Users\\Aikawa\\.nuget\\packages\\",
-      "outputPath": "D:\\December 2025 OS\\Development\\StardewModding\\Updating\\PlayerCheats\\obj\\",
+      "outputPath": "D:\\December 2025 OS\\Development\\StardewModding\\Updating\\UltimatePlayerCheats\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\Aikawa\\AppData\\Roaming\\NuGet\\NuGet.Config"

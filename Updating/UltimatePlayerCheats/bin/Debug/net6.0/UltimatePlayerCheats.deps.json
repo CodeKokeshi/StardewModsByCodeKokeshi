@@ -6,13 +6,13 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v6.0": {
-      "PlayerCheats/1.0.0": {
+      "UltimatePlayerCheats/1.0.0": {
         "dependencies": {
           "Lib.Harmony": "2.3.3",
           "Pathoschild.Stardew.ModBuildConfig": "4.1.1"
         },
         "runtime": {
-          "PlayerCheats.dll": {}
+          "UltimatePlayerCheats.dll": {}
         }
       },
       "Lib.Harmony/2.3.3": {
@@ -48,7 +48,7 @@
     }
   },
   "libraries": {
-    "PlayerCheats/1.0.0": {
+    "UltimatePlayerCheats/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

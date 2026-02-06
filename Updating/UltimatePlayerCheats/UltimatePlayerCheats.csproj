@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>PlayerCheats</AssemblyName>
+    <AssemblyName>UltimatePlayerCheats</AssemblyName>
     <RootNamespace>PlayerCheats</RootNamespace>
     <Version>1.0.0</Version>
     <TargetFramework>net6.0</TargetFramework>

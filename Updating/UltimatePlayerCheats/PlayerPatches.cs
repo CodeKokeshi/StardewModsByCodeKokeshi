@@ -282,10 +282,10 @@ namespace PlayerCheats
             return true;
         }
 
-        /// <summary>Patch to prevent passing out.</summary>
-        public static bool Farmer_PassOutFromTired_Prefix(Farmer __instance)
+        /// <summary>Patch to prevent passing out (static method).</summary>
+        public static bool Farmer_PassOutFromTired_Prefix(Farmer who)
         {
-            if (!Context.IsWorldReady || __instance != Game1.player || !ModEntry.Config.ModEnabled)
+            if (!Context.IsWorldReady || who != Game1.player || !ModEntry.Config.ModEnabled)
                 return true;
 
             if (ModEntry.Config.NeverPassOut)
@@ -294,18 +294,6 @@ namespace PlayerCheats
             }
 
             return true;
-        }
-
-        /// <summary>Patch to enable noclip.</summary>
-        public static void Farmer_IgnoreCollisions_Postfix(Farmer __instance, ref bool __result)
-        {
-            if (!Context.IsWorldReady || __instance != Game1.player || !ModEntry.Config.ModEnabled)
-                return;
-
-            if (ModEntry.Config.NoClip)
-            {
-                __result = true;
-            }
         }
 
         /// <summary>Patch to multiply friendship gains.</summary>
@@ -328,14 +316,53 @@ namespace PlayerCheats
             }
         }
 
-        /// <summary>Patch to force harvest quality.</summary>
+        /// <summary>Patch to force harvest quality - placeholder, actual implementation complex.</summary>
         public static void Crop_Harvest_Prefix(Crop __instance)
+        {
+            // Note: Crop quality is determined by complex factors including
+            // fertilizer and farming level - this would require more extensive patching
+        }
+
+        /// <summary>Patch for max fish quality - override fishQuality parameter.</summary>
+        public static void FishingRod_PullFishFromWater_Prefix(ref int fishQuality)
         {
             if (!Context.IsWorldReady || !ModEntry.Config.ModEnabled)
                 return;
 
-            // Note: This is a simplified approach - quality is determined during harvest
-            // The actual quality logic is complex, but we can influence it through HoeDirt state
+            if (ModEntry.Config.MaxFishQuality)
+            {
+                fishQuality = 4; // Iridium quality
+            }
+        }
+
+        /// <summary>Patch to prevent item consumption (infinite items).</summary>
+        public static bool Farmer_ReduceActiveItemByOne_Prefix(Farmer __instance)
+        {
+            if (!Context.IsWorldReady || __instance != Game1.player || !ModEntry.Config.ModEnabled)
+                return true;
+
+            if (ModEntry.Config.InfiniteItems)
+            {
+                return false; // Skip the original method - don't reduce item
+            }
+
+            return true;
+        }
+
+        /// <summary>Patch to prevent item stack consumption (infinite items).</summary>
+        public static bool Item_ConsumeStack_Prefix(Item __instance, ref Item? __result, int amount)
+        {
+            if (!Context.IsWorldReady || !ModEntry.Config.ModEnabled)
+                return true;
+
+            if (ModEntry.Config.InfiniteItems)
+            {
+                // Return the item unchanged instead of consuming it
+                __result = __instance;
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>Patch for instant fish bite.</summary>
@@ -388,6 +415,30 @@ namespace PlayerCheats
             if (ModEntry.Config.AddedImmunity > 0)
             {
                 __result += ModEntry.Config.AddedImmunity;
+            }
+        }
+
+        /// <summary>Patch to multiply sell prices (Object.sellToStorePrice postfix).</summary>
+        public static void Object_SellToStorePrice_Postfix(StardewValley.Object __instance, ref int __result)
+        {
+            if (!Context.IsWorldReady || !ModEntry.Config.ModEnabled)
+                return;
+
+            if (ModEntry.Config.SellPriceMultiplier != 1.0f)
+            {
+                __result = (int)(__result * ModEntry.Config.SellPriceMultiplier);
+            }
+        }
+
+        /// <summary>Patch to multiply buy prices via salePrice (Object.salePrice postfix).</summary>
+        public static void Object_SalePrice_Postfix(StardewValley.Object __instance, ref int __result)
+        {
+            if (!Context.IsWorldReady || !ModEntry.Config.ModEnabled)
+                return;
+
+            if (ModEntry.Config.BuyPriceMultiplier != 1.0f)
+            {
+                __result = (int)(__result * ModEntry.Config.BuyPriceMultiplier);
             }
         }
     }

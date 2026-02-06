@@ -1,3 +1,6 @@
+using StardewModdingAPI;
+using StardewModdingAPI.Utilities;
+
 namespace PlayerCheats
 {
     /// <summary>Configuration settings for Player Cheats mod.</summary>
@@ -9,6 +12,9 @@ namespace PlayerCheats
 
         /// <summary>Enable/disable the entire mod.</summary>
         public bool ModEnabled { get; set; } = true;
+
+        /// <summary>Hotkey to open this mod's config menu directly.</summary>
+        public KeybindList OpenMenuKey { get; set; } = new KeybindList(SButton.K);
 
         /*********
         ** Movement & Speed

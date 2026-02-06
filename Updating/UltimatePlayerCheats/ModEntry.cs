@@ -33,6 +33,9 @@ namespace PlayerCheats
         /// <summary>Harmony instance for patching.</summary>
         private Harmony? harmony;
 
+        /// <summary>GMCM API for opening menu with hotkey.</summary>
+        private IGenericModConfigMenuApi? gmcmApi;
+
         /*********
         ** Public Methods
         *********/
@@ -51,6 +54,7 @@ namespace PlayerCheats
             helper.Events.GameLoop.OneSecondUpdateTicked += OnOneSecondUpdateTicked;
             helper.Events.GameLoop.DayStarted += OnDayStarted;
             helper.Events.GameLoop.TimeChanged += OnTimeChanged;
+            helper.Events.Input.ButtonPressed += OnButtonPressed;
 
             Monitor.Log("[PlayerCheats] Loaded! Configure in GMCM.", LogLevel.Info);
         }
@@ -62,138 +66,210 @@ namespace PlayerCheats
         {
             if (harmony == null) return;
 
+            // Helper method for safe patching
+            void TryPatch(MethodBase? original, HarmonyMethod? prefix = null, HarmonyMethod? postfix = null, string description = "")
+            {
+                if (original == null)
+                {
+                    Monitor.Log($"[PlayerCheats] WARNING: Could not find method to patch: {description}", LogLevel.Warn);
+                    return;
+                }
+                try
+                {
+                    harmony.Patch(original, prefix: prefix, postfix: postfix);
+                    Monitor.Log($"[PlayerCheats] Patched: {description}", LogLevel.Trace);
+                }
+                catch (Exception ex)
+                {
+                    Monitor.Log($"[PlayerCheats] ERROR patching {description}: {ex.Message}", LogLevel.Error);
+                }
+            }
+
             // === Player Damage (Invincibility) ===
-            harmony.Patch(
+            TryPatch(
                 original: AccessTools.Method(typeof(Farmer), nameof(Farmer.takeDamage)),
-                prefix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_TakeDamage_Prefix))
+                prefix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_TakeDamage_Prefix)),
+                description: "Farmer.takeDamage"
             );
 
             // === Movement Speed ===
-            harmony.Patch(
+            TryPatch(
                 original: AccessTools.Method(typeof(Farmer), nameof(Farmer.getMovementSpeed)),
-                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_GetMovementSpeed_Postfix))
+                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_GetMovementSpeed_Postfix)),
+                description: "Farmer.getMovementSpeed"
             );
 
             // === Magnetic Radius ===
-            harmony.Patch(
+            TryPatch(
                 original: AccessTools.PropertyGetter(typeof(Farmer), nameof(Farmer.MagneticRadius)),
-                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_MagneticRadius_Postfix))
+                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_MagneticRadius_Postfix)),
+                description: "Farmer.MagneticRadius getter"
             );
 
             // === Stamina Consumption ===
-            harmony.Patch(
+            TryPatch(
                 original: AccessTools.PropertySetter(typeof(Farmer), nameof(Farmer.stamina)),
-                prefix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_Stamina_Prefix))
+                prefix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_Stamina_Prefix)),
+                description: "Farmer.stamina setter"
             );
 
             // === Monster One Hit Kill ===
-            harmony.Patch(
+            TryPatch(
                 original: AccessTools.Method(typeof(Monster), nameof(Monster.takeDamage), new Type[] { typeof(int), typeof(int), typeof(int), typeof(bool), typeof(double), typeof(Farmer) }),
-                prefix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Monster_TakeDamage_Prefix))
+                prefix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Monster_TakeDamage_Prefix)),
+                description: "Monster.takeDamage"
             );
 
             // === Weapon Critical Chance ===
-            harmony.Patch(
+            TryPatch(
                 original: AccessTools.Method(typeof(MeleeWeapon), nameof(MeleeWeapon.DoDamage)),
-                prefix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.MeleeWeapon_DoDamage_Prefix))
+                prefix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.MeleeWeapon_DoDamage_Prefix)),
+                description: "MeleeWeapon.DoDamage"
             );
 
             // === Tool Stamina Cost ===
-            harmony.Patch(
+            TryPatch(
                 original: AccessTools.Method(typeof(Tool), nameof(Tool.DoFunction)),
-                prefix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Tool_DoFunction_Prefix))
+                prefix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Tool_DoFunction_Prefix)),
+                description: "Tool.DoFunction"
             );
 
             // === Hoe/Watering Can Area ===
-            harmony.Patch(
+            TryPatch(
                 original: AccessTools.Method(typeof(Tool), "tilesAffected", new Type[] { typeof(Vector2), typeof(int), typeof(Farmer) }),
-                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Tool_TilesAffected_Postfix))
+                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Tool_TilesAffected_Postfix)),
+                description: "Tool.tilesAffected"
             );
 
             // === Watering Can Infinite Water ===
-            harmony.Patch(
+            TryPatch(
                 original: AccessTools.PropertyGetter(typeof(WateringCan), nameof(WateringCan.WaterLeft)),
-                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.WateringCan_WaterLeft_Postfix))
+                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.WateringCan_WaterLeft_Postfix)),
+                description: "WateringCan.WaterLeft getter"
             );
 
             // === Skill Levels ===
-            harmony.Patch(
+            TryPatch(
                 original: AccessTools.PropertyGetter(typeof(Farmer), nameof(Farmer.FarmingLevel)),
-                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_FarmingLevel_Postfix))
+                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_FarmingLevel_Postfix)),
+                description: "Farmer.FarmingLevel getter"
             );
-            harmony.Patch(
+            TryPatch(
                 original: AccessTools.PropertyGetter(typeof(Farmer), nameof(Farmer.MiningLevel)),
-                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_MiningLevel_Postfix))
+                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_MiningLevel_Postfix)),
+                description: "Farmer.MiningLevel getter"
             );
-            harmony.Patch(
+            TryPatch(
                 original: AccessTools.PropertyGetter(typeof(Farmer), nameof(Farmer.ForagingLevel)),
-                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_ForagingLevel_Postfix))
+                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_ForagingLevel_Postfix)),
+                description: "Farmer.ForagingLevel getter"
             );
-            harmony.Patch(
+            TryPatch(
                 original: AccessTools.PropertyGetter(typeof(Farmer), nameof(Farmer.FishingLevel)),
-                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_FishingLevel_Postfix))
+                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_FishingLevel_Postfix)),
+                description: "Farmer.FishingLevel getter"
             );
-            harmony.Patch(
+            TryPatch(
                 original: AccessTools.PropertyGetter(typeof(Farmer), nameof(Farmer.CombatLevel)),
-                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_CombatLevel_Postfix))
+                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_CombatLevel_Postfix)),
+                description: "Farmer.CombatLevel getter"
             );
 
             // === XP Gain ===
-            harmony.Patch(
+            TryPatch(
                 original: AccessTools.Method(typeof(Farmer), nameof(Farmer.gainExperience)),
-                prefix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_GainExperience_Prefix))
+                prefix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_GainExperience_Prefix)),
+                description: "Farmer.gainExperience"
             );
 
             // === Time Freeze ===
-            harmony.Patch(
+            TryPatch(
                 original: AccessTools.Method(typeof(Game1), nameof(Game1.performTenMinuteClockUpdate)),
-                prefix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Game1_PerformTenMinuteClockUpdate_Prefix))
+                prefix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Game1_PerformTenMinuteClockUpdate_Prefix)),
+                description: "Game1.performTenMinuteClockUpdate"
             );
 
-            // === Passout Prevention ===
-            harmony.Patch(
+            // === Passout Prevention (static method) ===
+            TryPatch(
                 original: AccessTools.Method(typeof(Farmer), nameof(Farmer.passOutFromTired)),
-                prefix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_PassOutFromTired_Prefix))
-            );
-
-            // === NoClip (Collision) ===
-            harmony.Patch(
-                original: AccessTools.PropertyGetter(typeof(Farmer), nameof(Farmer.ignoreCollisions)),
-                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_IgnoreCollisions_Postfix))
+                prefix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_PassOutFromTired_Prefix)),
+                description: "Farmer.passOutFromTired"
             );
 
             // === Friendship Gain ===
-            harmony.Patch(
+            TryPatch(
                 original: AccessTools.Method(typeof(Farmer), nameof(Farmer.changeFriendship)),
-                prefix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_ChangeFriendship_Prefix))
+                prefix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_ChangeFriendship_Prefix)),
+                description: "Farmer.changeFriendship"
             );
 
             // === Harvest Quality ===
-            harmony.Patch(
+            TryPatch(
                 original: AccessTools.Method(typeof(Crop), nameof(Crop.harvest)),
-                prefix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Crop_Harvest_Prefix))
+                prefix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Crop_Harvest_Prefix)),
+                description: "Crop.harvest"
+            );
+
+            // === Max Fish Quality ===
+            TryPatch(
+                original: AccessTools.Method(typeof(FishingRod), nameof(FishingRod.pullFishFromWater)),
+                prefix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.FishingRod_PullFishFromWater_Prefix)),
+                description: "FishingRod.pullFishFromWater"
+            );
+
+            // === Infinite Items ===
+            TryPatch(
+                original: AccessTools.Method(typeof(Farmer), nameof(Farmer.reduceActiveItemByOne)),
+                prefix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_ReduceActiveItemByOne_Prefix)),
+                description: "Farmer.reduceActiveItemByOne"
+            );
+
+            TryPatch(
+                original: AccessTools.Method(typeof(Item), nameof(Item.ConsumeStack)),
+                prefix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Item_ConsumeStack_Prefix)),
+                description: "Item.ConsumeStack"
             );
 
             // === Fishing Rod (Instant Bite) ===
-            harmony.Patch(
+            TryPatch(
                 original: AccessTools.Method(typeof(FishingRod), nameof(FishingRod.DoFunction)),
-                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.FishingRod_DoFunction_Postfix))
+                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.FishingRod_DoFunction_Postfix)),
+                description: "FishingRod.DoFunction"
             );
 
-            // === Max Health/Stamina Override ===
-            harmony.Patch(
+            // === Max Stamina Override ===
+            TryPatch(
                 original: AccessTools.PropertyGetter(typeof(Farmer), nameof(Farmer.MaxStamina)),
-                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_MaxStamina_Postfix))
+                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_MaxStamina_Postfix)),
+                description: "Farmer.MaxStamina getter"
             );
 
-            // === Defense/Attack/Immunity ===
-            harmony.Patch(
+            // === Attack ===
+            TryPatch(
                 original: AccessTools.PropertyGetter(typeof(Farmer), nameof(Farmer.Attack)),
-                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_Attack_Postfix))
+                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_Attack_Postfix)),
+                description: "Farmer.Attack getter"
             );
-            harmony.Patch(
-                original: AccessTools.PropertyGetter(typeof(Farmer), "Immunity"),
-                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_Immunity_Postfix))
+
+            // === Immunity ===
+            TryPatch(
+                original: AccessTools.PropertyGetter(typeof(Farmer), nameof(Farmer.Immunity)),
+                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Farmer_Immunity_Postfix)),
+                description: "Farmer.Immunity getter"
+            );
+
+            // === Sell Price Multiplier ===
+            TryPatch(
+                original: AccessTools.Method(typeof(StardewValley.Object), nameof(StardewValley.Object.sellToStorePrice)),
+                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Object_SellToStorePrice_Postfix)),
+                description: "Object.sellToStorePrice"
+            );
+
+            // === Buy Price Multiplier ===
+            TryPatch(
+                original: AccessTools.Method(typeof(StardewValley.Object), nameof(StardewValley.Object.salePrice)),
+                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Object_SalePrice_Postfix)),
+                description: "Object.salePrice"
             );
 
             Monitor.Log("All Harmony patches applied!", LogLevel.Debug);
@@ -234,6 +310,12 @@ namespace PlayerCheats
             if (Config.AlwaysRun)
             {
                 player.running = true;
+            }
+
+            // NoClip - set the field directly since it's a public field, not a property
+            if (Config.NoClip)
+            {
+                player.ignoreCollisions = true;
             }
 
             // No monster spawns - remove all monsters
@@ -286,6 +368,31 @@ namespace PlayerCheats
                     }
                 }
             }
+
+            // Real-time luck setting
+            if (Config.AlwaysMaxLuck)
+            {
+                Game1.player.team.sharedDailyLuck.Value = 0.12;
+            }
+            else if (Config.DailyLuckOverride >= -0.1f && Config.DailyLuckOverride <= 0.12f)
+            {
+                Game1.player.team.sharedDailyLuck.Value = Config.DailyLuckOverride;
+            }
+
+            // Real-time instant crop growth (all locations)
+            if (Config.InstantCropGrowth)
+            {
+                foreach (var location in Game1.locations)
+                {
+                    foreach (var pair in location.terrainFeatures.Pairs)
+                    {
+                        if (pair.Value is HoeDirt dirt && dirt.crop != null && !dirt.crop.fullyGrown.Value)
+                        {
+                            dirt.crop.growCompletely();
+                        }
+                    }
+                }
+            }
         }
 
         private void OnDayStarted(object? sender, DayStartedEventArgs e)
@@ -296,31 +403,9 @@ namespace PlayerCheats
             var player = Game1.player;
             if (player == null) return;
 
-            // Max luck day
-            if (Config.AlwaysMaxLuck)
-            {
-                Game1.player.team.sharedDailyLuck.Value = 0.12f; // Max luck
-            }
-            else if (Config.DailyLuckOverride >= -0.1f && Config.DailyLuckOverride <= 0.1f)
-            {
-                Game1.player.team.sharedDailyLuck.Value = Config.DailyLuckOverride;
-            }
+            // Luck is now applied in real-time via OnOneSecondUpdateTicked
 
-            // Instant crop growth
-            if (Config.InstantCropGrowth)
-            {
-                var farm = Game1.getFarm();
-                if (farm != null)
-                {
-                    foreach (var pair in farm.terrainFeatures.Pairs)
-                    {
-                        if (pair.Value is HoeDirt dirt && dirt.crop != null)
-                        {
-                            dirt.crop.growCompletely();
-                        }
-                    }
-                }
-            }
+            // Crop growth is now applied in real-time via OnOneSecondUpdateTicked
         }
 
         private void OnTimeChanged(object? sender, TimeChangedEventArgs e)
@@ -335,6 +420,22 @@ namespace PlayerCheats
             }
         }
 
+        private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
+        {
+            // Open this mod's GMCM menu when hotkey is pressed
+            if (Config.OpenMenuKey.JustPressed())
+            {
+                if (gmcmApi != null)
+                {
+                    gmcmApi.OpenModMenu(this.ModManifest);
+                }
+                else
+                {
+                    Monitor.Log("Cannot open config menu - GMCM not installed.", LogLevel.Warn);
+                }
+            }
+        }
+
         private void SetupGMCM()
         {
             var configMenu = this.Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
@@ -343,6 +444,9 @@ namespace PlayerCheats
                 Monitor.Log("Generic Mod Config Menu not found. Config can only be edited via config.json", LogLevel.Info);
                 return;
             }
+
+            // Store reference for hotkey use
+            gmcmApi = configMenu;
 
             // Register mod
             configMenu.Register(
@@ -355,7 +459,7 @@ namespace PlayerCheats
             // === Master Toggle ===
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,
-                text: () => "⚙️ Master Toggle"
+                text: () => "Master Toggle"
             );
 
             configMenu.AddBoolOption(
@@ -366,10 +470,18 @@ namespace PlayerCheats
                 setValue: value => Config.ModEnabled = value
             );
 
+            configMenu.AddKeybindList(
+                mod: this.ModManifest,
+                name: () => "Open Menu Hotkey",
+                tooltip: () => "Press this key to open this config menu directly.",
+                getValue: () => Config.OpenMenuKey,
+                setValue: value => Config.OpenMenuKey = value
+            );
+
             // === Movement & Speed ===
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,
-                text: () => "🏃 Movement & Speed"
+                text: () => "Movement & Speed"
             );
 
             configMenu.AddNumberOption(
@@ -413,7 +525,7 @@ namespace PlayerCheats
             // === Health & Stamina ===
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,
-                text: () => "❤️ Health & Stamina"
+                text: () => "Health & Stamina"
             );
 
             configMenu.AddBoolOption(
@@ -479,7 +591,7 @@ namespace PlayerCheats
             // === Combat ===
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,
-                text: () => "⚔️ Combat"
+                text: () => "Combat"
             );
 
             configMenu.AddBoolOption(
@@ -575,7 +687,7 @@ namespace PlayerCheats
             // === Tools & Farming ===
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,
-                text: () => "🔧 Tools & Farming"
+                text: () => "Tools & Farming"
             );
 
             configMenu.AddNumberOption(
@@ -638,7 +750,7 @@ namespace PlayerCheats
             // === Item Pickup & Inventory ===
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,
-                text: () => "🎒 Items & Inventory"
+                text: () => "Items & Inventory"
             );
 
             configMenu.AddNumberOption(
@@ -674,18 +786,18 @@ namespace PlayerCheats
             // === Skills & Levels ===
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,
-                text: () => "📊 Skills & Levels"
+                text: () => "Skills & Levels"
             );
 
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
                 name: () => "XP Multiplier",
-                tooltip: () => "Multiply all XP gains. 1.0 = normal, 10.0 = 10x XP.",
+                tooltip: () => "Multiply all XP gains. 1.0 = normal, 100 = 100x XP, 1000 = instant level ups!",
                 getValue: () => Config.XPMultiplier,
                 setValue: value => Config.XPMultiplier = value,
                 min: 1f,
-                max: 100f,
-                interval: 1f
+                max: 1000f,
+                interval: 10f
             );
 
             configMenu.AddNumberOption(
@@ -741,13 +853,13 @@ namespace PlayerCheats
             // === Luck ===
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,
-                text: () => "🍀 Luck"
+                text: () => "Luck"
             );
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
                 name: () => "Always Max Luck",
-                tooltip: () => "Every day is the luckiest day possible.",
+                tooltip: () => "Every day is the luckiest day possible. Applies immediately.",
                 getValue: () => Config.AlwaysMaxLuck,
                 setValue: value => Config.AlwaysMaxLuck = value
             );
@@ -755,7 +867,7 @@ namespace PlayerCheats
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
                 name: () => "Daily Luck Override",
-                tooltip: () => "Set exact daily luck. -1.0 = disabled, range -0.1 to 0.1",
+                tooltip: () => "Set exact daily luck. -1.0 = disabled, range -0.1 to 0.12. Applies immediately.",
                 getValue: () => Config.DailyLuckOverride,
                 setValue: value => Config.DailyLuckOverride = value,
                 min: -1f,
@@ -766,7 +878,7 @@ namespace PlayerCheats
             // === Fishing ===
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,
-                text: () => "🎣 Fishing"
+                text: () => "Fishing"
             );
 
             configMenu.AddBoolOption(
@@ -804,7 +916,7 @@ namespace PlayerCheats
             // === Quality & Prices ===
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,
-                text: () => "💰 Quality & Prices"
+                text: () => "Quality & Prices"
             );
 
             configMenu.AddNumberOption(
@@ -842,7 +954,7 @@ namespace PlayerCheats
             // === Relationships ===
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,
-                text: () => "💕 Relationships"
+                text: () => "Relationships"
             );
 
             configMenu.AddNumberOption(
@@ -867,7 +979,7 @@ namespace PlayerCheats
             // === Time ===
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,
-                text: () => "⏰ Time"
+                text: () => "Time"
             );
 
             configMenu.AddBoolOption(
@@ -897,7 +1009,7 @@ namespace PlayerCheats
             // === Misc ===
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,
-                text: () => "✨ Miscellaneous"
+                text: () => "Miscellaneous"
             );
 
             configMenu.AddBoolOption(
@@ -919,7 +1031,7 @@ namespace PlayerCheats
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
                 name: () => "Instant Crop Growth",
-                tooltip: () => "All crops grow to full harvest at the start of each day.",
+                tooltip: () => "All crops across all locations grow to full harvest in real-time.",
                 getValue: () => Config.InstantCropGrowth,
                 setValue: value => Config.InstantCropGrowth = value
             );

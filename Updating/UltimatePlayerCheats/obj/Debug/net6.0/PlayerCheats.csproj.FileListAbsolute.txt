@@ -1,9 +1,9 @@
-D:\December 2025 OS\Development\StardewModding\Updating\PlayerCheats\bin\Debug\net6.0\PlayerCheats.deps.json
-D:\December 2025 OS\Development\StardewModding\Updating\PlayerCheats\bin\Debug\net6.0\PlayerCheats.dll
 D:\December 2025 OS\Development\StardewModding\Updating\PlayerCheats\obj\Debug\net6.0\PlayerCheats.csproj.AssemblyReference.cache
 D:\December 2025 OS\Development\StardewModding\Updating\PlayerCheats\obj\Debug\net6.0\PlayerCheats.GeneratedMSBuildEditorConfig.editorconfig
 D:\December 2025 OS\Development\StardewModding\Updating\PlayerCheats\obj\Debug\net6.0\PlayerCheats.AssemblyInfoInputs.cache
 D:\December 2025 OS\Development\StardewModding\Updating\PlayerCheats\obj\Debug\net6.0\PlayerCheats.AssemblyInfo.cs
 D:\December 2025 OS\Development\StardewModding\Updating\PlayerCheats\obj\Debug\net6.0\PlayerCheats.csproj.CoreCompileInputs.cache
 D:\December 2025 OS\Development\StardewModding\Updating\PlayerCheats\obj\Debug\net6.0\PlayerCheats.sourcelink.json
-D:\December 2025 OS\Development\StardewModding\Updating\PlayerCheats\obj\Debug\net6.0\PlayerCheats.dll
+D:\December 2025 OS\Development\StardewModding\Updating\PlayerCheats\bin\Debug\net6.0\UltimatePlayerCheats.deps.json
+D:\December 2025 OS\Development\StardewModding\Updating\PlayerCheats\bin\Debug\net6.0\UltimatePlayerCheats.dll
+D:\December 2025 OS\Development\StardewModding\Updating\PlayerCheats\obj\Debug\net6.0\UltimatePlayerCheats.dll

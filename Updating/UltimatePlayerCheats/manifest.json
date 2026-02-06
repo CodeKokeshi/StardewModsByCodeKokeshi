@@ -1,10 +1,16 @@
 {
-  "Name": "Player Cheats",
+  "Name": "Ultimate Player Cheats",
   "Author": "CodeKokeshi",
   "Version": "1.0.0",
   "Description": "Ultimate player customization mod with GMCM integration. Customize movement speed, stamina, health, damage, pickup radius, tool power, skill levels, invincibility, and much more. All features disabled/default by default.",
-  "UniqueID": "CodeKokeshi.PlayerCheats",
-  "EntryDll": "PlayerCheats.dll",
+  "UniqueID": "CodeKokeshi.UltimatePlayerCheats",
+  "EntryDll": "UltimatePlayerCheats.dll",
   "MinimumApiVersion": "4.0.0",
-  "UpdateKeys": []
+  "UpdateKeys": ["Nexus:42058"],
+  "Dependencies": [
+    {
+      "UniqueID": "spacechase0.GenericModConfigMenu",
+      "IsRequired": true
+    }
+  ]
 }

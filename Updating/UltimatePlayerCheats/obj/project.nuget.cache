@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "cHbsgIZ3IxA=",
+  "dgSpecHash": "dnsXArcK1Ic=",
   "success": true,
-  "projectFilePath": "D:\\December 2025 OS\\Development\\StardewModding\\Updating\\PlayerCheats\\PlayerCheats.csproj",
+  "projectFilePath": "D:\\December 2025 OS\\Development\\StardewModding\\Updating\\UltimatePlayerCheats\\UltimatePlayerCheats.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Aikawa\\.nuget\\packages\\lib.harmony\\2.3.3\\lib.harmony.2.3.3.nupkg.sha512",
     "C:\\Users\\Aikawa\\.nuget\\packages\\pathoschild.stardew.modbuildconfig\\4.1.1\\pathoschild.stardew.modbuildconfig.4.1.1.nupkg.sha512",
