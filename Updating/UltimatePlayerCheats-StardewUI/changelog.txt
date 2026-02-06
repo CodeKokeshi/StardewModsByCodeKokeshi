@@ -1,0 +1,100 @@
+Ultimate Player Cheats v2.0.0 Changelog
+=========================================
+
+Version 2.0.0 - Initial StardewUI Release
+------------------------------------------
+
+FEATURES:
+
+GENERAL:
+• Master toggle to enable/disable all cheats at once
+• Beautiful tabbed UI with 10 organized categories
+• Real-time settings updates
+• Auto-save on menu close
+• Reset to defaults button
+• Press K to open cheats menu (configurable in config.json)
+
+MOVEMENT & SPEED:
+• Speed multiplier (0.5x - 20x)
+• Added flat speed bonus
+• No clip mode - walk through walls and obstacles
+• Always run mode
+
+HEALTH & STAMINA:
+• Infinite stamina - never get tired
+• Infinite health - complete invincibility
+• Max stamina override (customize max stamina)
+• Max health override (customize max health)
+• Stamina regeneration per second
+• Health regeneration per second
+
+COMBAT:
+• One-hit kill - all enemies die instantly
+• 100% critical hit chance
+• Damage multiplier (1x - 100x)
+• Critical damage multiplier (1x - 100x)
+• Added attack points (0 - 500)
+• Added defense points (0 - 500)
+• Added immunity points (0 - 100)
+• No monster spawns - removes all monsters from current location
+
+TOOLS & FARMING:
+• Tool area multiplier - expand hoe/watering can area (1x1 - 11x11)
+• No tool stamina cost - use tools without getting tired
+• Infinite water - watering can never runs out
+• Axe power bonus (0 - 10)
+• Pickaxe power bonus (0 - 10)
+
+ITEMS & INVENTORY:
+• Magnetic radius multiplier (1x - 50x pickup range)
+• Added magnetic radius bonus (0 - 2000 pixels)
+• Infinite items - items never get consumed
+
+SKILLS & LEVELS:
+• XP multiplier (1x - 1000x for instant leveling!)
+• Farming level override (-1 for normal, 0-20 custom)
+• Mining level override (-1 for normal, 0-20 custom)
+• Foraging level override (-1 for normal, 0-20 custom)
+• Fishing level override (-1 for normal, 0-20 custom)
+• Combat level override (-1 for normal, 0-20 custom)
+
+LUCK:
+• Always max luck - every day is the luckiest day
+• Daily luck override (customize exact luck value)
+
+FISHING:
+• Instant fish bite - fish bite immediately when cast
+• Instant catch - skip the fishing minigame entirely
+• Max fish quality - all caught fish are iridium quality
+• Always find treasure - treasure in every fishing minigame
+
+QUALITY & PRICES:
+• Force forage quality (disabled, normal, silver, gold, iridium)
+• Sell price multiplier (1x - 100x profit!)
+• Buy price multiplier (0x FREE! - 2x)
+
+RELATIONSHIPS:
+• Friendship multiplier (1x - 100x faster friendships)
+• No friendship decay - friendships never decrease
+
+TIME:
+• Freeze time - time never passes
+• Freeze time indoors - time stops inside buildings
+• Never pass out - stay awake past 2am without consequences
+
+FARM & WORLD:
+• Max animal happiness - all farm animals always happy
+• Crops never die - survive season changes and lack of water
+• Instant crop growth - all crops grow to harvest instantly
+• Instant tree growth - regular trees grow to full size instantly
+• Instant fruit tree growth - fruit trees mature instantly
+
+REQUIREMENTS:
+• SMAPI 4.0+
+• StardewUI Framework (required dependency)
+
+NOTES:
+• All features are disabled by default - you choose what to enable!
+• Beautiful native Stardew Valley UI style
+• No more endless scrolling - everything organized into tabs
+• Settings persist between game sessions
