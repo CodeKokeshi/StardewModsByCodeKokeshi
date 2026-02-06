@@ -203,12 +203,8 @@ namespace PlayerCheats
                 description: "Farmer.changeFriendship"
             );
 
-            // === Harvest Quality ===
-            TryPatch(
-                original: AccessTools.Method(typeof(Crop), nameof(Crop.harvest)),
-                prefix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Crop_Harvest_Prefix)),
-                description: "Crop.harvest"
-            );
+            // === Harvest Quality === (REMOVED - requires transpiler, too complex)
+            // ForceHarvestQuality is not currently implemented
 
             // === Max Fish Quality ===
             TryPatch(
@@ -235,6 +231,20 @@ namespace PlayerCheats
                 original: AccessTools.Method(typeof(FishingRod), nameof(FishingRod.DoFunction)),
                 postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.FishingRod_DoFunction_Postfix)),
                 description: "FishingRod.DoFunction"
+            );
+
+            // === Instant Catch & Always Find Treasure ===
+            TryPatch(
+                original: AccessTools.Method(typeof(FishingRod), nameof(FishingRod.startMinigameEndFunction)),
+                prefix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.FishingRod_StartMinigameEndFunction_Prefix)),
+                description: "FishingRod.startMinigameEndFunction"
+            );
+
+            // === BobberBar Treasure Override ===
+            TryPatch(
+                original: AccessTools.Constructor(typeof(BobberBar), new Type[] { typeof(string), typeof(float), typeof(bool), typeof(List<string>), typeof(string), typeof(bool), typeof(string), typeof(bool) }),
+                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.BobberBar_Constructor_Postfix)),
+                description: "BobberBar constructor"
             );
 
             // === Max Stamina Override ===
@@ -974,16 +984,6 @@ namespace PlayerCheats
             configMenu.AddSectionTitle(
                 mod: this.ModManifest,
                 text: () => "Quality & Prices"
-            );
-
-            configMenu.AddNumberOption(
-                mod: this.ModManifest,
-                name: () => "Force Harvest Quality",
-                tooltip: () => "Force quality of all harvested crops. -1=disabled, 0=normal, 1=silver, 2=gold, 4=iridium.",
-                getValue: () => Config.ForceHarvestQuality,
-                setValue: value => Config.ForceHarvestQuality = value,
-                min: -1,
-                max: 4
             );
 
             configMenu.AddNumberOption(

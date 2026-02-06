@@ -316,13 +316,6 @@ namespace PlayerCheats
             }
         }
 
-        /// <summary>Patch to force harvest quality - placeholder, actual implementation complex.</summary>
-        public static void Crop_Harvest_Prefix(Crop __instance)
-        {
-            // Note: Crop quality is determined by complex factors including
-            // fertilizer and farming level - this would require more extensive patching
-        }
-
         /// <summary>Patch for max fish quality - override fishQuality parameter.</summary>
         public static void FishingRod_PullFishFromWater_Prefix(ref int fishQuality)
         {
@@ -379,6 +372,60 @@ namespace PlayerCheats
                 {
                     timeUntilFishingBite.SetValue(__instance, 1f);
                 }
+            }
+        }
+
+        /// <summary>Patch to skip fishing minigame entirely (instant catch).</summary>
+        public static bool FishingRod_StartMinigameEndFunction_Prefix(FishingRod __instance, Item fish)
+        {
+            if (!Context.IsWorldReady || !ModEntry.Config.ModEnabled)
+                return true;
+
+            if (ModEntry.Config.InstantCatch)
+            {
+                // Skip the BobberBar minigame entirely - directly complete the catch
+                fish.TryGetTempData<bool>("IsBossFish", out bool bossFish);
+                Farmer who = __instance.lastUser;
+
+                // Calculate fish size (simplified - take max)
+                int fishSize = 1;
+
+                // Calculate quality (use MaxFishQuality if enabled)
+                int quality = ModEntry.Config.MaxFishQuality ? 4 : 0;
+
+                // Always treasure if enabled
+                bool treasureCaught = ModEntry.Config.AlwaysFindTreasure;
+
+                // Trigger the fish caught event
+                __instance.pullFishFromWater(
+                    fish.QualifiedItemId,
+                    fishSize,
+                    quality,
+                    0, // difficulty
+                    treasureCaught,
+                    true, // wasPerfect
+                    false, // fromFishPond
+                    fish.SetFlagOnPickup,
+                    bossFish,
+                    1 // numCaught
+                );
+
+                return false; // Skip original method (don't show BobberBar)
+            }
+
+            return true;
+        }
+
+        /// <summary>Patch to force treasure in fishing minigame.</summary>
+        public static void BobberBar_Constructor_Postfix(BobberBar __instance)
+        {
+            if (!Context.IsWorldReady || !ModEntry.Config.ModEnabled)
+                return;
+
+            if (ModEntry.Config.AlwaysFindTreasure)
+            {
+                __instance.treasure = true;
+                __instance.treasureAppearTimer = 0f; // Make treasure appear immediately
             }
         }
 

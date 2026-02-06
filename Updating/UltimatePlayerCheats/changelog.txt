@@ -61,7 +61,6 @@ Fishing
 - Always Find Treasure: Always find treasure when fishing
 
 Quality & Prices
-- Force Harvest Quality: Force quality of all harvested crops (-1=disabled, 0=normal, 1=silver, 2=gold, 4=iridium)
 - Force Forage Quality: Force quality of all foraged items (-1=disabled, 0=normal, 1=silver, 2=gold, 4=iridium), only affects forageables that naturally have quality
 - Sell Price Multiplier: Multiply prices when selling (1.0 = normal, 2.0 = 2x profit)
 - Buy Price Multiplier: Multiply prices when buying (1.0 = normal, 0.5 = half price, 0 = free)
