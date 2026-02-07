@@ -204,20 +204,77 @@
                 <cheat-toggle label="Crops Never Die"
                               tooltip="Crops survive season changes and lack of water."
                               checked={<>CropsNeverDie} />
-                <cheat-toggle label="Instant Crop Growth"
-                              tooltip="All crops grow to full harvest in real-time."
-                              checked={<>InstantCropGrowth} />
-                <cheat-toggle label="Instant Tree Growth"
-                              tooltip="All regular trees grow to full size in real-time."
-                              checked={<>InstantTreeGrowth} />
-                <cheat-toggle label="Instant Fruit Tree Growth"
-                              tooltip="All fruit trees grow to full maturity in real-time."
-                              checked={<>InstantFruitTreeGrowth} />
                 <cheat-slider label="Force Forage Quality"
                               tooltip="-1=disabled, 0=normal, 1=silver, 2=gold, 4=iridium."
                               min="-1" max="4" interval="1"
                               value={<>ForceForageQuality}
                               value-format={:FormatQuality} />
+
+                <section-header text="Instant Growth Actions" />
+                <lane layout="stretch content" margin="16, 4" vertical-content-alignment="middle">
+                    <label layout="320px content"
+                           margin="0, 6"
+                           text="Grow All Crops"
+                           tooltip="Instantly grow all crops to harvestable state."
+                           shadow-alpha="0.6"
+                           shadow-color="#4448"
+                           shadow-offset="-1, 1" />
+                    <button layout="100px 36px"
+                            text="Apply"
+                            tooltip="Instantly grow all crops to harvestable state."
+                            hover-background={@Mods/StardewUI/Sprites/ButtonLight}
+                            left-click=|GrowAllCrops()| />
+                </lane>
+                <lane layout="stretch content" margin="16, 4" vertical-content-alignment="middle">
+                    <label layout="320px content"
+                           margin="0, 6"
+                           text="Grow All Trees"
+                           tooltip="Instantly grow all regular trees to full size."
+                           shadow-alpha="0.6"
+                           shadow-color="#4448"
+                           shadow-offset="-1, 1" />
+                    <button layout="100px 36px"
+                            text="Apply"
+                            tooltip="Instantly grow all regular trees to full size."
+                            hover-background={@Mods/StardewUI/Sprites/ButtonLight}
+                            left-click=|GrowAllTrees()| />
+                </lane>
+                <lane layout="stretch content" margin="16, 4" vertical-content-alignment="middle">
+                    <label layout="320px content"
+                           margin="0, 6"
+                           text="Grow All Fruit Trees"
+                           tooltip="Instantly grow all fruit trees to full maturity."
+                           shadow-alpha="0.6"
+                           shadow-color="#4448"
+                           shadow-offset="-1, 1" />
+                    <button layout="100px 36px"
+                            text="Apply"
+                            tooltip="Instantly grow all fruit trees to full maturity."
+                            hover-background={@Mods/StardewUI/Sprites/ButtonLight}
+                            left-click=|GrowAllFruitTrees()| />
+                </lane>
+                <lane layout="stretch content" margin="16, 4" vertical-content-alignment="middle">
+                    <label layout="320px content"
+                           margin="0, 6"
+                           text="Water All Fields"
+                           tooltip="Water all tilled fields on the farm."
+                           shadow-alpha="0.6"
+                           shadow-color="#4448"
+                           shadow-offset="-1, 1" />
+                    <button layout="100px 36px"
+                            text="Apply"
+                            tooltip="Water all tilled fields on the farm."
+                            hover-background={@Mods/StardewUI/Sprites/ButtonLight}
+                            left-click=|WaterAllFields()| />
+                </lane>
+
+                <section-header text="Field Protection" />
+                <cheat-toggle label="Prevent Debris Spawn"
+                              tooltip="Stop weeds, stones, and twigs from spawning on the farm."
+                              checked={<>PreventDebrisSpawn} />
+                <cheat-toggle label="Tilled Soil Don't Decay"
+                              tooltip="Tilled soil stays tilled indefinitely."
+                              checked={<>TilledSoilDontDecay} />
             </lane>
         </scrollable>
 
@@ -226,15 +283,37 @@
             <lane layout="stretch content" orientation="vertical">
                 <section-header text="Farm Animals" />
                 <cheat-toggle label="Max Animal Happiness"
-                              tooltip="All farm animals are always at max happiness and friendship."
+                              tooltip="All farm animals are always at max happiness."
                               checked={<>MaxAnimalHappiness} />
+                <cheat-toggle label="Buy Animals Fully Matured"
+                              tooltip="Purchased animals are fully grown immediately."
+                              checked={<>BuyAnimalsFullyMatured} />
+                <cheat-toggle label="Auto-Pet Animals"
+                              tooltip="Automatically pet all farm animals each day."
+                              checked={<>AutoPetAnimals} />
+                <cheat-toggle label="Auto-Feed Animals"
+                              tooltip="Automatically fill all feeding troughs with hay."
+                              checked={<>AutoFeedAnimals} />
+                <cheat-toggle label="Animals Produce Daily"
+                              tooltip="All animals produce every day regardless of schedule."
+                              checked={<>AnimalsProduceDaily} />
+                <cheat-slider label="Farm Animal Hearts"
+                              tooltip="-1=disabled, 0-10=override friendship hearts for all farm animals."
+                              min="-1" max="10" interval="1"
+                              value={<>FarmAnimalHeartsOverride}
+                              value-format={:FormatHearts} />
 
-                <lane layout="stretch content" margin="0, 16, 0, 0">
-                    <label layout="stretch content"
-                           margin="16, 0"
-                           color="#888"
-                           text="More animal and pet cheats coming soon!" />
-                </lane>
+                <section-header text="Pets" />
+                <cheat-slider label="Pet Hearts"
+                              tooltip="-1=disabled, 0-10=override friendship hearts for all pets."
+                              min="-1" max="10" interval="1"
+                              value={<>PetHeartsOverride}
+                              value-format={:FormatHearts} />
+
+                <section-header text="Silos" />
+                <cheat-toggle label="Infinite Hay"
+                              tooltip="Silos always have infinite hay."
+                              checked={<>InfiniteHay} />
             </lane>
         </scrollable>
 
@@ -274,6 +353,66 @@
                 <cheat-toggle label="Infinite Items"
                               tooltip="Items don't get consumed when used. (Experimental)"
                               checked={<>InfiniteItems} />
+
+                <section-header text="Recipes" />
+                <lane layout="stretch content" margin="16, 4" vertical-content-alignment="middle">
+                    <label layout="320px content"
+                           margin="0, 6"
+                           text="Unlock All Recipes"
+                           tooltip="Unlock all crafting and cooking recipes."
+                           shadow-alpha="0.6"
+                           shadow-color="#4448"
+                           shadow-offset="-1, 1" />
+                    <button layout="100px 36px"
+                            text="Apply"
+                            tooltip="Unlock all crafting and cooking recipes."
+                            hover-background={@Mods/StardewUI/Sprites/ButtonLight}
+                            left-click=|UnlockAllRecipes()| />
+                </lane>
+                <lane layout="stretch content" margin="16, 4" vertical-content-alignment="middle">
+                    <label layout="320px content"
+                           margin="0, 6"
+                           text="Unlock All Crafting Recipes"
+                           tooltip="Unlock all crafting recipes."
+                           shadow-alpha="0.6"
+                           shadow-color="#4448"
+                           shadow-offset="-1, 1" />
+                    <button layout="100px 36px"
+                            text="Apply"
+                            tooltip="Unlock all crafting recipes."
+                            hover-background={@Mods/StardewUI/Sprites/ButtonLight}
+                            left-click=|UnlockAllCraftingRecipes()| />
+                </lane>
+                <lane layout="stretch content" margin="16, 4" vertical-content-alignment="middle">
+                    <label layout="320px content"
+                           margin="0, 6"
+                           text="Unlock All Cooking Recipes"
+                           tooltip="Unlock all cooking recipes."
+                           shadow-alpha="0.6"
+                           shadow-color="#4448"
+                           shadow-offset="-1, 1" />
+                    <button layout="100px 36px"
+                            text="Apply"
+                            tooltip="Unlock all cooking recipes."
+                            hover-background={@Mods/StardewUI/Sprites/ButtonLight}
+                            left-click=|UnlockAllCookingRecipes()| />
+                </lane>
+
+                <section-header text="Backpack" />
+                <lane layout="stretch content" margin="16, 4" vertical-content-alignment="middle">
+                    <label layout="320px content"
+                           margin="0, 6"
+                           text="Unlock All Inventory Slots"
+                           tooltip="Maximize backpack to 36 slots (3 rows)."
+                           shadow-alpha="0.6"
+                           shadow-color="#4448"
+                           shadow-offset="-1, 1" />
+                    <button layout="100px 36px"
+                            text="Apply"
+                            tooltip="Maximize backpack to 36 slots (3 rows)."
+                            hover-background={@Mods/StardewUI/Sprites/ButtonLight}
+                            left-click=|UnlockAllInventorySlots()| />
+                </lane>
             </lane>
         </scrollable>
 
@@ -420,7 +559,7 @@
                            text="Click a location to instantly warp there." />
                 </lane>
                 <lane layout="stretch content" orientation="vertical" margin="0, 8, 0, 0">
-                    <warp-location *repeat={WarpLocations} />
+                    <warp-location *repeat={:WarpLocations} />
                 </lane>
             </lane>
         </scrollable>

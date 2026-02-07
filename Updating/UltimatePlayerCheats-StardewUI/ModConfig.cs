@@ -196,23 +196,41 @@ namespace PlayerCheats
         public bool NeverPassOut { get; set; } = false;
 
         /*********
-        ** Misc Cheats
+        ** Animals & Pets
         *********/
 
-        /// <summary>No monster spawns in current location.</summary>
+        /// <summary>All farm animals are always at max happiness and friendship.</summary>
         public bool MaxAnimalHappiness { get; set; } = false;
+
+        /// <summary>Purchased animals are fully grown immediately.</summary>
+        public bool BuyAnimalsFullyMatured { get; set; } = false;
+
+        /// <summary>Automatically pet all farm animals each day.</summary>
+        public bool AutoPetAnimals { get; set; } = false;
+
+        /// <summary>Automatically feed all farm animals (fill troughs).</summary>
+        public bool AutoFeedAnimals { get; set; } = false;
+
+        /// <summary>Silos always have infinite hay.</summary>
+        public bool InfiniteHay { get; set; } = false;
+
+        /// <summary>All animals produce every day regardless of their normal schedule.</summary>
+        public bool AnimalsProduceDaily { get; set; } = false;
+
+        /// <summary>Override farm animal hearts (-1 = disabled, 0-10 = hearts).</summary>
+        public int FarmAnimalHeartsOverride { get; set; } = -1;
+
+        /// <summary>Override pet hearts (-1 = disabled, 0-10 = hearts).</summary>
+        public int PetHeartsOverride { get; set; } = -1;
 
         /// <summary>Crops never die from season change or lack of water.</summary>
         public bool CropsNeverDie { get; set; } = false;
 
-        /// <summary>Instant crop growth.</summary>
-        public bool InstantCropGrowth { get; set; } = false;
+        /// <summary>Prevent debris (weeds, stones, twigs) from spawning on the farm.</summary>
+        public bool PreventDebrisSpawn { get; set; } = false;
 
-        /// <summary>Instant tree growth — regular trees grow to full size immediately.</summary>
-        public bool InstantTreeGrowth { get; set; } = false;
-
-        /// <summary>Instant fruit tree growth — fruit trees grow to full maturity immediately.</summary>
-        public bool InstantFruitTreeGrowth { get; set; } = false;
+        /// <summary>Tilled soil stays tilled indefinitely.</summary>
+        public bool TilledSoilDontDecay { get; set; } = false;
 
         /*********
         ** Buildings & Construction (from World Cheats)

@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework.Graphics;
 using PropertyChanged.SourceGenerator;
 using StardewModdingAPI;
 using StardewValley;
+using StardewValley.TerrainFeatures;
 
 namespace PlayerCheats
 {
@@ -175,13 +176,23 @@ namespace PlayerCheats
         [Notify] private bool neverPassOut;
 
         /*********
-        ** Miscellaneous
+        ** Animals & Pets
         *********/
         [Notify] private bool maxAnimalHappiness;
+        [Notify] private bool buyAnimalsFullyMatured;
+        [Notify] private bool autoPetAnimals;
+        [Notify] private bool autoFeedAnimals;
+        [Notify] private bool infiniteHay;
+        [Notify] private bool animalsProduceDaily;
+        [Notify] private int farmAnimalHeartsOverride;
+        [Notify] private int petHeartsOverride;
+
+        /*********
+        ** Farming
+        *********/
         [Notify] private bool cropsNeverDie;
-        [Notify] private bool instantCropGrowth;
-        [Notify] private bool instantTreeGrowth;
-        [Notify] private bool instantFruitTreeGrowth;
+        [Notify] private bool preventDebrisSpawn;
+        [Notify] private bool tilledSoilDontDecay;
 
         /*********
         ** Buildings & Construction (World Cheats)
@@ -264,7 +275,197 @@ namespace PlayerCheats
             ModEntry.ModMonitor.Log($"[PlayerCheats] Added {amount} Qi Coins. New total: {Game1.player.clubCoins}", LogLevel.Info);
         }
 
+        /*********
+        ** Farming Actions
+        *********/
 
+        /// <summary>Instantly grow all crops to harvestable state.</summary>
+        public void GrowAllCrops()
+        {
+            if (!Context.IsWorldReady)
+                return;
+
+            int count = 0;
+            foreach (var location in Game1.locations)
+            {
+                foreach (var pair in location.terrainFeatures.Pairs)
+                {
+                    if (pair.Value is HoeDirt dirt && dirt.crop != null && !dirt.crop.fullyGrown.Value)
+                    {
+                        dirt.crop.growCompletely();
+                        count++;
+                    }
+                }
+            }
+
+            Game1.addHUDMessage(new HUDMessage($"Grew {count} crops!", HUDMessage.achievement_type));
+            ModEntry.ModMonitor.Log($"[PlayerCheats] Grew {count} crops to full maturity.", LogLevel.Info);
+        }
+
+        /// <summary>Instantly grow all regular trees to full size.</summary>
+        public void GrowAllTrees()
+        {
+            if (!Context.IsWorldReady)
+                return;
+
+            int count = 0;
+            foreach (var location in Game1.locations)
+            {
+                foreach (var pair in location.terrainFeatures.Pairs)
+                {
+                    if (pair.Value is Tree tree && tree.growthStage.Value < Tree.treeStage)
+                    {
+                        tree.growthStage.Value = Tree.treeStage;
+                        count++;
+                    }
+                }
+            }
+
+            Game1.addHUDMessage(new HUDMessage($"Grew {count} trees!", HUDMessage.achievement_type));
+            ModEntry.ModMonitor.Log($"[PlayerCheats] Grew {count} regular trees to full size.", LogLevel.Info);
+        }
+
+        /// <summary>Instantly grow all fruit trees to full maturity.</summary>
+        public void GrowAllFruitTrees()
+        {
+            if (!Context.IsWorldReady)
+                return;
+
+            int count = 0;
+            foreach (var location in Game1.locations)
+            {
+                foreach (var pair in location.terrainFeatures.Pairs)
+                {
+                    if (pair.Value is FruitTree fruitTree && fruitTree.growthStage.Value < FruitTree.treeStage)
+                    {
+                        fruitTree.growthStage.Value = FruitTree.treeStage;
+                        fruitTree.daysUntilMature.Value = 0;
+                        count++;
+                    }
+                }
+            }
+
+            Game1.addHUDMessage(new HUDMessage($"Grew {count} fruit trees!", HUDMessage.achievement_type));
+            ModEntry.ModMonitor.Log($"[PlayerCheats] Grew {count} fruit trees to full maturity.", LogLevel.Info);
+        }
+
+        /// <summary>Water all tilled fields on the farm.</summary>
+        public void WaterAllFields()
+        {
+            if (!Context.IsWorldReady)
+                return;
+
+            int count = 0;
+            foreach (var location in Game1.locations)
+            {
+                foreach (var pair in location.terrainFeatures.Pairs)
+                {
+                    if (pair.Value is HoeDirt dirt && dirt.state.Value != HoeDirt.watered)
+                    {
+                        dirt.state.Value = HoeDirt.watered;
+                        count++;
+                    }
+                }
+            }
+
+            Game1.addHUDMessage(new HUDMessage($"Watered {count} tiles!", HUDMessage.achievement_type));
+            ModEntry.ModMonitor.Log($"[PlayerCheats] Watered {count} tilled tiles.", LogLevel.Info);
+        }
+
+        /// <summary>Unlock all crafting and cooking recipes for the player.</summary>
+        public void UnlockAllRecipes()
+        {
+            if (!Context.IsWorldReady)
+                return;
+
+            int craftingCount = UnlockAllCraftingRecipesInternal();
+            int cookingCount = UnlockAllCookingRecipesInternal();
+
+            Game1.addHUDMessage(new HUDMessage($"Unlocked {craftingCount} crafting + {cookingCount} cooking recipes!", HUDMessage.achievement_type));
+            ModEntry.ModMonitor.Log($"[PlayerCheats] Unlocked {craftingCount} crafting and {cookingCount} cooking recipes.", LogLevel.Info);
+        }
+
+        /// <summary>Unlock all crafting recipes for the player.</summary>
+        public void UnlockAllCraftingRecipes()
+        {
+            if (!Context.IsWorldReady)
+                return;
+
+            int count = UnlockAllCraftingRecipesInternal();
+            Game1.addHUDMessage(new HUDMessage($"Unlocked {count} crafting recipes!", HUDMessage.achievement_type));
+            ModEntry.ModMonitor.Log($"[PlayerCheats] Unlocked {count} crafting recipes.", LogLevel.Info);
+        }
+
+        /// <summary>Unlock all cooking recipes for the player.</summary>
+        public void UnlockAllCookingRecipes()
+        {
+            if (!Context.IsWorldReady)
+                return;
+
+            int count = UnlockAllCookingRecipesInternal();
+            Game1.addHUDMessage(new HUDMessage($"Unlocked {count} cooking recipes!", HUDMessage.achievement_type));
+            ModEntry.ModMonitor.Log($"[PlayerCheats] Unlocked {count} cooking recipes.", LogLevel.Info);
+        }
+
+        /// <summary>Unlock all inventory slots (maximize backpack size).</summary>
+        public void UnlockAllInventorySlots()
+        {
+            if (!Context.IsWorldReady)
+                return;
+
+            var player = Game1.player;
+            int maxSlots = 36; // Maximum backpack size (3 rows of 12)
+
+            if (player.MaxItems >= maxSlots)
+            {
+                Game1.addHUDMessage(new HUDMessage("Inventory already at maximum size!", HUDMessage.error_type));
+                return;
+            }
+
+            int added = maxSlots - player.MaxItems;
+            player.increaseBackpackSize(added);
+
+            Game1.addHUDMessage(new HUDMessage($"Unlocked {added} inventory slots!", HUDMessage.achievement_type));
+            ModEntry.ModMonitor.Log($"[PlayerCheats] Increased backpack from {maxSlots - added} to {maxSlots} slots.", LogLevel.Info);
+        }
+
+        /// <summary>Internal helper to unlock all crafting recipes.</summary>
+        private int UnlockAllCraftingRecipesInternal()
+        {
+            int count = 0;
+            var player = Game1.player;
+
+            // Ensure crafting recipes are loaded
+            if (CraftingRecipe.craftingRecipes == null)
+                CraftingRecipe.InitShared();
+
+            foreach (string recipeName in CraftingRecipe.craftingRecipes.Keys)
+            {
+                if (player.craftingRecipes.TryAdd(recipeName, 0))
+                    count++;
+            }
+
+            return count;
+        }
+
+        /// <summary>Internal helper to unlock all cooking recipes.</summary>
+        private int UnlockAllCookingRecipesInternal()
+        {
+            int count = 0;
+            var player = Game1.player;
+
+            // Ensure cooking recipes are loaded
+            if (CraftingRecipe.cookingRecipes == null)
+                CraftingRecipe.InitShared();
+
+            foreach (string recipeName in CraftingRecipe.cookingRecipes.Keys)
+            {
+                if (player.cookingRecipes.TryAdd(recipeName, 0))
+                    count++;
+            }
+
+            return count;
+        }
 
         /// <summary>Refresh the list of available warp locations from the current game.</summary>
         public void RefreshWarpLocations()
@@ -503,10 +704,16 @@ namespace PlayerCheats
             NeverPassOut = config.NeverPassOut;
 
             MaxAnimalHappiness = config.MaxAnimalHappiness;
+            BuyAnimalsFullyMatured = config.BuyAnimalsFullyMatured;
+            AutoPetAnimals = config.AutoPetAnimals;
+            AutoFeedAnimals = config.AutoFeedAnimals;
+            InfiniteHay = config.InfiniteHay;
+            AnimalsProduceDaily = config.AnimalsProduceDaily;
+            FarmAnimalHeartsOverride = config.FarmAnimalHeartsOverride;
+            PetHeartsOverride = config.PetHeartsOverride;
             CropsNeverDie = config.CropsNeverDie;
-            InstantCropGrowth = config.InstantCropGrowth;
-            InstantTreeGrowth = config.InstantTreeGrowth;
-            InstantFruitTreeGrowth = config.InstantFruitTreeGrowth;
+            PreventDebrisSpawn = config.PreventDebrisSpawn;
+            TilledSoilDontDecay = config.TilledSoilDontDecay;
 
             // World Cheats
             InstantBuildConstruction = config.InstantBuildConstruction;
@@ -589,10 +796,16 @@ namespace PlayerCheats
             config.NeverPassOut = NeverPassOut;
 
             config.MaxAnimalHappiness = MaxAnimalHappiness;
+            config.BuyAnimalsFullyMatured = BuyAnimalsFullyMatured;
+            config.AutoPetAnimals = AutoPetAnimals;
+            config.AutoFeedAnimals = AutoFeedAnimals;
+            config.InfiniteHay = InfiniteHay;
+            config.AnimalsProduceDaily = AnimalsProduceDaily;
+            config.FarmAnimalHeartsOverride = FarmAnimalHeartsOverride;
+            config.PetHeartsOverride = PetHeartsOverride;
             config.CropsNeverDie = CropsNeverDie;
-            config.InstantCropGrowth = InstantCropGrowth;
-            config.InstantTreeGrowth = InstantTreeGrowth;
-            config.InstantFruitTreeGrowth = InstantFruitTreeGrowth;
+            config.PreventDebrisSpawn = PreventDebrisSpawn;
+            config.TilledSoilDontDecay = TilledSoilDontDecay;
 
             // World Cheats
             config.InstantBuildConstruction = InstantBuildConstruction;
@@ -680,6 +893,12 @@ namespace PlayerCheats
                 4 => "Iridium",
                 _ => $"{v}"
             };
+        };
+
+        public Func<float, string> FormatHearts { get; } = value =>
+        {
+            int v = (int)value;
+            return v < 0 ? "Disabled" : $"{v} ♥";
         };
 
         public Func<float, string> FormatPercent { get; } = value => $"{value * 100:F0}%";

@@ -97,22 +97,51 @@ namespace PlayerCheats
             }
         }
 
+        // Store original weapon crit values
+        private static Dictionary<MeleeWeapon, float> originalCritChances = new Dictionary<MeleeWeapon, float>();
+        private static Dictionary<MeleeWeapon, float> originalCritMultipliers = new Dictionary<MeleeWeapon, float>();
+
         /// <summary>Patch to force 100% crit chance on weapons.</summary>
         public static void MeleeWeapon_DoDamage_Prefix(MeleeWeapon __instance)
         {
             if (!Context.IsWorldReady || !ModEntry.Config.ModEnabled)
                 return;
 
+            // Store original values if not already stored
+            if (!originalCritChances.ContainsKey(__instance))
+            {
+                originalCritChances[__instance] = __instance.critChance.Value;
+            }
+            if (!originalCritMultipliers.ContainsKey(__instance))
+            {
+                originalCritMultipliers[__instance] = __instance.critMultiplier.Value;
+            }
+
             if (ModEntry.Config.AlwaysCrit)
             {
                 __instance.critChance.Value = 1.0f;
             }
+            else if (originalCritChances.TryGetValue(__instance, out float origChance))
+            {
+                __instance.critChance.Value = origChance;
+            }
 
             if (ModEntry.Config.CritDamageMultiplier != 1.0f)
             {
-                __instance.critMultiplier.Value *= ModEntry.Config.CritDamageMultiplier;
+                // Apply multiplier to original value, not current (to avoid compounding)
+                if (originalCritMultipliers.TryGetValue(__instance, out float origMult))
+                {
+                    __instance.critMultiplier.Value = origMult * ModEntry.Config.CritDamageMultiplier;
+                }
+            }
+            else if (originalCritMultipliers.TryGetValue(__instance, out float origMult))
+            {
+                __instance.critMultiplier.Value = origMult;
             }
         }
+
+        // Store original tool efficiency values
+        private static Dictionary<Tool, bool> originalToolEfficiency = new Dictionary<Tool, bool>();
 
         /// <summary>Patch to mark tools as efficient (no stamina cost) and enable one-hit tools.</summary>
         public static void Tool_DoFunction_Prefix(Tool __instance, GameLocation location, int x, int y, int power, Farmer who)
@@ -120,9 +149,19 @@ namespace PlayerCheats
             if (!Context.IsWorldReady || who != Game1.player || !ModEntry.Config.ModEnabled)
                 return;
 
+            // Store original IsEfficient if not already tracked
+            if (!originalToolEfficiency.ContainsKey(__instance))
+            {
+                originalToolEfficiency[__instance] = __instance.IsEfficient;
+            }
+
             if (ModEntry.Config.NoToolStaminaCost)
             {
                 __instance.IsEfficient = true;
+            }
+            else if (originalToolEfficiency.TryGetValue(__instance, out bool origEfficient))
+            {
+                __instance.IsEfficient = origEfficient;
             }
 
             // One Hit Tools: Set additionalPower for instant destruction, or reset to 0 when disabled

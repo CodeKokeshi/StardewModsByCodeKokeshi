@@ -461,5 +461,61 @@ namespace PlayerCheats
                 ModEntry.ModMonitor.Log($"[Mining] Forced ladder spawn at ({x}, {y}) on level {__instance.mineLevel}.", LogLevel.Trace);
             }
         }
+
+        /*********
+        ** Farming - Field Protection
+        *********/
+
+        /// <summary>Prevent weeds, stones, and twigs from spawning when enabled.</summary>
+        public static bool GameLocation_SpawnWeedsAndStones_Prefix(GameLocation __instance)
+        {
+            if (!ModEntry.Config.ModEnabled || !ModEntry.Config.PreventDebrisSpawn)
+                return true;
+
+            // Skip spawning on farm and farm buildings
+            if (__instance is Farm || __instance.GetParentLocation() is Farm)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>Prevent tilled soil from decaying by returning 0% decay chance.</summary>
+        public static void GameLocation_GetDirtDecayChance_Postfix(ref double __result)
+        {
+            if (!ModEntry.Config.ModEnabled || !ModEntry.Config.TilledSoilDontDecay)
+                return;
+
+            __result = 0.0;
+        }
+
+        /*********
+        ** Animals & Pets
+        *********/
+
+        /// <summary>Track the animal being purchased before receiveLeftClick.</summary>
+        public static void PurchaseAnimalsMenu_ReceiveLeftClick_Prefix(PurchaseAnimalsMenu __instance, ref FarmAnimal? __state)
+        {
+            __state = __instance.animalBeingPurchased;
+        }
+
+        /// <summary>Make purchased animals fully grown immediately.</summary>
+        public static void PurchaseAnimalsMenu_ReceiveLeftClick_Postfix(PurchaseAnimalsMenu __instance, FarmAnimal? __state)
+        {
+            if (!ModEntry.Config.ModEnabled || !ModEntry.Config.BuyAnimalsFullyMatured)
+                return;
+
+            FarmAnimal? purchased = __instance.animalBeingPurchased;
+            if (purchased == null)
+                return;
+
+            // Only apply when a new animal was just selected for purchase
+            if (ReferenceEquals(purchased, __state))
+                return;
+
+            purchased.growFully();
+            ModEntry.ModMonitor.Log($"[Animals] Made {purchased.Name} ({purchased.type.Value}) fully matured.", LogLevel.Trace);
+        }
     }
 }

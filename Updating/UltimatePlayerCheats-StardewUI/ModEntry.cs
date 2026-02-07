@@ -9,6 +9,7 @@ using StardewModdingAPI.Events;
 using StardewUI.Framework;
 using StardewValley;
 using StardewValley.Buildings;
+using StardewValley.Characters;
 using StardewValley.Locations;
 using StardewValley.Menus;
 using StardewValley.Monsters;
@@ -377,6 +378,28 @@ namespace PlayerCheats
                 description: "Friendship.GiftsThisWeek getter"
             );
 
+            // === Prevent Debris Spawn (weeds, stones, twigs) ===
+            TryPatch(
+                original: AccessTools.Method(typeof(GameLocation), nameof(GameLocation.spawnWeedsAndStones)),
+                prefix: new HarmonyMethod(typeof(WorldPatches), nameof(WorldPatches.GameLocation_SpawnWeedsAndStones_Prefix)),
+                description: "GameLocation.spawnWeedsAndStones"
+            );
+
+            // === Tilled Soil Don't Decay ===
+            TryPatch(
+                original: AccessTools.Method(typeof(GameLocation), nameof(GameLocation.GetDirtDecayChance)),
+                postfix: new HarmonyMethod(typeof(WorldPatches), nameof(WorldPatches.GameLocation_GetDirtDecayChance_Postfix)),
+                description: "GameLocation.GetDirtDecayChance"
+            );
+
+            // === Buy Animals Fully Matured ===
+            TryPatch(
+                original: AccessTools.Method(typeof(PurchaseAnimalsMenu), nameof(PurchaseAnimalsMenu.receiveLeftClick)),
+                prefix: new HarmonyMethod(typeof(WorldPatches), nameof(WorldPatches.PurchaseAnimalsMenu_ReceiveLeftClick_Prefix)),
+                postfix: new HarmonyMethod(typeof(WorldPatches), nameof(WorldPatches.PurchaseAnimalsMenu_ReceiveLeftClick_Postfix)),
+                description: "PurchaseAnimalsMenu.receiveLeftClick"
+            );
+
             Monitor.Log("All Harmony patches applied!", LogLevel.Debug);
         }
 
@@ -509,7 +532,7 @@ namespace PlayerCheats
                 player.health = Math.Min(player.maxHealth, player.health + (int)Config.HealthRegenPerSecond);
             }
 
-            // Max animal happiness
+            // Max animal happiness (only happiness, not friendship)
             if (Config.MaxAnimalHappiness)
             {
                 var farm = Game1.getFarm();
@@ -518,7 +541,49 @@ namespace PlayerCheats
                     foreach (var animal in farm.getAllFarmAnimals())
                     {
                         animal.happiness.Value = 255;
-                        animal.friendshipTowardFarmer.Value = 1000;
+                    }
+                }
+            }
+
+            // Infinite hay - keep all silos full
+            if (Config.InfiniteHay)
+            {
+                foreach (var location in Game1.locations)
+                {
+                    int capacity = location.GetHayCapacity();
+                    if (capacity > 0 && location.piecesOfHay.Value < capacity)
+                    {
+                        location.piecesOfHay.Value = capacity;
+                    }
+                }
+            }
+
+            // Farm animal hearts override
+            if (Config.FarmAnimalHeartsOverride >= 0)
+            {
+                int targetFriendship = Config.FarmAnimalHeartsOverride * 100;
+                var farm = Game1.getFarm();
+                if (farm != null)
+                {
+                    foreach (var animal in farm.getAllFarmAnimals())
+                    {
+                        animal.friendshipTowardFarmer.Value = targetFriendship;
+                    }
+                }
+            }
+
+            // Pet hearts override
+            if (Config.PetHeartsOverride >= 0)
+            {
+                int targetFriendship = Config.PetHeartsOverride * 100;
+                foreach (var location in Game1.locations)
+                {
+                    foreach (var character in location.characters)
+                    {
+                        if (character is Pet pet)
+                        {
+                            pet.friendshipTowardFarmer.Value = targetFriendship;
+                        }
                     }
                 }
             }
@@ -527,52 +592,6 @@ namespace PlayerCheats
             if (Config.AlwaysMaxLuck)
             {
                 Game1.player.team.sharedDailyLuck.Value = 0.12;
-            }
-
-            // Real-time instant crop growth (all locations)
-            if (Config.InstantCropGrowth)
-            {
-                foreach (var location in Game1.locations)
-                {
-                    foreach (var pair in location.terrainFeatures.Pairs)
-                    {
-                        if (pair.Value is HoeDirt dirt && dirt.crop != null && !dirt.crop.fullyGrown.Value)
-                        {
-                            dirt.crop.growCompletely();
-                        }
-                    }
-                }
-            }
-
-            // Real-time instant tree growth (regular trees)
-            if (Config.InstantTreeGrowth)
-            {
-                foreach (var location in Game1.locations)
-                {
-                    foreach (var pair in location.terrainFeatures.Pairs)
-                    {
-                        if (pair.Value is Tree tree && tree.growthStage.Value < Tree.treeStage)
-                        {
-                            tree.growthStage.Value = Tree.treeStage;
-                        }
-                    }
-                }
-            }
-
-            // Real-time instant fruit tree growth
-            if (Config.InstantFruitTreeGrowth)
-            {
-                foreach (var location in Game1.locations)
-                {
-                    foreach (var pair in location.terrainFeatures.Pairs)
-                    {
-                        if (pair.Value is FruitTree fruitTree && fruitTree.growthStage.Value < FruitTree.treeStage)
-                        {
-                            fruitTree.growthStage.Value = FruitTree.treeStage;
-                            fruitTree.daysUntilMature.Value = 0;
-                        }
-                    }
-                }
             }
 
             // Force forage quality on world objects
@@ -614,6 +633,56 @@ namespace PlayerCheats
                 WorldPatches.CompleteCommunityUpgrades();
             if (Config.InstantToolUpgrade)
                 CompleteToolUpgrade();
+
+            // Auto-pet all farm animals
+            if (Config.AutoPetAnimals)
+            {
+                var farm = Game1.getFarm();
+                if (farm != null)
+                {
+                    int count = 0;
+                    foreach (var animal in farm.getAllFarmAnimals())
+                    {
+                        animal.wasPet.Value = true;
+                        count++;
+                    }
+                    if (count > 0)
+                        Monitor.Log($"[Animals] Auto-petted {count} farm animals.", LogLevel.Trace);
+                }
+            }
+
+            // Auto-feed all barn/coop animals (fill troughs)
+            if (Config.AutoFeedAnimals)
+            {
+                var farm = Game1.getFarm();
+                if (farm != null)
+                {
+                    foreach (var building in farm.buildings)
+                    {
+                        var indoors = building.GetIndoors();
+                        if (indoors is AnimalHouse animalHouse)
+                        {
+                            // Fill all feeding benches with hay
+                            animalHouse.feedAllAnimals();
+                            Monitor.Log($"[Animals] Auto-fed animals in {building.buildingType.Value}.", LogLevel.Trace);
+                        }
+                    }
+                }
+            }
+
+            // Animals produce daily - reset produce timers
+            if (Config.AnimalsProduceDaily)
+            {
+                var farm = Game1.getFarm();
+                if (farm != null)
+                {
+                    foreach (var animal in farm.getAllFarmAnimals())
+                    {
+                        // Set daysSinceLastLay high enough that they'll produce today
+                        animal.daysSinceLastLay.Value = 99;
+                    }
+                }
+            }
         }
 
         private void OnTimeChanged(object? sender, TimeChangedEventArgs e)

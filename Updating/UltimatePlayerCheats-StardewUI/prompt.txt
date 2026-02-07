@@ -18,7 +18,7 @@ PHASE 1: Tools & Crafting Updates (Completed)
    - No Resource Need for Upgrade (NEW toggle) - upgrade tools without materials at blacksmith (Skipped)
 
 ================================================================================
-PHASE 2: Farming Updates 
+PHASE 2: Farming Updates  (Completed)
 ================================================================================
 
 6. Farming
@@ -30,11 +30,11 @@ PHASE 2: Farming Updates
    - Tilled Area Don't Decay (NEW toggle)
 
 ================================================================================
-PHASE 3: Animals & Pets (NEW Category)
+PHASE 3: Animals & Pets (NEW Category) (Completed)
 ================================================================================
 
 7. Animals & Pets
-   - Max Animal Happiness (convert from toggle to slider)
+   - Max Animal Happiness (toggle)
    - Buy Animals Fully Matured (NEW toggle - port from BuyAnimalsFullyMatured mod)
    - Auto-Pet Animals (NEW toggle)
    - Auto-Feed Animals (NEW toggle)
@@ -44,7 +44,7 @@ PHASE 3: Animals & Pets (NEW Category)
    - Customizable Pet Hearts (NEW slider - port from CustomAnimalHearts, affects only pets)
 
 ================================================================================
-PHASE 4: Items & Inventory Updates
+PHASE 4: Items & Inventory Updates (Completed)
 ================================================================================
 
 9. Items & Inventory - Remember the rules implement only if possible.
