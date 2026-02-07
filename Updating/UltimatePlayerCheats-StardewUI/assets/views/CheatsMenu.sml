@@ -514,9 +514,58 @@
                 <cheat-toggle label="Freeze Time Indoors"
                               tooltip="Time stops when you're inside buildings."
                               checked={<>FreezeTimeIndoors} />
+                <cheat-toggle label="Freeze Time in Mines"
+                              tooltip="Time stops while inside mines, skull cavern, and volcano dungeon."
+                              checked={<>FreezeTimeMines} />
                 <cheat-toggle label="Never Pass Out"
                               tooltip="Stay awake past 2am without passing out."
                               checked={<>NeverPassOut} />
+
+                <section-header text="Adjust Time" />
+                <lane layout="stretch content" margin="16, 4" vertical-content-alignment="middle">
+                    <label layout="320px content"
+                           margin="0, 6"
+                           text="Subtract 10 Minutes"
+                           tooltip="Go back 10 minutes in game time."
+                           shadow-alpha="0.6"
+                           shadow-color="#4448"
+                           shadow-offset="-1, 1" />
+                    <button layout="100px 36px"
+                            text="-10 min"
+                            tooltip="Subtract 10 minutes from the current time."
+                            hover-background={@Mods/StardewUI/Sprites/ButtonLight}
+                            left-click=|SubtractTime()| />
+                </lane>
+                <lane layout="stretch content" margin="16, 4" vertical-content-alignment="middle">
+                    <label layout="320px content"
+                           margin="0, 6"
+                           text="Add 10 Minutes"
+                           tooltip="Advance time by 10 minutes."
+                           shadow-alpha="0.6"
+                           shadow-color="#4448"
+                           shadow-offset="-1, 1" />
+                    <button layout="100px 36px"
+                            text="+10 min"
+                            tooltip="Add 10 minutes to the current time."
+                            hover-background={@Mods/StardewUI/Sprites/ButtonLight}
+                            left-click=|AddTime()| />
+                </lane>
+                <lane layout="stretch content" margin="8, 4">
+                    <lane layout="200px content" vertical-content-alignment="middle">
+                        <label text="Set Current Time" />
+                    </lane>
+                    <slider layout="250px content"
+                            min="600" max="2600" interval="10"
+                            value={<>SetTimeTarget}
+                            value-format={:FormatTime}
+                            tooltip="Choose the time to set." />
+                    <button layout="100px 36px"
+                            margin="16, 0, 0, 0"
+                            text="Set"
+                            hover-background={@Mods/StardewUI/Sprites/ButtonLight}
+                            tooltip="Set the current game time to the selected value."
+                            left-click=|SetCurrentTime()| />
+                </lane>
 
                 <section-header text="Luck" />
                 <cheat-toggle label="Always Max Luck"
@@ -529,6 +578,61 @@
                               min="0" max="5" interval="1"
                               value={<>WeatherIndex}
                               value-format={:FormatWeather} />
+
+                <section-header text="Bypass All Doors" />
+                <cheat-toggle label="Bypass Friendship Doors"
+                              tooltip="Bypass NPC bedroom doors that require 2+ hearts friendship."
+                              checked={<>BypassFriendshipDoors} />
+                <cheat-toggle label="Bypass Time Restrictions"
+                              tooltip="Enter buildings even when they're closed (shop hours)."
+                              checked={<>BypassTimeRestrictions} />
+                <cheat-toggle label="Bypass Festival Closures"
+                              tooltip="Enter buildings during festivals when everything is normally closed."
+                              checked={<>BypassFestivalClosures} />
+                <cheat-toggle label="Bypass Conditional Doors"
+                              tooltip="Bypass conditional doors that use Game State Queries."
+                              checked={<>BypassConditionalDoors} />
+                <cheat-toggle label="Bypass Special Closures"
+                              tooltip="Bypass special closures like Pierre's Wednesday closure."
+                              checked={<>BypassSpecialClosures} />
+
+                <section-header text="Quests" />
+                <cheat-toggle label="Auto-Accept Quests"
+                              tooltip="Automatically accept the daily quest from the Help Wanted board."
+                              checked={<>AutoAcceptQuests} />
+                <cheat-toggle label="Infinite Quest Time"
+                              tooltip="Quest timers never expire. Quests won't fail from running out of time."
+                              checked={<>InfiniteQuestTime} />
+
+                <section-header text="Completion Actions" />
+                <lane layout="stretch content" margin="16, 4" vertical-content-alignment="middle">
+                    <label layout="320px content"
+                           margin="0, 6"
+                           text="Complete Community Bundle"
+                           tooltip="Complete all community center bundles instantly."
+                           shadow-alpha="0.6"
+                           shadow-color="#4448"
+                           shadow-offset="-1, 1" />
+                    <button layout="100px 36px"
+                            text="Apply"
+                            tooltip="Complete all community center bundles."
+                            hover-background={@Mods/StardewUI/Sprites/ButtonLight}
+                            left-click=|CompleteCommunityBundle()| />
+                </lane>
+                <lane layout="stretch content" margin="16, 4" vertical-content-alignment="middle">
+                    <label layout="320px content"
+                           margin="0, 6"
+                           text="Complete Special Orders"
+                           tooltip="Complete all active special orders instantly."
+                           shadow-alpha="0.6"
+                           shadow-color="#4448"
+                           shadow-offset="-1, 1" />
+                    <button layout="100px 36px"
+                            text="Apply"
+                            tooltip="Complete all active special orders."
+                            hover-background={@Mods/StardewUI/Sprites/ButtonLight}
+                            left-click=|CompleteSpecialOrders()| />
+                </lane>
             </lane>
         </scrollable>
 

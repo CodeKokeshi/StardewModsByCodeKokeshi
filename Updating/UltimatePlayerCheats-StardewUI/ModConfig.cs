@@ -192,8 +192,40 @@ namespace PlayerCheats
         /// <summary>Freeze time indoors only.</summary>
         public bool FreezeTimeIndoors { get; set; } = false;
 
+        /// <summary>Freeze time only within mines/skull cavern/volcano.</summary>
+        public bool FreezeTimeMines { get; set; } = false;
+
         /// <summary>Never pass out at 2am.</summary>
         public bool NeverPassOut { get; set; } = false;
+
+        /*********
+        ** Bypass All Doors
+        *********/
+
+        /// <summary>Bypass friendship-locked doors (NPC bedrooms requiring 2+ hearts).</summary>
+        public bool BypassFriendshipDoors { get; set; } = false;
+
+        /// <summary>Bypass time-locked doors (shop hours).</summary>
+        public bool BypassTimeRestrictions { get; set; } = false;
+
+        /// <summary>Bypass festival closures (all shops closed during festivals).</summary>
+        public bool BypassFestivalClosures { get; set; } = false;
+
+        /// <summary>Bypass conditional doors (GSQ-based locks).</summary>
+        public bool BypassConditionalDoors { get; set; } = false;
+
+        /// <summary>Bypass special closures (Pierre's Wednesday, etc.).</summary>
+        public bool BypassSpecialClosures { get; set; } = false;
+
+        /*********
+        ** Quests
+        *********/
+
+        /// <summary>Automatically accept the daily quest from the Help Wanted board.</summary>
+        public bool AutoAcceptQuests { get; set; } = false;
+
+        /// <summary>Quest timers never decrease (infinite quest time).</summary>
+        public bool InfiniteQuestTime { get; set; } = false;
 
         /*********
         ** Animals & Pets
@@ -291,5 +323,12 @@ namespace PlayerCheats
 
         /// <summary>Force ladder spawn chance when breaking rocks in mines (0 = disabled, 100 = always spawn).</summary>
         public int ForceLadderChance { get; set; } = 0;
+
+        /*********
+        ** Time Override (not persisted, action-only)
+        *********/
+
+        /// <summary>Current time override target for the Set Time slider (600-2600). Not persisted.</summary>
+        public int SetTimeTarget { get; set; } = 600;
     }
 }

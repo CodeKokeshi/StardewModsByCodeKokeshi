@@ -62,7 +62,7 @@ PHASE 5: Economy Updates (Completed)
    - Add Casino Coins (NEW input field + button) - implement only if possible
 
 ================================================================================
-PHASE 6: Buildings & Machines Updates
+PHASE 6: Buildings & Machines Updates (Done)
 ================================================================================
 
 11. Buildings & Machines

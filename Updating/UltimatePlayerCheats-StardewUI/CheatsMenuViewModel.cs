@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework.Graphics;
 using PropertyChanged.SourceGenerator;
 using StardewModdingAPI;
 using StardewValley;
+using StardewValley.Locations;
 using StardewValley.TerrainFeatures;
 
 namespace PlayerCheats
@@ -173,7 +174,28 @@ namespace PlayerCheats
         *********/
         [Notify] private bool freezeTime;
         [Notify] private bool freezeTimeIndoors;
+        [Notify] private bool freezeTimeMines;
         [Notify] private bool neverPassOut;
+
+        /*********
+        ** Bypass All Doors
+        *********/
+        [Notify] private bool bypassFriendshipDoors;
+        [Notify] private bool bypassTimeRestrictions;
+        [Notify] private bool bypassFestivalClosures;
+        [Notify] private bool bypassConditionalDoors;
+        [Notify] private bool bypassSpecialClosures;
+
+        /*********
+        ** Quests
+        *********/
+        [Notify] private bool autoAcceptQuests;
+        [Notify] private bool infiniteQuestTime;
+
+        /*********
+        ** Time Control
+        *********/
+        [Notify] private float setTimeTarget = 600;
 
         /*********
         ** Animals & Pets
@@ -599,6 +621,171 @@ namespace PlayerCheats
         }
 
         /*********
+        ** World Actions — Phase 7
+        *********/
+
+        /// <summary>Complete all community center bundles.</summary>
+        public void CompleteCommunityBundle()
+        {
+            if (!Context.IsWorldReady)
+                return;
+
+            var cc = Game1.getLocationFromName("CommunityCenter") as StardewValley.Locations.CommunityCenter;
+            if (cc == null)
+            {
+                Game1.addHUDMessage(new HUDMessage("Community Center not found!", HUDMessage.error_type));
+                return;
+            }
+
+            // Check if already completed via JojaMart route
+            if (Game1.MasterPlayer.mailReceived.Contains("JojaMember"))
+            {
+                Game1.addHUDMessage(new HUDMessage("Joja route active - bundles not applicable!", HUDMessage.error_type));
+                return;
+            }
+
+            int completedBundles = 0;
+            var bundleData = Game1.netWorldState.Value.Bundles;
+
+            foreach (var key in bundleData.Keys)
+            {
+                bool[] slots = bundleData[key];
+                bool anyChanged = false;
+                for (int i = 0; i < slots.Length; i++)
+                {
+                    if (!slots[i])
+                    {
+                        slots[i] = true;
+                        anyChanged = true;
+                    }
+                }
+                if (anyChanged)
+                {
+                    bundleData[key] = slots;
+                    completedBundles++;
+                }
+
+                // Mark bundle reward as collected
+                if (!Game1.netWorldState.Value.BundleRewards.ContainsKey(key) || !Game1.netWorldState.Value.BundleRewards[key])
+                {
+                    Game1.netWorldState.Value.BundleRewards[key] = true;
+                }
+            }
+
+            // Mark all areas as complete
+            string[] areaMailFlags = { "ccPantry", "ccCraftsRoom", "ccFishTank", "ccBoilerRoom", "ccVault", "ccBulletin" };
+            for (int area = 0; area < 6; area++)
+            {
+                if (!cc.areasComplete[area])
+                {
+                    cc.markAreaAsComplete(area);
+                }
+                if (!Game1.MasterPlayer.mailReceived.Contains(areaMailFlags[area]))
+                {
+                    Game1.MasterPlayer.mailReceived.Add(areaMailFlags[area]);
+                }
+            }
+
+            // Mark community center as complete
+            if (!Game1.MasterPlayer.mailReceived.Contains("ccIsComplete"))
+            {
+                Game1.MasterPlayer.mailReceived.Add("ccIsComplete");
+            }
+
+            Game1.addHUDMessage(new HUDMessage($"Completed {completedBundles} bundles! All areas done!", HUDMessage.achievement_type));
+            ModEntry.ModMonitor.Log($"[World] Completed all community center bundles ({completedBundles} updated).", LogLevel.Info);
+        }
+
+        /// <summary>Complete all active special orders.</summary>
+        public void CompleteSpecialOrders()
+        {
+            if (!Context.IsWorldReady)
+                return;
+
+            int count = 0;
+            foreach (var order in Game1.player.team.specialOrders)
+            {
+                if (order.questState.Value == StardewValley.SpecialOrders.SpecialOrderStatus.InProgress)
+                {
+                    // Complete all objectives
+                    foreach (var objective in order.objectives)
+                    {
+                        objective.SetCount(objective.GetMaxCount());
+                    }
+                    order.CheckCompletion();
+                    count++;
+                }
+            }
+
+            if (count > 0)
+            {
+                Game1.addHUDMessage(new HUDMessage($"Completed {count} special orders!", HUDMessage.achievement_type));
+                ModEntry.ModMonitor.Log($"[World] Completed {count} active special orders.", LogLevel.Info);
+            }
+            else
+            {
+                Game1.addHUDMessage(new HUDMessage("No active special orders to complete!", HUDMessage.error_type));
+            }
+        }
+
+        /// <summary>Subtract 10 minutes from current time.</summary>
+        public void SubtractTime()
+        {
+            if (!Context.IsWorldReady)
+                return;
+
+            int newTime = Game1.timeOfDay - 10;
+            // Handle minutes rollover: if minutes become negative (e.g., 1200 - 10 = 1190 → 1150)
+            if (newTime % 100 >= 60)
+                newTime = newTime - newTime % 100 + 50;
+            if (newTime < 600)
+                newTime = 600;
+
+            Game1.timeOfDay = newTime;
+            Game1.gameTimeInterval = 0;
+            ModEntry.ModMonitor.Log($"[World] Time set to {newTime}.", LogLevel.Trace);
+        }
+
+        /// <summary>Add 10 minutes to current time.</summary>
+        public void AddTime()
+        {
+            if (!Context.IsWorldReady)
+                return;
+
+            int newTime = Game1.timeOfDay + 10;
+            // Handle minutes rollover: if minutes reach 60 (e.g., 1250 + 10 = 1260 → 1300)
+            if (newTime % 100 >= 60)
+                newTime = newTime - newTime % 100 + 100;
+            if (newTime > 2600)
+                newTime = 2600;
+
+            Game1.timeOfDay = newTime;
+            Game1.gameTimeInterval = 0;
+            ModEntry.ModMonitor.Log($"[World] Time set to {newTime}.", LogLevel.Trace);
+        }
+
+        /// <summary>Set current time to the slider value.</summary>
+        public void SetCurrentTime()
+        {
+            if (!Context.IsWorldReady)
+                return;
+
+            int target = (int)SetTimeTarget;
+            // Clamp and round to nearest 10-minute increment
+            target = Math.Clamp(target, 600, 2600);
+            // Round to nearest 10
+            target = (target / 10) * 10;
+            // Fix rollover
+            if (target % 100 >= 60)
+                target = target - target % 100 + 100;
+
+            Game1.timeOfDay = target;
+            Game1.gameTimeInterval = 0;
+            Game1.addHUDMessage(new HUDMessage($"Time set to {Game1.getTimeOfDayString(target)}!", HUDMessage.achievement_type));
+            ModEntry.ModMonitor.Log($"[World] Time set to {target}.", LogLevel.Info);
+        }
+
+        /*********
         ** Constructor — load from config
         *********/
         public CheatsMenuViewModel()
@@ -701,7 +888,22 @@ namespace PlayerCheats
 
             FreezeTime = config.FreezeTime;
             FreezeTimeIndoors = config.FreezeTimeIndoors;
+            FreezeTimeMines = config.FreezeTimeMines;
             NeverPassOut = config.NeverPassOut;
+
+            // Bypass All Doors
+            BypassFriendshipDoors = config.BypassFriendshipDoors;
+            BypassTimeRestrictions = config.BypassTimeRestrictions;
+            BypassFestivalClosures = config.BypassFestivalClosures;
+            BypassConditionalDoors = config.BypassConditionalDoors;
+            BypassSpecialClosures = config.BypassSpecialClosures;
+
+            // Quests
+            AutoAcceptQuests = config.AutoAcceptQuests;
+            InfiniteQuestTime = config.InfiniteQuestTime;
+
+            // Time Control
+            SetTimeTarget = config.SetTimeTarget > 0 ? config.SetTimeTarget : 600;
 
             MaxAnimalHappiness = config.MaxAnimalHappiness;
             BuyAnimalsFullyMatured = config.BuyAnimalsFullyMatured;
@@ -793,7 +995,22 @@ namespace PlayerCheats
 
             config.FreezeTime = FreezeTime;
             config.FreezeTimeIndoors = FreezeTimeIndoors;
+            config.FreezeTimeMines = FreezeTimeMines;
             config.NeverPassOut = NeverPassOut;
+
+            // Bypass All Doors
+            config.BypassFriendshipDoors = BypassFriendshipDoors;
+            config.BypassTimeRestrictions = BypassTimeRestrictions;
+            config.BypassFestivalClosures = BypassFestivalClosures;
+            config.BypassConditionalDoors = BypassConditionalDoors;
+            config.BypassSpecialClosures = BypassSpecialClosures;
+
+            // Quests
+            config.AutoAcceptQuests = AutoAcceptQuests;
+            config.InfiniteQuestTime = InfiniteQuestTime;
+
+            // Time Control
+            config.SetTimeTarget = (int)SetTimeTarget;
 
             config.MaxAnimalHappiness = MaxAnimalHappiness;
             config.BuyAnimalsFullyMatured = BuyAnimalsFullyMatured;
@@ -951,5 +1168,18 @@ namespace PlayerCheats
         public Func<float, string> FormatMoney { get; } = value => $"{(int)value:N0}g";
 
         public Func<float, string> FormatQiCoins { get; } = value => $"{(int)value:N0}";
+
+        public Func<float, string> FormatTime { get; } = value =>
+        {
+            int v = (int)value;
+            int hours = v / 100;
+            int minutes = v % 100;
+            // Convert to 12-hour format
+            string period = hours >= 12 && hours < 24 ? "PM" : "AM";
+            if (hours > 24) { hours -= 24; period = "AM"; }
+            int displayHour = hours % 12;
+            if (displayHour == 0) displayHour = 12;
+            return $"{displayHour}:{minutes:D2} {period}";
+        };
     }
 }

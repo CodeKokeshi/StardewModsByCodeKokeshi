@@ -14,6 +14,7 @@ using StardewValley.Locations;
 using StardewValley.Menus;
 using StardewValley.Monsters;
 using StardewValley.Network;
+using StardewValley.Quests;
 using StardewValley.TerrainFeatures;
 using StardewValley.Tools;
 using SObject = StardewValley.Object;
@@ -400,6 +401,36 @@ namespace PlayerCheats
                 description: "PurchaseAnimalsMenu.receiveLeftClick"
             );
 
+            // ==================== PHASE 7: WORLD UPDATES ====================
+
+            // === Bypass All Doors — performAction ===
+            TryPatch(
+                original: AccessTools.Method(typeof(GameLocation), nameof(GameLocation.performAction), new Type[] { typeof(string[]), typeof(Farmer), typeof(xTile.Dimensions.Location) }),
+                prefix: new HarmonyMethod(typeof(WorldPatches), nameof(WorldPatches.GameLocation_PerformAction_Prefix)),
+                description: "GameLocation.performAction (BypassAllDoors)"
+            );
+
+            // === Bypass All Doors — lockedDoorWarp ===
+            TryPatch(
+                original: AccessTools.Method(typeof(GameLocation), nameof(GameLocation.lockedDoorWarp)),
+                prefix: new HarmonyMethod(typeof(WorldPatches), nameof(WorldPatches.GameLocation_LockedDoorWarp_Prefix)),
+                description: "GameLocation.lockedDoorWarp (BypassAllDoors)"
+            );
+
+            // === Bypass All Doors — checkAction ===
+            TryPatch(
+                original: AccessTools.Method(typeof(GameLocation), nameof(GameLocation.checkAction)),
+                prefix: new HarmonyMethod(typeof(WorldPatches), nameof(WorldPatches.GameLocation_CheckAction_Prefix)),
+                description: "GameLocation.checkAction (BypassAllDoors)"
+            );
+
+            // === Freeze Time in Mines (separate prefix from base FreezeTime) ===
+            TryPatch(
+                original: AccessTools.Method(typeof(Game1), nameof(Game1.performTenMinuteClockUpdate)),
+                prefix: new HarmonyMethod(typeof(WorldPatches), nameof(WorldPatches.Game1_PerformTenMinuteClockUpdate_MinesPrefix)),
+                description: "Game1.performTenMinuteClockUpdate (MinesOnly)"
+            );
+
             Monitor.Log("All Harmony patches applied!", LogLevel.Debug);
         }
 
@@ -683,6 +714,29 @@ namespace PlayerCheats
                     }
                 }
             }
+
+            // Auto-accept daily quest from Help Wanted board
+            if (Config.AutoAcceptQuests)
+            {
+                if (Game1.CanAcceptDailyQuest())
+                {
+                    Game1.player.questLog.Add(Game1.questOfTheDay);
+                    Game1.player.acceptedDailyQuest.Set(true);
+                    Monitor.Log("[World] Auto-accepted daily quest.", LogLevel.Trace);
+                }
+            }
+
+            // Infinite quest time - reset all timed quest timers so they never expire
+            if (Config.InfiniteQuestTime)
+            {
+                foreach (var quest in Game1.player.questLog)
+                {
+                    if (quest.IsTimedQuest() && !quest.completed.Value && quest.GetDaysLeft() > 0)
+                    {
+                        quest.daysLeft.Value = Math.Max(quest.daysLeft.Value, 99);
+                    }
+                }
+            }
         }
 
         private void OnTimeChanged(object? sender, TimeChangedEventArgs e)
@@ -692,6 +746,12 @@ namespace PlayerCheats
 
             // Freeze time indoors
             if (Config.FreezeTimeIndoors && !Game1.currentLocation.IsOutdoors)
+            {
+                Game1.timeOfDay = e.OldTime;
+            }
+
+            // Freeze time in mines (backup for when Harmony prefix might not fire)
+            if (Config.FreezeTimeMines && (Game1.currentLocation is MineShaft || Game1.currentLocation is VolcanoDungeon))
             {
                 Game1.timeOfDay = e.OldTime;
             }

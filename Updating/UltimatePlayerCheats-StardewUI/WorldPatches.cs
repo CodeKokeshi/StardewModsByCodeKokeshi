@@ -11,6 +11,7 @@ using StardewValley.Locations;
 using StardewValley.Menus;
 using StardewValley.Network;
 using StardewValley.Network.NetEvents;
+using StardewValley.Quests;
 using SObject = StardewValley.Object;
 
 namespace PlayerCheats
@@ -516,6 +517,236 @@ namespace PlayerCheats
 
             purchased.growFully();
             ModEntry.ModMonitor.Log($"[Animals] Made {purchased.Name} ({purchased.type.Value}) fully matured.", LogLevel.Trace);
+        }
+
+        /*********
+        ** Bypass All Doors
+        *********/
+
+        /// <summary>Bypass door restrictions in performAction (friendship doors, conditional doors).</summary>
+        public static bool GameLocation_PerformAction_Prefix(GameLocation __instance, string[] action, Farmer who, xTile.Dimensions.Location tileLocation, ref bool __result)
+        {
+            if (!ModEntry.Config.ModEnabled)
+                return true;
+
+            try
+            {
+                if (action == null || action.Length == 0) return true;
+
+                string actionType = action[0];
+
+                // Case 1: "Door NpcName" - Friendship-locked bedroom doors
+                if (string.Equals(actionType, "Door", StringComparison.OrdinalIgnoreCase) && action.Length > 1 && !Game1.eventUp)
+                {
+                    if (!ModEntry.Config.BypassFriendshipDoors)
+                        return true;
+
+                    ModEntry.ModMonitor.Log($"[BypassAllDoors] Bypassing friendship Door: {string.Join(" ", action)}", LogLevel.Debug);
+                    Rumble.rumble(0.1f, 100f);
+
+                    for (int i = 1; i < action.Length; i++)
+                    {
+                        string mailKey = "doorUnlock" + action[i];
+                        if (!Game1.player.mailReceived.Contains(mailKey))
+                            Game1.player.mailReceived.Add(mailKey);
+                    }
+
+                    __instance.openDoor(tileLocation, playSound: true);
+                    __result = true;
+                    return false;
+                }
+
+                // Case 2: "ConditionalDoor" - GSQ-based conditional doors
+                if (string.Equals(actionType, "ConditionalDoor", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!ModEntry.Config.BypassConditionalDoors)
+                        return true;
+
+                    ModEntry.ModMonitor.Log($"[BypassAllDoors] Bypassing ConditionalDoor", LogLevel.Debug);
+                    __instance.openDoor(tileLocation, playSound: true);
+                    __result = true;
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                ModEntry.ModMonitor.Log($"[BypassAllDoors] Error in performAction: {ex.Message}", LogLevel.Error);
+            }
+
+            return true;
+        }
+
+        /// <summary>Bypass lockedDoorWarp restrictions (time, friendship, festival, special closures).</summary>
+        public static bool GameLocation_LockedDoorWarp_Prefix(GameLocation __instance, Point tile, string locationName, int openTime, int closeTime, string npcName, int minFriendship)
+        {
+            if (!ModEntry.Config.ModEnabled)
+                return true;
+
+            try
+            {
+                bool bypassFestival = ModEntry.Config.BypassFestivalClosures;
+                bool bypassSpecial = ModEntry.Config.BypassSpecialClosures;
+                bool bypassTime = ModEntry.Config.BypassTimeRestrictions;
+                bool bypassFriendship = ModEntry.Config.BypassFriendshipDoors;
+
+                if (!bypassFestival && !bypassSpecial && !bypassTime && !bypassFriendship)
+                    return true;
+
+                // Festival closure check
+                if (GameLocation.AreStoresClosedForFestival() && __instance.InValleyContext())
+                {
+                    if (!bypassFestival)
+                    {
+                        Game1.drawObjectDialogue(Game1.parseText(Game1.content.LoadString("Strings\\Locations:FestivalDay_DoorLocked")));
+                        return false;
+                    }
+                    ModEntry.ModMonitor.Log($"[BypassAllDoors] Bypassing festival closure for {locationName}", LogLevel.Debug);
+                }
+
+                // Pierre's Wednesday special closure
+                bool town_key_applies = Game1.player.HasTownKey;
+                if (locationName == "SeedShop" && Game1.shortDayNameFromDayOfSeason(Game1.dayOfMonth).Equals("Wed") && !Utility.HasAnyPlayerSeenEvent("191393") && !town_key_applies)
+                {
+                    if (!bypassSpecial)
+                    {
+                        Game1.drawObjectDialogue(Game1.parseText(Game1.content.LoadString("Strings\\Locations:SeedShop_LockedWed")));
+                        return false;
+                    }
+                    ModEntry.ModMonitor.Log($"[BypassAllDoors] Bypassing Pierre's Wednesday closure", LogLevel.Debug);
+                }
+
+                // Adjust Willy's hours
+                int actualOpenTime = openTime;
+                if (locationName == "FishShop" && Game1.player.mailReceived.Contains("willyHours"))
+                    actualOpenTime = 800;
+
+                // Town key logic
+                if (town_key_applies)
+                {
+                    if (!__instance.InValleyContext())
+                        town_key_applies = false;
+                    if (__instance is BeachNightMarket && locationName != "FishShop")
+                        town_key_applies = false;
+                }
+
+                // Time check
+                bool timeIsValid = town_key_applies || (Game1.timeOfDay >= actualOpenTime && Game1.timeOfDay < closeTime);
+
+                // Green rain exception
+                if (__instance.IsGreenRainingHere() && Game1.year == 1 && !(__instance is Beach) && !(__instance is Forest) && !locationName.Equals("AdventureGuild"))
+                    timeIsValid = true;
+
+                if (!timeIsValid && bypassTime)
+                {
+                    ModEntry.ModMonitor.Log($"[BypassAllDoors] Bypassing time restriction for {locationName} (hours: {openTime}-{closeTime})", LogLevel.Debug);
+                    timeIsValid = true;
+                }
+
+                // Friendship check
+                bool friendshipValid = minFriendship <= 0 || __instance.IsWinterHere();
+                if (!friendshipValid)
+                {
+                    Friendship friendship;
+                    friendshipValid = Game1.player.friendshipData.TryGetValue(npcName, out friendship) && friendship.Points >= minFriendship;
+                }
+
+                if (!friendshipValid && bypassFriendship)
+                {
+                    ModEntry.ModMonitor.Log($"[BypassAllDoors] Bypassing friendship requirement for {locationName}", LogLevel.Debug);
+                    friendshipValid = true;
+                }
+
+                if (timeIsValid && friendshipValid)
+                {
+                    Rumble.rumble(0.15f, 200f);
+                    Game1.player.completelyStopAnimatingOrDoingAction();
+                    __instance.playSound("doorClose", Game1.player.Tile);
+                    Game1.warpFarmer(locationName, tile.X, tile.Y, flip: false);
+                }
+                else if (!timeIsValid)
+                {
+                    string openTimeString = Game1.getTimeOfDayString(actualOpenTime).Replace(" ", "");
+                    string closeTimeString = Game1.getTimeOfDayString(closeTime).Replace(" ", "");
+                    Game1.drawObjectDialogue(Game1.content.LoadString("Strings\\Locations:LockedDoor_OpenRange", openTimeString, closeTimeString));
+                }
+                else
+                {
+                    NPC character = Game1.getCharacterFromName(npcName);
+                    if (character != null)
+                        Game1.drawObjectDialogue(Game1.content.LoadString("Strings\\Locations:LockedDoor_FriendsOnly", character.displayName));
+                    else
+                        Game1.drawObjectDialogue(Game1.content.LoadString("Strings\\Locations:LockedDoor"));
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                ModEntry.ModMonitor.Log($"[BypassAllDoors] Error in lockedDoorWarp: {ex.Message}", LogLevel.Error);
+                return true;
+            }
+        }
+
+        /// <summary>Bypass friendship doors via checkAction (walk-into doors).</summary>
+        public static bool GameLocation_CheckAction_Prefix(GameLocation __instance, xTile.Dimensions.Location tileLocation, xTile.Dimensions.Rectangle viewport, Farmer who, ref bool __result)
+        {
+            if (!ModEntry.Config.ModEnabled || !ModEntry.Config.BypassFriendshipDoors)
+                return true;
+
+            try
+            {
+                string actionValue = __instance.doesTileHaveProperty(tileLocation.X, tileLocation.Y, "Action", "Buildings");
+                if (string.IsNullOrEmpty(actionValue)) return true;
+
+                string[] parts = actionValue.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length == 0) return true;
+
+                if (string.Equals(parts[0], "Door", StringComparison.OrdinalIgnoreCase) && parts.Length > 1)
+                {
+                    ModEntry.ModMonitor.Log($"[BypassAllDoors] checkAction: Bypassing friendship for Door at ({tileLocation.X},{tileLocation.Y})", LogLevel.Debug);
+
+                    for (int i = 1; i < parts.Length; i++)
+                    {
+                        string mailKey = "doorUnlock" + parts[i];
+                        if (!Game1.player.mailReceived.Contains(mailKey))
+                            Game1.player.mailReceived.Add(mailKey);
+                    }
+
+                    __instance.openDoor(tileLocation, true);
+                    __result = true;
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                ModEntry.ModMonitor.Log($"[BypassAllDoors] Error in checkAction: {ex.Message}", LogLevel.Error);
+            }
+
+            return true;
+        }
+
+        /*********
+        ** Freeze Time in Mines
+        *********/
+
+        /// <summary>Freeze time when in mines/skull cavern/volcano.</summary>
+        public static bool Game1_PerformTenMinuteClockUpdate_MinesPrefix()
+        {
+            if (!Context.IsWorldReady || !ModEntry.Config.ModEnabled)
+                return true;
+
+            if (ModEntry.Config.FreezeTimeMines && Game1.currentLocation is MineShaft)
+            {
+                return false;
+            }
+
+            // Also check for volcano dungeon
+            if (ModEntry.Config.FreezeTimeMines && Game1.currentLocation is VolcanoDungeon)
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 }
