@@ -1,220 +1,97 @@
 v1.0.0
-General
-    - Mod Enabled
-        - Master toggle to enable or disable all cheats
-    - Open Menu Hotkey
-        - Configurable hotkey to open the cheats menu (default: K)
-    - Reset to Defaults
-        - Resets all cheat values back to defaults
-    - Runtime Trainer
-        - All cheats reset on game restart; only Mod Enabled and Hotkey persist
 
-Player
-    - Speed Multiplier
-        - Multiplies movement speed (1.0x to 10.0x)
-    - Added Speed Bonus
-        - Flat speed bonus added to movement
-    - No Clip
-        - Walk through walls, fences, and obstacles
-    - Infinite Stamina
-        - Stamina never decreases
-    - Infinite Health
-        - Health never decreases (invincibility)
-    - Max Stamina Override
-        - Override maximum stamina value (up to 1100)
-    - Max Health Override
-        - Override maximum health value (up to 620)
-    - Stamina Regen Per Second
-        - Regenerate stamina every second
-    - Health Regen Per Second
-        - Regenerate health every second
-
-Combat
-    - Damage Multiplier
-        - Multiplies weapon damage output
-    - One Hit Kill
-        - Kill any monster in a single hit
-    - Always Crit
-        - 100% critical hit chance on every attack
-    - Crit Damage Multiplier
-        - Multiplies critical hit damage
-    - Added Defense
-        - Bonus defense points
-    - Added Attack
-        - Bonus attack points
-    - Added Immunity
-        - Bonus immunity points
-    - No Monster Spawns
-        - Removes all monsters from the current location
-
-Skills
-    - Farming Level Override
-        - Override farming skill level (0 to 10)
-    - Mining Level Override
-        - Override mining skill level (0 to 10)
-    - Foraging Level Override
-        - Override foraging skill level (0 to 10)
-    - Fishing Level Override
-        - Override fishing skill level (0 to 10)
-    - Combat Level Override
-        - Override combat skill level (0 to 10)
-    - XP Multiplier
-        - Multiplies experience gained for all skills
-    - Always Max Luck
-        - Daily luck is always set to maximum
-
-Tools
-    - Tool Area Multiplier
-        - Increases hoe and watering can affected area
-    - No Tool Stamina Cost
-        - Using tools costs no stamina
-    - Infinite Water
-        - Watering can never runs out of water
-    - One Hit Tools
-        - Axe one-hits trees, pickaxe one-hits boulders
-
-Farming
-    - Instant Crop Growth
-        - Immediately grows all planted crops to harvest stage
-    - Instant Tree Growth
-        - Immediately grows all regular trees to full size
-    - Instant Fruit Tree Growth
-        - Immediately grows all fruit trees to full maturity
-    - Water All Fields
-        - Waters all tilled soil across all locations
-    - Crops Never Die
-        - Crops survive season changes and lack of water
-    - Prevent Debris Spawn
-        - Stops weeds, stones, and twigs from spawning on the farm
-    - Tilled Soil Don't Decay
-        - Tilled soil stays tilled indefinitely
-
-Animals & Pets
-    - Max Animal Happiness
-        - All farm animals stay at maximum happiness
-    - Buy Animals Fully Matured
-        - Purchased animals are fully grown immediately
-    - Auto-Pet Animals
-        - Automatically pets all farm animals
-    - Auto-Feed Animals
-        - Automatically fills all feeding troughs with hay
-    - Infinite Hay
-        - Silos always stay full
-    - Animals Produce Daily
-        - All animals produce every day regardless of schedule
-    - Farm Animal Hearts Override
-        - Override farm animal friendship level (0 to 10 hearts)
-    - Pet Hearts Override
-        - Override pet friendship level (0 to 10 hearts)
-
-Fishing
-    - Instant Fish Bite
-        - Fish bite immediately after casting
-    - Instant Catch
-        - Skip the fishing minigame entirely
-    - Max Fish Quality
-        - All caught fish are iridium quality
-    - Always Find Treasure
-        - Treasure chest always appears during fishing
-
-Items & Inventory
-    - Magnetic Radius Multiplier
-        - Multiplies item pickup range
-    - Added Magnetic Radius
-        - Flat bonus to item pickup range in pixels
-    - Infinite Items
-        - Items in inventory are never consumed
-    - Unlock All Recipes
-        - Unlocks all crafting and cooking recipes at once
-    - Unlock All Crafting Recipes
-        - Unlocks all crafting recipes
-    - Unlock All Cooking Recipes
-        - Unlocks all cooking recipes
-    - Unlock All Inventory Slots
-        - Maximizes backpack to 36 slots
-
-Economy
-    - Add Money
-        - Add a custom gold amount to the player's wallet
-    - Add Casino Coins
-        - Add a custom amount of Qi Coins
-    - Sell Price Multiplier
-        - Multiplies sell prices for items
-    - Buy Price Multiplier
-        - Multiplies buy prices at shops (lower = cheaper)
-    - Force Forage Quality
-        - Override quality of all foraged items (Normal to Iridium)
-    - Free Shop Purchases
-        - All shop purchases cost nothing
-    - Free Crafting
-        - Crafting does not consume ingredients
-    - Free Geode Processing
-        - Geode processing at Clint's is free
-
-Buildings & Machines
-    - Instant Build Construction
-        - Buildings finish constructing immediately
-    - Instant Build Upgrade
-        - Building upgrades complete instantly
-    - Instant House Upgrade
-        - Farmhouse upgrades complete instantly
-    - Instant Community Upgrade
-        - Community upgrades (Pam's house, shortcuts) complete instantly
-    - Free Building Construction
-        - Buildings cost no materials (gold still required)
-    - Instant Tool Upgrade
-        - Tool upgrades at the blacksmith complete instantly
-    - Instant Machine Processing
-        - All machines produce output instantly
-
-World
-    - Freeze Time
-        - Time stops passing entirely
-    - Freeze Time Indoors
-        - Time stops only while indoors
-    - Freeze Time in Mines
-        - Time stops in mines, skull cavern, and volcano dungeon
-    - Never Pass Out
-        - Prevents passing out at 2:00 AM
-    - Subtract Time
-        - Subtract 10 minutes from the current time
-    - Add Time
-        - Add 10 minutes to the current time
-    - Set Current Time
-        - Set the time of day to a specific value via slider
-    - Next Weather Override
-        - Override tomorrow's weather (Sun, Rain, Storm, Snow, Wind)
-    - Bypass Friendship Doors
-        - Enter NPC bedrooms without friendship requirements
-    - Bypass Time Restrictions
-        - Enter buildings outside of operating hours
-    - Bypass Festival Closures
-        - Enter buildings during festival days
-    - Bypass Conditional Doors
-        - Bypass GSQ-based conditional door locks
-    - Bypass Special Closures
-        - Bypass special closures (Pierre's Wednesday, etc.)
-    - Auto-Accept Quests
-        - Automatically accept the daily help wanted quest
-    - Infinite Quest Time
-        - Timed quests never expire
-    - Complete Community Bundle
-        - Completes all community center bundles instantly
-    - Complete Special Orders
-        - Completes all active special orders instantly
-
-Relationships
-    - Friendship Multiplier
-        - Multiplies friendship points gained
-    - No Friendship Decay
-        - Friendship never decreases over time
-    - Give Gifts Anytime
-        - Bypass daily and weekly gift limits for NPCs
-
-Warp
-    - Warp Locations
-        - Teleport to any location in the game via categorized list
-
-Mining
-    - Force Ladder Chance
-        - Set the chance (0-100%) for a ladder to spawn when breaking rocks
+Cheats:
+- Mod Enabled (Master toggle for all cheats)
+- Configurable Menu Hotkey (Default: K)
+- Reset to Defaults
+- Speed Multiplier
+- Speed Bonus
+- No Clip
+- Infinite Stamina
+- Infinite Health (Invincible)
+- Max Stamina Override (Change maximum stamina value)
+- Max Health Override (Change maximum health value)
+- Stamina Regen Per Second
+- Health Regen Per Second
+- Damage Multiplier
+- One Hit Kill
+- Always Crit
+- Crit Damage Multiplier
+- Added Attack
+- Added Defense
+- Added Immunity
+- No Monster Spawns
+- Farming Level Override
+- Mining Level Override
+- Foraging Level Override
+- Fishing Level Override
+- Combat Level Override
+- XP Multiplier
+- Always Max Luck
+- Tool Area Multiplier (Increases hoe/watering can area)
+- No Tool Stamina Cost
+- Infinite Water (Watering can never empties)
+- One Hit Tools (Axe/pickaxe destroy in one hit)
+- Instant Tool Upgrade
+- Free Crafting (No ingredients consumed)
+- Crops Never Die
+- Force Forage Quality
+- Grow All Crops
+- Grow All Trees
+- Grow All Fruit Trees
+- Water All Fields
+- Prevent Debris Spawn
+- Tilled Soil Don't Decay
+- Max Animal Happiness
+- Buy Animals Fully Matured
+- Auto-Pet Animals
+- Auto-Feed Animals
+- Animals Produce Daily
+- Farm Animal Hearts Override
+- Pet Hearts Override
+- Infinite Hay
+- Instant Fish Bite
+- Instant Catch (Skip fishing minigame)
+- Max Fish Quality
+- Always Find Treasure
+- Magnetic Radius Multiplier
+- Added Magnetic Radius
+- Infinite Items (Items never consumed)
+- Unlock All Recipes
+- Unlock All Crafting Recipes
+- Unlock All Cooking Recipes
+- Unlock All Inventory Slots
+- Sell Price Multiplier
+- Buy Price Multiplier
+- Free Shop Purchases
+- Free Geode Processing
+- Add Money (Slider amount)
+- Add Qi Coins (Slider amount)
+- Instant Machine Processing
+- Instant Build Construction
+- Instant Build Upgrade
+- Instant House Upgrade
+- Instant Community Upgrade
+- Free Building Construction
+- Freeze Time
+- Freeze Time Indoors
+- Freeze Time in Mines
+- Never Pass Out
+- Subtract 10 Minutes
+- Add 10 Minutes
+- Set Current Time (Slider)
+- Weather Override
+- Bypass Friendship Doors
+- Bypass Time Restrictions
+- Bypass Festival Closures
+- Bypass Conditional Doors
+- Bypass Special Closures
+- Auto-Accept Quests
+- Infinite Quest Time
+- Complete Community Bundle
+- Complete Special Orders
+- Friendship Multiplier
+- No Friendship Decay
+- Give Gifts Anytime (Bypass daily/weekly limits)
+- Warp to Any Location (Categorized list)
+- Force Ladder Chance
