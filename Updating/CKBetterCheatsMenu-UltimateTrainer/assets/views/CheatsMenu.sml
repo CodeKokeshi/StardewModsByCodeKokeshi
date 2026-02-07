@@ -530,7 +530,7 @@
                            shadow-alpha="0.6"
                            shadow-color="#4448"
                            shadow-offset="-1, 1" />
-                    <button layout="100px 36px"
+                    <button layout="128px 36px"
                             text="-10 min"
                             tooltip="Subtract 10 minutes from the current time."
                             hover-background={@Mods/StardewUI/Sprites/ButtonLight}
@@ -544,7 +544,7 @@
                            shadow-alpha="0.6"
                            shadow-color="#4448"
                            shadow-offset="-1, 1" />
-                    <button layout="100px 36px"
+                    <button layout="128px 36px"
                             text="+10 min"
                             tooltip="Add 10 minutes to the current time."
                             hover-background={@Mods/StardewUI/Sprites/ButtonLight}

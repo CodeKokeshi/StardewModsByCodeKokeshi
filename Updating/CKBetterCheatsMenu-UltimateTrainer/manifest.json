@@ -6,7 +6,7 @@
   "UniqueID": "CodeKokeshi.UltimatePlayerCheats",
   "EntryDll": "UltimatePlayerCheats.dll",
   "MinimumApiVersion": "4.0.0",
-  "UpdateKeys": ["Nexus:42058"],
+  "UpdateKeys": ["Nexus:42088"],
   "Dependencies": [
     {
       "UniqueID": "focustense.StardewUI",

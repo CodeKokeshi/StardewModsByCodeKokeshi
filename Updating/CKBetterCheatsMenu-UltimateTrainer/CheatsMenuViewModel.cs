@@ -1044,15 +1044,22 @@ namespace PlayerCheats
             config.ForceLadderChance = (int)ForceLadderChance;
         }
 
-        /// <summary>Reset all values to defaults and immediately apply to the live config.</summary>
+        /// <summary>Reset all cheat values to defaults (preserves ModEnabled and hotkey).</summary>
         public void ResetToDefaults()
         {
-            var defaults = new ModConfig();
+            // Preserve non-cheat settings
+            bool savedEnabled = ModEntry.Config.ModEnabled;
+            var savedKey = ModEntry.Config.OpenMenuKey;
+
+            var defaults = new ModConfig
+            {
+                ModEnabled = savedEnabled,
+                OpenMenuKey = savedKey
+            };
             LoadFromConfig(defaults);
 
             // Immediately apply to the live config so game logic sees defaults right away
             SaveToConfig(ModEntry.Config);
-            ModEntry.ModHelper.WriteConfig(ModEntry.Config);
 
             // Reset game state for things that need immediate reversal
             if (Context.IsWorldReady && Game1.player != null)

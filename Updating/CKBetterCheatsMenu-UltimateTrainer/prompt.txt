@@ -69,7 +69,7 @@ PHASE 6: Buildings & Machines Updates (Done)
    - No Resource Cost for Building (NEW toggle - no materials required but consumes money)
 
 ================================================================================
-PHASE 7: World Updates
+PHASE 7: World Updates (Completed)
 ================================================================================
 
 12. World

@@ -49,7 +49,15 @@ namespace PlayerCheats
         {
             ModMonitor = this.Monitor;
             ModHelper = helper;
-            Config = helper.ReadConfig<ModConfig>();
+
+            // Read config from disk but only preserve ModEnabled and OpenMenuKey.
+            // All cheat values reset to defaults every game launch (runtime trainer).
+            var diskConfig = helper.ReadConfig<ModConfig>();
+            Config = new ModConfig
+            {
+                ModEnabled = diskConfig.ModEnabled,
+                OpenMenuKey = diskConfig.OpenMenuKey
+            };
 
             harmony = new Harmony(this.ModManifest.UniqueID);
             ApplyPatches();
@@ -60,6 +68,7 @@ namespace PlayerCheats
             helper.Events.GameLoop.UpdateTicked += OnUpdateTicked;
             helper.Events.GameLoop.OneSecondUpdateTicked += OnOneSecondUpdateTicked;
             helper.Events.GameLoop.DayStarted += OnDayStarted;
+            helper.Events.GameLoop.DayEnding += OnDayEnding;
             helper.Events.GameLoop.TimeChanged += OnTimeChanged;
             helper.Events.Input.ButtonPressed += OnButtonPressed;
             helper.Events.World.BuildingListChanged += OnBuildingListChanged;
@@ -645,6 +654,74 @@ namespace PlayerCheats
             {
                 WorldPatches.CompleteAllMachines();
             }
+
+            // Auto-pet all farm animals immediately (runs every second while enabled)
+            if (Config.AutoPetAnimals)
+            {
+                var farm = Game1.getFarm();
+                if (farm != null)
+                {
+                    foreach (var animal in farm.getAllFarmAnimals())
+                    {
+                        if (!animal.wasPet.Value)
+                            animal.wasPet.Value = true;
+                    }
+                }
+            }
+
+            // Auto-feed all barn/coop animals immediately (fill troughs every second while enabled)
+            if (Config.AutoFeedAnimals)
+            {
+                var farm = Game1.getFarm();
+                if (farm != null)
+                {
+                    foreach (var building in farm.buildings)
+                    {
+                        var indoors = building.GetIndoors();
+                        if (indoors is AnimalHouse animalHouse)
+                        {
+                            animalHouse.feedAllAnimals();
+                        }
+                    }
+                }
+            }
+
+            // Animals produce daily — set daysSinceLastLay high so they produce on next check
+            if (Config.AnimalsProduceDaily)
+            {
+                var farm = Game1.getFarm();
+                if (farm != null)
+                {
+                    foreach (var animal in farm.getAllFarmAnimals())
+                    {
+                        if (animal.daysSinceLastLay.Value < 99)
+                            animal.daysSinceLastLay.Value = 99;
+                    }
+                }
+            }
+
+            // Auto-accept daily quest immediately when enabled
+            if (Config.AutoAcceptQuests)
+            {
+                if (Game1.CanAcceptDailyQuest() && !Game1.player.acceptedDailyQuest.Value)
+                {
+                    Game1.player.questLog.Add(Game1.questOfTheDay);
+                    Game1.player.acceptedDailyQuest.Set(true);
+                    Monitor.Log("[World] Auto-accepted daily quest (immediate).", LogLevel.Trace);
+                }
+            }
+
+            // Infinite quest time — keep daysLeft high for all active timed quests
+            if (Config.InfiniteQuestTime)
+            {
+                foreach (var quest in Game1.player.questLog)
+                {
+                    if (quest.IsTimedQuest() && !quest.completed.Value && quest.daysLeft.Value < 90)
+                    {
+                        quest.daysLeft.Value = 99;
+                    }
+                }
+            }
         }
 
         private void OnDayStarted(object? sender, DayStartedEventArgs e)
@@ -652,7 +729,7 @@ namespace PlayerCheats
             if (!Config.ModEnabled)
                 return;
 
-            // Weather override
+            // Weather override (explicitly "next day" — applied at day start)
             WorldPatches.ApplyWeatherOverride();
 
             // Complete any pending buildings/upgrades
@@ -664,76 +741,21 @@ namespace PlayerCheats
                 WorldPatches.CompleteCommunityUpgrades();
             if (Config.InstantToolUpgrade)
                 CompleteToolUpgrade();
+        }
 
-            // Auto-pet all farm animals
-            if (Config.AutoPetAnimals)
-            {
-                var farm = Game1.getFarm();
-                if (farm != null)
-                {
-                    int count = 0;
-                    foreach (var animal in farm.getAllFarmAnimals())
-                    {
-                        animal.wasPet.Value = true;
-                        count++;
-                    }
-                    if (count > 0)
-                        Monitor.Log($"[Animals] Auto-petted {count} farm animals.", LogLevel.Trace);
-                }
-            }
+        private void OnDayEnding(object? sender, DayEndingEventArgs e)
+        {
+            if (!Config.ModEnabled)
+                return;
 
-            // Auto-feed all barn/coop animals (fill troughs)
-            if (Config.AutoFeedAnimals)
-            {
-                var farm = Game1.getFarm();
-                if (farm != null)
-                {
-                    foreach (var building in farm.buildings)
-                    {
-                        var indoors = building.GetIndoors();
-                        if (indoors is AnimalHouse animalHouse)
-                        {
-                            // Fill all feeding benches with hay
-                            animalHouse.feedAllAnimals();
-                            Monitor.Log($"[Animals] Auto-fed animals in {building.buildingType.Value}.", LogLevel.Trace);
-                        }
-                    }
-                }
-            }
-
-            // Animals produce daily - reset produce timers
-            if (Config.AnimalsProduceDaily)
-            {
-                var farm = Game1.getFarm();
-                if (farm != null)
-                {
-                    foreach (var animal in farm.getAllFarmAnimals())
-                    {
-                        // Set daysSinceLastLay high enough that they'll produce today
-                        animal.daysSinceLastLay.Value = 99;
-                    }
-                }
-            }
-
-            // Auto-accept daily quest from Help Wanted board
-            if (Config.AutoAcceptQuests)
-            {
-                if (Game1.CanAcceptDailyQuest())
-                {
-                    Game1.player.questLog.Add(Game1.questOfTheDay);
-                    Game1.player.acceptedDailyQuest.Set(true);
-                    Monitor.Log("[World] Auto-accepted daily quest.", LogLevel.Trace);
-                }
-            }
-
-            // Infinite quest time - reset all timed quest timers so they never expire
+            // Infinite quest time - set daysLeft high BEFORE Farmer.dayupdate() decrements/removes them
             if (Config.InfiniteQuestTime)
             {
                 foreach (var quest in Game1.player.questLog)
                 {
-                    if (quest.IsTimedQuest() && !quest.completed.Value && quest.GetDaysLeft() > 0)
+                    if (quest.IsTimedQuest() && !quest.completed.Value)
                     {
-                        quest.daysLeft.Value = Math.Max(quest.daysLeft.Value, 99);
+                        quest.daysLeft.Value = 99;
                     }
                 }
             }
@@ -821,12 +843,11 @@ namespace PlayerCheats
                 controller.EnableCloseButton();
                 controller.DimmingAmount = 0.75f;
 
-                // When menu closes, auto-save config
+                // When menu closes, sync to in-memory config (runtime trainer — no disk persistence)
                 controller.Closing += () =>
                 {
                     viewModel.SaveToConfig(Config);
-                    Helper.WriteConfig(Config);
-                    Monitor.Log("Cheats config saved.", LogLevel.Trace);
+                    Monitor.Log("Cheats synced to runtime config.", LogLevel.Trace);
                 };
 
                 Game1.activeClickableMenu = controller.Menu;
