@@ -29,6 +29,9 @@ namespace PlayerCheats
         /// <summary>Whether player can walk through walls/obstacles (noclip).</summary>
         public bool NoClip { get; set; } = false;
 
+        /// <summary>Whether running is always enabled (no walking).</summary>
+        public bool AlwaysRun { get; set; } = false;
+
         /*********
         ** Health & Stamina
         *********/
@@ -136,6 +139,9 @@ namespace PlayerCheats
         /*********
         ** Luck & Daily
         *********/
+
+        /// <summary>Daily luck override (-1.0 = normal, range -0.1 to 0.12).</summary>
+        public float DailyLuckOverride { get; set; } = -1.0f;
 
         /// <summary>Always max luck day.</summary>
         public bool AlwaysMaxLuck { get; set; } = false;
@@ -266,12 +272,5 @@ namespace PlayerCheats
 
         /// <summary>Override tomorrow's weather. "Default" = no override.</summary>
         public string WeatherForTomorrow { get; set; } = "Default";
-
-        /*********
-        ** Mining
-        *********/
-
-        /// <summary>Force ladder spawn chance when breaking rocks in mines (0 = disabled, 100 = always spawn).</summary>
-        public int ForceLadderChance { get; set; } = 0;
     }
 }

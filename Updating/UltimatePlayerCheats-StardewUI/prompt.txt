@@ -1,0 +1,136 @@
+================================================================================
+ULTIMATE PLAYER CHEATS - REMAINING IMPLEMENTATION TASKS
+================================================================================
+
+Phase 0 (COMPLETED):
+- 15 tabs created and organized
+- Existing cheats moved to their respective categories
+- Removed AlwaysRun and DailyLuckOverride
+- Capped skill levels to 10, Max Stamina to 1100, Max Health to 620
+- Renamed labels appropriately
+
+================================================================================
+PHASE 1: Tools & Crafting Updates
+================================================================================
+
+5. Tools & Crafting
+   - One Hit Damage Tools (convert Axe/Pickaxe Power Bonus sliders to a SINGLE boolean toggle that maximizes Axe damage to one-hit trees, and Pickaxe to one-hit boulders)
+   - No Resource Need for Upgrade (NEW toggle) - upgrade tools without materials at blacksmith
+
+================================================================================
+PHASE 2: Farming Updates
+================================================================================
+
+6. Farming
+   - Convert Instant Crop Growth to SET button (immediate one-time action)
+   - Convert Instant Tree Growth to SET button
+   - Convert Instant Fruit Tree Growth to SET button
+   - Water all Fields (NEW SET button)
+   - Prevent Debris Spawn (NEW toggle)
+   - Tilled Area Don't Decay (NEW toggle)
+
+================================================================================
+PHASE 3: Animals & Pets (NEW Category)
+================================================================================
+
+7. Animals & Pets
+   - Max Animal Happiness (convert from toggle to slider)
+   - Buy Animals Fully Matured (NEW toggle - port from BuyAnimalsFullyMatured mod)
+   - Auto-Pet Animals (NEW toggle)
+   - Auto-Feed Animals (NEW toggle)
+   - Infinite Hay in Silos (NEW toggle)
+   - Animals Produce Daily (NEW toggle - even if normally takes longer)
+   - Customizable Farm Animal Hearts (NEW slider - port from CustomAnimalHearts, affects only farm animals)
+   - Customizable Pet Hearts (NEW slider - port from CustomAnimalHearts, affects only pets)
+
+================================================================================
+PHASE 4: Items & Inventory Updates
+================================================================================
+
+9. Items & Inventory
+   - Unlock All Recipes (NEW SET button)
+   - Unlock All Crafting Recipes (NEW SET button)
+   - Unlock All Cooking Recipes (NEW SET button)
+   - Unlock all Inventory Slots (NEW SET button - auto purchase/upgrade backpack)
+
+================================================================================
+PHASE 5: Economy Updates
+================================================================================
+
+10. Economy
+   - Add Money (NEW input field + "Add Amount" button, affects profit tracking)
+   - Add Casino Coins (NEW input field + button) - implement only if possible
+
+================================================================================
+PHASE 6: Buildings & Machines Updates
+================================================================================
+
+11. Buildings & Machines
+   - No Resource Cost for Building (NEW toggle - no materials required but consumes money)
+
+================================================================================
+PHASE 7: World Updates
+================================================================================
+
+12. World
+   - Freeze Time within Mines Only (NEW toggle)
+   - Bypass All Doors (NEW sub-category - port entire BypassAllDoors mod with its settings)
+   - Complete All 'Help-Wanted' Orders (NEW button) - implement only if possible
+   - Complete Community Bundle (NEW button) - implement only if possible
+   - Complete Special Orders (NEW button) - implement only if possible
+   - Auto-Accept Quests (NEW toggle) - implement only if possible
+   - Infinite Quest Time (NEW toggle) - implement only if possible
+   - Adjust Time (NEW - two buttons: subtract/add 10 seconds) - implement only if possible
+   - Set Current Time (NEW slider) - implement only if possible
+
+================================================================================
+PHASE 8: Relationships Updates
+================================================================================
+
+13. Relationships
+   - Give Gifts Anytime (NEW toggle)
+
+================================================================================
+PHASE 9: Warp (NEW Category) (COMPLETED)
+================================================================================
+
+14. Warp
+   - List all warp locations with SET buttons
+   - Display map names instead of file names (e.g., "Farm" → "Aikawa's Farm") (Not a good option)
+
+================================================================================
+PHASE 10: Mining (NEW Category) (Completed)
+================================================================================
+
+15. Mining
+   - Force Ladder/Shaft Chance (NEW slider: 0-100%) - implement only if possible
+   - Auto-Break Rocks in Radius (NEW toggle + radius slider) - implement only if possible (Not possible)
+   - Infinite Bombs (NEW toggle - must have 1 bomb slot left) - implement only if possible (Not possible)
+   - Iridium Node Spawn Chance Multiplier (NEW slider) - implement only if possible (Not possible)
+
+================================================================================
+IMPLEMENTATION RULES
+================================================================================
+
+1. Ensure that the mod created or part of the mod created is compared to the Game's Code for 1-2-3 times.
+2. Ensure that the latest build would not suffer from warnings or errors.
+3. If the part of the mod is unimplementable then don't implement.
+4. SET = scripts that take effect immediately (one-time action). Example: Instant Tree Growth grows currently planted trees. Does not run in background.
+5. Toggle/Boolean = cheats that persist and behave depending on true/false state.
+6. Follow the game's cap values for settings (except Health=620, Stamina=1100 as specified).
+
+================================================================================
+REFERENCE MODS TO PORT
+================================================================================
+
+- BuyAnimalsFullyMatured (for Animals & Pets)
+- CustomAnimalHearts (for Animals & Pets - separate farm animals from pets)
+- BypassAllDoors (for World tab)
+- InstantBuildings (for Buildings & Machines)
+
+================================================================================
+ICON SPECIFICATIONS
+================================================================================
+
+- Icons.png: 240x16 (15 icons × 16px each, horizontal strip)
+- Tab order matches the 15 tabs listed above

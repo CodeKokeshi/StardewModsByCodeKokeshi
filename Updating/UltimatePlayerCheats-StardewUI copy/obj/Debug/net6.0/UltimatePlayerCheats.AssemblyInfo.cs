@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("UltimatePlayerCheats")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("2.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("2.0.0+25cfdf8b2f006bd7912de8f0dc9ee97e90e65dba")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("2.0.0+ea38fcc8982141dc15399b683100f5daf092bf8c")]
 [assembly: System.Reflection.AssemblyProductAttribute("UltimatePlayerCheats")]
 [assembly: System.Reflection.AssemblyTitleAttribute("UltimatePlayerCheats")]
 [assembly: System.Reflection.AssemblyVersionAttribute("2.0.0.0")]

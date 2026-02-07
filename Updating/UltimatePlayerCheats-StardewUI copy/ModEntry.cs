@@ -357,13 +357,6 @@ namespace PlayerCheats
                 description: "GeodeMenu.startGeodeCrack"
             );
 
-            // === Force Ladder Spawn in Mines ===
-            TryPatch(
-                original: AccessTools.Method(typeof(MineShaft), nameof(MineShaft.checkStoneForItems)),
-                postfix: new HarmonyMethod(typeof(WorldPatches), nameof(WorldPatches.MineShaft_CheckStoneForItems_Postfix)),
-                description: "MineShaft.checkStoneForItems"
-            );
-
             Monitor.Log("All Harmony patches applied!", LogLevel.Debug);
         }
 
@@ -428,6 +421,12 @@ namespace PlayerCheats
             if (Config.MaxHealthOverride > 0)
             {
                 player.maxHealth = Config.MaxHealthOverride;
+            }
+
+            // Always run
+            if (Config.AlwaysRun)
+            {
+                player.running = true;
             }
 
             // NoClip
@@ -511,6 +510,10 @@ namespace PlayerCheats
             if (Config.AlwaysMaxLuck)
             {
                 Game1.player.team.sharedDailyLuck.Value = 0.12;
+            }
+            else if (Config.DailyLuckOverride >= -0.1f && Config.DailyLuckOverride <= 0.12f)
+            {
+                Game1.player.team.sharedDailyLuck.Value = Config.DailyLuckOverride;
             }
 
             // Real-time instant crop growth (all locations)

@@ -433,33 +433,5 @@ namespace PlayerCheats
                 ModEntry.ModMonitor.Log($"Weather for tomorrow set to: {gameWeather}", LogLevel.Info);
             }
         }
-
-        /*********
-        ** Mining
-        *********/
-
-        /// <summary>Force ladder spawn when breaking rocks in mines based on configured chance.</summary>
-        public static void MineShaft_CheckStoneForItems_Postfix(MineShaft __instance, string stoneId, int x, int y, Farmer who)
-        {
-            if (!ModEntry.Config.ModEnabled || ModEntry.Config.ForceLadderChance <= 0)
-                return;
-
-            // Skip if ladder already spawned on this level
-            if (__instance.ladderHasSpawned)
-                return;
-
-            // Skip if player must kill all monsters first
-            if (__instance.mustKillAllMonstersToAdvance())
-                return;
-
-            // Check against configured chance
-            int chance = ModEntry.Config.ForceLadderChance;
-            if (chance >= 100 || Game1.random.Next(100) < chance)
-            {
-                // Create ladder at the stone's position
-                __instance.createLadderDown(x, y);
-                ModEntry.ModMonitor.Log($"[Mining] Forced ladder spawn at ({x}, {y}) on level {__instance.mineLevel}.", LogLevel.Trace);
-            }
-        }
     }
 }

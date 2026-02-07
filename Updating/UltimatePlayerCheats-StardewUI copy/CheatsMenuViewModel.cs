@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using PropertyChanged.SourceGenerator;
@@ -10,34 +9,6 @@ using StardewValley;
 
 namespace PlayerCheats
 {
-    /// <summary>Data for a single warp location.</summary>
-    internal class WarpLocationData
-    {
-        /// <summary>Internal location name used for warping.</summary>
-        public string LocationName { get; }
-
-        /// <summary>Display name shown to the user.</summary>
-        public string DisplayName { get; }
-
-        /// <summary>Default X tile position for warping.</summary>
-        public int TileX { get; }
-
-        /// <summary>Default Y tile position for warping.</summary>
-        public int TileY { get; }
-
-        /// <summary>Category for grouping locations in the UI.</summary>
-        public string Category { get; }
-
-        public WarpLocationData(string locationName, string displayName, int tileX, int tileY, string category)
-        {
-            LocationName = locationName;
-            DisplayName = displayName;
-            TileX = tileX;
-            TileY = tileY;
-            Category = category;
-        }
-    }
-
     /// <summary>Tab data for the main menu tabs.</summary>
     internal partial class TabData : INotifyPropertyChanged
     {
@@ -86,6 +57,7 @@ namespace PlayerCheats
         [Notify] private float speedMultiplier;
         [Notify] private float addedSpeedBonus;
         [Notify] private bool noClip;
+        [Notify] private bool alwaysRun;
 
         /*********
         ** Health & Stamina
@@ -139,6 +111,7 @@ namespace PlayerCheats
         ** Luck
         *********/
         [Notify] private bool alwaysMaxLuck;
+        [Notify] private float dailyLuckOverride;
 
         /*********
         ** Fishing
@@ -209,192 +182,30 @@ namespace PlayerCheats
         [Notify] private float weatherIndex;
 
         /*********
-        ** Mining
-        *********/
-        [Notify] private float forceLadderChance;
-
-        /*********
-        ** Warp Locations
-        *********/
-        /// <summary>All available warp locations grouped by category.</summary>
-        public IReadOnlyList<WarpLocationData> WarpLocations { get; private set; } = Array.Empty<WarpLocationData>();
-
-        /// <summary>Warp the player to the specified location.</summary>
-        public void WarpTo(WarpLocationData location)
-        {
-            if (location == null || !Context.IsWorldReady)
-                return;
-
-            // Close the menu first
-            Game1.activeClickableMenu?.exitThisMenu();
-
-            // Warp the player to the location
-            Game1.warpFarmer(location.LocationName, location.TileX, location.TileY, false);
-            ModEntry.ModMonitor.Log($"[PlayerCheats] Warped to {location.DisplayName} ({location.LocationName}) at ({location.TileX}, {location.TileY})", LogLevel.Info);
-        }
-
-        /// <summary>Refresh the list of available warp locations from the current game.</summary>
-        public void RefreshWarpLocations()
-        {
-            if (!Context.IsWorldReady)
-            {
-                WarpLocations = Array.Empty<WarpLocationData>();
-                return;
-            }
-
-            var locations = new List<WarpLocationData>();
-
-            foreach (var gameLocation in Game1.locations)
-            {
-                if (gameLocation == null || string.IsNullOrEmpty(gameLocation.Name))
-                    continue;
-
-                // Skip temporary locations (festivals, events)
-                if (gameLocation.IsTemporary)
-                    continue;
-
-                // Get display name for tooltip (falls back to Name if DisplayName is not set)
-                string displayName = gameLocation.DisplayName ?? gameLocation.Name;
-
-                // If display name is same as location name, show category instead
-                if (displayName == gameLocation.Name)
-                    displayName = CategorizeLocation(gameLocation);
-
-                // Get default warp position
-                int x = 0, y = 0;
-                Utility.getDefaultWarpLocation(gameLocation.Name, ref x, ref y);
-
-                // If no default position found, try center of the map
-                if (x == 0 && y == 0 && gameLocation.Map != null)
-                {
-                    x = gameLocation.Map.Layers[0].LayerWidth / 2;
-                    y = gameLocation.Map.Layers[0].LayerHeight / 2;
-                }
-
-                // Categorize locations
-                string category = CategorizeLocation(gameLocation);
-
-                locations.Add(new WarpLocationData(gameLocation.Name, displayName, x, y, category));
-            }
-
-            // Sort by category, then by location name
-            WarpLocations = locations
-                .OrderBy(l => GetCategoryOrder(l.Category))
-                .ThenBy(l => l.LocationName)
-                .ToList();
-
-            ModEntry.ModMonitor.Log($"[PlayerCheats] Loaded {WarpLocations.Count} warp locations.", LogLevel.Trace);
-        }
-
-        /// <summary>Categorize a location for UI grouping.</summary>
-        private static string CategorizeLocation(GameLocation location)
-        {
-            string name = location.Name ?? "";
-
-            // Farm and farm buildings
-            if (name == "Farm" || name == "FarmHouse" || name == "FarmCave" || name == "Greenhouse" || name == "Cellar")
-                return "Farm";
-            if (name.StartsWith("Barn") || name.StartsWith("Coop") || name.StartsWith("Shed") || name.StartsWith("SlimeHutch"))
-                return "Farm Buildings";
-
-            // Town
-            if (name == "Town" || name == "SeedShop" || name == "JoshHouse" || name == "HaleyHouse" ||
-                name == "SamHouse" || name == "Blacksmith" || name == "ManorHouse" || name == "ArchaeologyHouse" ||
-                name == "AlexHouse" || name == "JojaMart" || name == "Saloon" || name == "Hospital" ||
-                name == "HarveyRoom" || name == "Trailer" || name == "Trailer_Big" || name == "CommunityCenter" ||
-                name == "MovieTheater")
-                return "Town";
-
-            // Beach
-            if (name == "Beach" || name == "FishShop" || name == "ElliottHouse")
-                return "Beach";
-
-            // Mountain & Forest
-            if (name == "Mountain" || name == "ScienceHouse" || name == "SebastianRoom" || name == "Tent" ||
-                name == "AdventureGuild" || name == "Backwoods")
-                return "Mountain";
-            if (name == "Forest" || name == "Woods" || name == "WizardHouse" || name == "WizardHouseBasement" ||
-                name == "AnimalShop" || name == "LeahHouse")
-                return "Forest";
-
-            // Mines & Caves
-            if (name.StartsWith("Mine") || name.StartsWith("UndergroundMine") || name == "SkullCave" ||
-                name.StartsWith("VolcanoDungeon") || name == "Caldera")
-                return "Mines & Caves";
-
-            // Desert
-            if (name == "Desert" || name == "SandyHouse" || name == "SkullCave" || name == "Club")
-                return "Desert";
-
-            // Island
-            if (name.StartsWith("Island"))
-                return "Ginger Island";
-
-            // Railroad & Spa
-            if (name == "Railroad" || name == "BathHouse_Entry" || name == "BathHouse_MensLocker" ||
-                name == "BathHouse_WomensLocker" || name == "BathHouse_Pool" || name == "Summit")
-                return "Railroad & Spa";
-
-            // Sewer & Special
-            if (name == "Sewer" || name == "BugLand" || name == "WitchSwamp" || name == "WitchHut" ||
-                name == "WitchWarpCave" || name == "Sunroom")
-                return "Special";
-
-            // Other
-            return "Other";
-        }
-
-        /// <summary>Get sort order for categories.</summary>
-        private static int GetCategoryOrder(string category)
-        {
-            return category switch
-            {
-                "Farm" => 0,
-                "Farm Buildings" => 1,
-                "Town" => 2,
-                "Beach" => 3,
-                "Forest" => 4,
-                "Mountain" => 5,
-                "Mines & Caves" => 6,
-                "Desert" => 7,
-                "Railroad & Spa" => 8,
-                "Ginger Island" => 9,
-                "Special" => 10,
-                _ => 99
-            };
-        }
-
-        /*********
         ** Constructor — load from config
         *********/
         public CheatsMenuViewModel()
         {
             LoadFromConfig(ModEntry.Config);
             InitTabs();
-            RefreshWarpLocations();
         }
 
         private void InitTabs()
         {
             var icons = ModEntry.ModHelper.ModContent.Load<Texture2D>("assets/Icons.png");
-            // Custom 16x16 icons in a horizontal strip (240x16 image, 15 tabs)
+            // Custom 16x16 icons in a horizontal strip: [0]=General, [1]=Movement, ... [9]=World
             Tabs = new List<TabData>
             {
                 new TabData("General",       icons, new Rectangle(0,   0, 16, 16)),
-                new TabData("Player",        icons, new Rectangle(16,  0, 16, 16)),
-                new TabData("Combat",        icons, new Rectangle(32,  0, 16, 16)),
-                new TabData("Skills",        icons, new Rectangle(48,  0, 16, 16)),
+                new TabData("Movement",      icons, new Rectangle(16,  0, 16, 16)),
+                new TabData("Health",        icons, new Rectangle(32,  0, 16, 16)),
+                new TabData("Combat",        icons, new Rectangle(48,  0, 16, 16)),
                 new TabData("Tools",         icons, new Rectangle(64,  0, 16, 16)),
-                new TabData("Farming",       icons, new Rectangle(80,  0, 16, 16)),
-                new TabData("Animals",       icons, new Rectangle(96,  0, 16, 16)),
+                new TabData("Items",         icons, new Rectangle(80,  0, 16, 16)),
+                new TabData("Skills",        icons, new Rectangle(96,  0, 16, 16)),
                 new TabData("Fishing",       icons, new Rectangle(112, 0, 16, 16)),
-                new TabData("Items",         icons, new Rectangle(128, 0, 16, 16)),
-                new TabData("Economy",       icons, new Rectangle(144, 0, 16, 16)),
-                new TabData("Buildings",     icons, new Rectangle(160, 0, 16, 16)),
-                new TabData("World",         icons, new Rectangle(176, 0, 16, 16)),
-                new TabData("Relationships", icons, new Rectangle(192, 0, 16, 16)),
-                new TabData("Warp",          icons, new Rectangle(208, 0, 16, 16)),
-                new TabData("Mining",        icons, new Rectangle(224, 0, 16, 16)),
+                new TabData("Economy",       icons, new Rectangle(128, 0, 16, 16)),
+                new TabData("World",         icons, new Rectangle(144, 0, 16, 16)),
             };
             Tabs[0].Active = true;
         }
@@ -407,6 +218,7 @@ namespace PlayerCheats
             SpeedMultiplier = config.SpeedMultiplier;
             AddedSpeedBonus = config.AddedSpeedBonus;
             NoClip = config.NoClip;
+            AlwaysRun = config.AlwaysRun;
 
             InfiniteStamina = config.InfiniteStamina;
             InfiniteHealth = config.InfiniteHealth;
@@ -442,6 +254,7 @@ namespace PlayerCheats
             XpMultiplier = config.XPMultiplier;
 
             AlwaysMaxLuck = config.AlwaysMaxLuck;
+            DailyLuckOverride = config.DailyLuckOverride;
 
             InstantFishBite = config.InstantFishBite;
             InstantCatch = config.InstantCatch;
@@ -480,9 +293,6 @@ namespace PlayerCheats
             {
                 "Sun" => 1, "Rain" => 2, "Storm" => 3, "Snow" => 4, "Wind" => 5, _ => 0
             };
-
-            // Mining
-            ForceLadderChance = config.ForceLadderChance;
         }
 
         /// <summary>Save all ViewModel values back to the config.</summary>
@@ -493,6 +303,7 @@ namespace PlayerCheats
             config.SpeedMultiplier = SpeedMultiplier;
             config.AddedSpeedBonus = AddedSpeedBonus;
             config.NoClip = NoClip;
+            config.AlwaysRun = AlwaysRun;
 
             config.InfiniteStamina = InfiniteStamina;
             config.InfiniteHealth = InfiniteHealth;
@@ -528,6 +339,7 @@ namespace PlayerCheats
             config.XPMultiplier = XpMultiplier;
 
             config.AlwaysMaxLuck = AlwaysMaxLuck;
+            config.DailyLuckOverride = DailyLuckOverride;
 
             config.InstantFishBite = InstantFishBite;
             config.InstantCatch = InstantCatch;
@@ -566,9 +378,6 @@ namespace PlayerCheats
             {
                 1 => "Sun", 2 => "Rain", 3 => "Storm", 4 => "Snow", 5 => "Wind", _ => "Default"
             };
-
-            // Mining
-            config.ForceLadderChance = (int)ForceLadderChance;
         }
 
         /// <summary>Reset all values to defaults and immediately apply to the live config.</summary>
@@ -675,14 +484,6 @@ namespace PlayerCheats
                 5 => "Wind",
                 _ => "No Override"
             };
-        };
-
-        public Func<float, string> FormatLadderChance { get; } = value =>
-        {
-            int v = (int)value;
-            if (v <= 0) return "Disabled";
-            if (v >= 100) return "Always";
-            return $"{v}%";
         };
     }
 }
