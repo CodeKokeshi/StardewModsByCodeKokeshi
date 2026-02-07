@@ -114,8 +114,8 @@ namespace PlayerCheats
             }
         }
 
-        /// <summary>Patch to mark tools as efficient (no stamina cost).</summary>
-        public static void Tool_DoFunction_Prefix(Tool __instance, Farmer who)
+        /// <summary>Patch to mark tools as efficient (no stamina cost) and enable one-hit tools.</summary>
+        public static void Tool_DoFunction_Prefix(Tool __instance, GameLocation location, int x, int y, int power, Farmer who)
         {
             if (!Context.IsWorldReady || who != Game1.player || !ModEntry.Config.ModEnabled)
                 return;
@@ -125,21 +125,41 @@ namespace PlayerCheats
                 __instance.IsEfficient = true;
             }
 
-            if (__instance is Axe axe && ModEntry.Config.AxePowerBonus > 0)
+            // One Hit Tools: Set additionalPower for instant destruction, or reset to 0 when disabled
+            if (__instance is Axe axe)
             {
                 var additionalPower = AccessTools.Field(typeof(Axe), "additionalPower");
                 if (additionalPower?.GetValue(axe) is Netcode.NetInt axeNetInt)
                 {
-                    axeNetInt.Value = ModEntry.Config.AxePowerBonus;
+                    axeNetInt.Value = ModEntry.Config.OneHitTools ? 100 : 0;
                 }
             }
 
-            if (__instance is Pickaxe pick && ModEntry.Config.PickaxePowerBonus > 0)
+            if (__instance is Pickaxe pick)
             {
                 var additionalPower = AccessTools.Field(typeof(Pickaxe), "additionalPower");
                 if (additionalPower?.GetValue(pick) is Netcode.NetInt pickNetInt)
                 {
-                    pickNetInt.Value = ModEntry.Config.PickaxePowerBonus;
+                    pickNetInt.Value = ModEntry.Config.OneHitTools ? 100 : 0;
+                }
+
+                // Boulders use a separate hitsToBoulder counter that must reach 4
+                if (ModEntry.Config.OneHitTools)
+                {
+                    // Pre-set the tile coordinates and counter so the first hit destroys them
+                    int tileX = x / 64;
+                    int tileY = y / 64;
+
+                    var boulderTileXField = AccessTools.Field(typeof(Pickaxe), "boulderTileX");
+                    var boulderTileYField = AccessTools.Field(typeof(Pickaxe), "boulderTileY");
+                    var hitsToBoulderField = AccessTools.Field(typeof(Pickaxe), "hitsToBoulder");
+
+                    if (boulderTileXField != null && boulderTileYField != null && hitsToBoulderField != null)
+                    {
+                        boulderTileXField.SetValue(pick, tileX);
+                        boulderTileYField.SetValue(pick, tileY);
+                        hitsToBoulderField.SetValue(pick, 3); // Will reach 4+ after power+1 is added
+                    }
                 }
             }
         }
@@ -478,6 +498,26 @@ namespace PlayerCheats
             {
                 __result = (int)(__result * ModEntry.Config.BuyPriceMultiplier);
             }
+        }
+
+        /// <summary>Patch to bypass daily gift limit (Give Gifts Anytime).</summary>
+        public static void Friendship_GiftsToday_Postfix(ref int __result)
+        {
+            if (!Context.IsWorldReady || !ModEntry.Config.ModEnabled)
+                return;
+
+            if (ModEntry.Config.GiveGiftsAnytime)
+                __result = 0;
+        }
+
+        /// <summary>Patch to bypass weekly gift limit (Give Gifts Anytime).</summary>
+        public static void Friendship_GiftsThisWeek_Postfix(ref int __result)
+        {
+            if (!Context.IsWorldReady || !ModEntry.Config.ModEnabled)
+                return;
+
+            if (ModEntry.Config.GiveGiftsAnytime)
+                __result = 0;
         }
     }
 }

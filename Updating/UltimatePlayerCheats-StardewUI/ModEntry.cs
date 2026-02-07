@@ -364,6 +364,19 @@ namespace PlayerCheats
                 description: "MineShaft.checkStoneForItems"
             );
 
+            // === Give Gifts Anytime (bypass daily/weekly limits) ===
+            TryPatch(
+                original: AccessTools.PropertyGetter(typeof(Friendship), nameof(Friendship.GiftsToday)),
+                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Friendship_GiftsToday_Postfix)),
+                description: "Friendship.GiftsToday getter"
+            );
+
+            TryPatch(
+                original: AccessTools.PropertyGetter(typeof(Friendship), nameof(Friendship.GiftsThisWeek)),
+                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Friendship_GiftsThisWeek_Postfix)),
+                description: "Friendship.GiftsThisWeek getter"
+            );
+
             Monitor.Log("All Harmony patches applied!", LogLevel.Debug);
         }
 
@@ -428,6 +441,9 @@ namespace PlayerCheats
             if (Config.MaxHealthOverride > 0)
             {
                 player.maxHealth = Config.MaxHealthOverride;
+                // Clamp current health to new max
+                if (player.health > player.maxHealth)
+                    player.health = player.maxHealth;
             }
 
             // NoClip

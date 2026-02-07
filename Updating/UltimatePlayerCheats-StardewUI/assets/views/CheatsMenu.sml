@@ -3,7 +3,7 @@
     <banner background={@Mods/StardewUI/Sprites/BannerBackground}
             background-border-thickness="48,0"
             padding="12"
-            text="Ultimate Player Cheats" />
+            text="Ultimate Trainer" />
 
     <!-- Tab Bar -->
     <lane margin="32, 8, 0, -16" z-index="1">
@@ -181,16 +181,9 @@
                 <cheat-toggle label="Infinite Water"
                               tooltip="Watering can never runs out."
                               checked={<>InfiniteWater} />
-                <cheat-slider label="Axe Power Bonus"
-                              tooltip="Additional power for axe. Makes chopping easier."
-                              min="0" max="10" interval="1"
-                              value={<>AxePowerBonus}
-                              value-format={:FormatInt} />
-                <cheat-slider label="Pickaxe Power Bonus"
-                              tooltip="Additional power for pickaxe. Makes mining easier."
-                              min="0" max="10" interval="1"
-                              value={<>PickaxePowerBonus}
-                              value-format={:FormatInt} />
+                <cheat-toggle label="One Hit Tools"
+                              tooltip="Axe destroys trees/stumps in one hit. Pickaxe destroys rocks/boulders in one hit."
+                              checked={<>OneHitTools} />
 
                 <section-header text="Tool Upgrades" />
                 <cheat-toggle label="Instant Tool Upgrade"
@@ -306,6 +299,42 @@
                 <cheat-toggle label="Free Geode Processing"
                               tooltip="Geode processing at Clint's is free (no 25g cost)."
                               checked={<>FreeGeodeProcessing} />
+
+                <section-header text="Add Currency" />
+                <!-- Add Money -->
+                <lane layout="stretch content" margin="8, 4">
+                    <lane layout="200px content" vertical-content-alignment="middle">
+                        <label text="Add Money" />
+                    </lane>
+                    <slider layout="250px content"
+                            min="100" max="100000" interval="100"
+                            value={<>AddMoneyAmount}
+                            value-format={:FormatMoney}
+                            tooltip="Choose amount of gold to add." />
+                    <button layout="100px 36px"
+                            margin="16, 0, 0, 0"
+                            text="Add"
+                            hover-background={@Mods/StardewUI/Sprites/ButtonLight}
+                            tooltip="Add the selected amount to your wallet and profit."
+                            left-click=|AddMoney()| />
+                </lane>
+                <!-- Add Casino Coins -->
+                <lane layout="stretch content" margin="8, 4">
+                    <lane layout="200px content" vertical-content-alignment="middle">
+                        <label text="Add Qi Coins" />
+                    </lane>
+                    <slider layout="250px content"
+                            min="10" max="10000" interval="10"
+                            value={<>AddCasinoCoinsAmount}
+                            value-format={:FormatQiCoins}
+                            tooltip="Choose amount of Qi Coins to add." />
+                    <button layout="100px 36px"
+                            margin="16, 0, 0, 0"
+                            text="Add"
+                            hover-background={@Mods/StardewUI/Sprites/ButtonLight}
+                            tooltip="Add the selected Qi Coins to your account."
+                            left-click=|AddCasinoCoins()| />
+                </lane>
             </lane>
         </scrollable>
 
@@ -376,6 +405,9 @@
                 <cheat-toggle label="No Friendship Decay"
                               tooltip="Friendship never decreases."
                               checked={<>NoFriendshipDecay} />
+                <cheat-toggle label="Give Gifts Anytime"
+                              tooltip="Bypass daily and weekly gift limits. Give unlimited gifts to NPCs."
+                              checked={<>GiveGiftsAnytime} />
             </lane>
         </scrollable>
 

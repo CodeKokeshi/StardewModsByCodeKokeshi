@@ -92,11 +92,8 @@ namespace PlayerCheats
         /// <summary>Watering can never runs out of water.</summary>
         public bool InfiniteWater { get; set; } = false;
 
-        /// <summary>Axe power bonus (0 = normal).</summary>
-        public int AxePowerBonus { get; set; } = 0;
-
-        /// <summary>Pickaxe power bonus (0 = normal).</summary>
-        public int PickaxePowerBonus { get; set; } = 0;
+        /// <summary>One hit destroy trees (axe) and rocks/boulders (pickaxe).</summary>
+        public bool OneHitTools { get; set; } = false;
 
         /*********
         ** Item Pickup & Inventory
@@ -181,6 +178,9 @@ namespace PlayerCheats
 
         /// <summary>No friendship decay.</summary>
         public bool NoFriendshipDecay { get; set; } = false;
+
+        /// <summary>Give unlimited gifts to NPCs (bypasses daily/weekly limits).</summary>
+        public bool GiveGiftsAnytime { get; set; } = false;
 
         /*********
         ** Time & Energy

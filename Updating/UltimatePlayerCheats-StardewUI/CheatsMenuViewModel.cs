@@ -115,8 +115,7 @@ namespace PlayerCheats
         [Notify] private float toolAreaMultiplier;
         [Notify] private bool noToolStaminaCost;
         [Notify] private bool infiniteWater;
-        [Notify] private float axePowerBonus;
-        [Notify] private float pickaxePowerBonus;
+        [Notify] private bool oneHitTools;
 
         /*********
         ** Items & Inventory
@@ -156,10 +155,17 @@ namespace PlayerCheats
         [Notify] private float buyPriceMultiplier;
 
         /*********
+        ** Economy Actions
+        *********/
+        [Notify] private float addMoneyAmount = 1000;
+        [Notify] private float addCasinoCoinsAmount = 100;
+
+        /*********
         ** Relationships
         *********/
         [Notify] private float friendshipMultiplier;
         [Notify] private bool noFriendshipDecay;
+        [Notify] private bool giveGiftsAnytime;
 
         /*********
         ** Time
@@ -232,6 +238,33 @@ namespace PlayerCheats
             Game1.warpFarmer(location.LocationName, location.TileX, location.TileY, false);
             ModEntry.ModMonitor.Log($"[PlayerCheats] Warped to {location.DisplayName} ({location.LocationName}) at ({location.TileX}, {location.TileY})", LogLevel.Info);
         }
+
+        /// <summary>Add money to the player's wallet and profit tracking.</summary>
+        public void AddMoney()
+        {
+            if (!Context.IsWorldReady || AddMoneyAmount <= 0)
+                return;
+
+            int amount = (int)AddMoneyAmount;
+            Game1.player.Money += amount;
+            Game1.player.totalMoneyEarned += (uint)amount;
+            Game1.addHUDMessage(new HUDMessage($"Added {amount:N0}g to wallet!", HUDMessage.achievement_type));
+            ModEntry.ModMonitor.Log($"[PlayerCheats] Added {amount}g to player. New total: {Game1.player.Money}g", LogLevel.Info);
+        }
+
+        /// <summary>Add casino coins (Qi coins) to the player.</summary>
+        public void AddCasinoCoins()
+        {
+            if (!Context.IsWorldReady || AddCasinoCoinsAmount <= 0)
+                return;
+
+            int amount = (int)AddCasinoCoinsAmount;
+            Game1.player.clubCoins += amount;
+            Game1.addHUDMessage(new HUDMessage($"Added {amount:N0} Qi Coins!", HUDMessage.achievement_type));
+            ModEntry.ModMonitor.Log($"[PlayerCheats] Added {amount} Qi Coins. New total: {Game1.player.clubCoins}", LogLevel.Info);
+        }
+
+
 
         /// <summary>Refresh the list of available warp locations from the current game.</summary>
         public void RefreshWarpLocations()
@@ -372,6 +405,16 @@ namespace PlayerCheats
             LoadFromConfig(ModEntry.Config);
             InitTabs();
             RefreshWarpLocations();
+
+            // Subscribe to property changes to sync values immediately to config
+            PropertyChanged += HandlePropertyChanged;
+        }
+
+        /// <summary>Sync changed property values to config immediately so cheats take effect in real-time.</summary>
+        private void HandlePropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            // Sync current ViewModel state to config so UpdateTicked can use it
+            SaveToConfig(ModEntry.Config);
         }
 
         private void InitTabs()
@@ -427,8 +470,7 @@ namespace PlayerCheats
             ToolAreaMultiplier = config.ToolAreaMultiplier;
             NoToolStaminaCost = config.NoToolStaminaCost;
             InfiniteWater = config.InfiniteWater;
-            AxePowerBonus = config.AxePowerBonus;
-            PickaxePowerBonus = config.PickaxePowerBonus;
+            OneHitTools = config.OneHitTools;
 
             MagneticRadiusMultiplier = config.MagneticRadiusMultiplier;
             AddedMagneticRadius = config.AddedMagneticRadius;
@@ -454,6 +496,7 @@ namespace PlayerCheats
 
             FriendshipMultiplier = config.FriendshipMultiplier;
             NoFriendshipDecay = config.NoFriendshipDecay;
+            GiveGiftsAnytime = config.GiveGiftsAnytime;
 
             FreezeTime = config.FreezeTime;
             FreezeTimeIndoors = config.FreezeTimeIndoors;
@@ -513,8 +556,7 @@ namespace PlayerCheats
             config.ToolAreaMultiplier = (int)ToolAreaMultiplier;
             config.NoToolStaminaCost = NoToolStaminaCost;
             config.InfiniteWater = InfiniteWater;
-            config.AxePowerBonus = (int)AxePowerBonus;
-            config.PickaxePowerBonus = (int)PickaxePowerBonus;
+            config.OneHitTools = OneHitTools;
 
             config.MagneticRadiusMultiplier = MagneticRadiusMultiplier;
             config.AddedMagneticRadius = (int)AddedMagneticRadius;
@@ -540,6 +582,7 @@ namespace PlayerCheats
 
             config.FriendshipMultiplier = FriendshipMultiplier;
             config.NoFriendshipDecay = NoFriendshipDecay;
+            config.GiveGiftsAnytime = GiveGiftsAnytime;
 
             config.FreezeTime = FreezeTime;
             config.FreezeTimeIndoors = FreezeTimeIndoors;
@@ -588,11 +631,12 @@ namespace PlayerCheats
             }
         }
 
-        /// <summary>Save and close.</summary>
+        /// <summary>Save to memory config (not persisted to file) and close.</summary>
         public void SaveAndClose()
         {
             SaveToConfig(ModEntry.Config);
-            ModEntry.ModHelper.WriteConfig(ModEntry.Config);
+            // NOTE: We intentionally do NOT call ModEntry.ModHelper.WriteConfig()
+            // This ensures cheats reset when the game restarts or player returns to title.
 
             // Apply game state for things that need immediate effect
             if (Context.IsWorldReady && Game1.player != null)
@@ -684,5 +728,9 @@ namespace PlayerCheats
             if (v >= 100) return "Always";
             return $"{v}%";
         };
+
+        public Func<float, string> FormatMoney { get; } = value => $"{(int)value:N0}g";
+
+        public Func<float, string> FormatQiCoins { get; } = value => $"{(int)value:N0}";
     }
 }
