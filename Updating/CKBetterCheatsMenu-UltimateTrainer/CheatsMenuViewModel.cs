@@ -10,7 +10,7 @@ using StardewValley;
 using StardewValley.Locations;
 using StardewValley.TerrainFeatures;
 
-namespace PlayerCheats
+namespace CKBetterCheatsMenu
 {
     /// <summary>Data for a single warp location.</summary>
     internal class WarpLocationData
@@ -269,7 +269,7 @@ namespace PlayerCheats
 
             // Warp the player to the location
             Game1.warpFarmer(location.LocationName, location.TileX, location.TileY, false);
-            ModEntry.ModMonitor.Log($"[PlayerCheats] Warped to {location.DisplayName} ({location.LocationName}) at ({location.TileX}, {location.TileY})", LogLevel.Info);
+            ModEntry.ModMonitor.Log($"[CKBetterCheatsMenu] Warped to {location.DisplayName} ({location.LocationName}) at ({location.TileX}, {location.TileY})", LogLevel.Info);
         }
 
         /// <summary>Add money to the player's wallet and profit tracking.</summary>
@@ -281,8 +281,8 @@ namespace PlayerCheats
             int amount = (int)AddMoneyAmount;
             Game1.player.Money += amount;
             Game1.player.totalMoneyEarned += (uint)amount;
-            Game1.addHUDMessage(new HUDMessage($"Added {amount:N0}g to wallet!", HUDMessage.achievement_type));
-            ModEntry.ModMonitor.Log($"[PlayerCheats] Added {amount}g to player. New total: {Game1.player.Money}g", LogLevel.Info);
+            Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.added-gold", new { amount = amount.ToString("N0") }), HUDMessage.achievement_type));
+            ModEntry.ModMonitor.Log($"[CKBetterCheatsMenu] Added {amount}g to player. New total: {Game1.player.Money}g", LogLevel.Info);
         }
 
         /// <summary>Add casino coins (Qi coins) to the player.</summary>
@@ -293,8 +293,8 @@ namespace PlayerCheats
 
             int amount = (int)AddCasinoCoinsAmount;
             Game1.player.clubCoins += amount;
-            Game1.addHUDMessage(new HUDMessage($"Added {amount:N0} Qi Coins!", HUDMessage.achievement_type));
-            ModEntry.ModMonitor.Log($"[PlayerCheats] Added {amount} Qi Coins. New total: {Game1.player.clubCoins}", LogLevel.Info);
+            Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.added-qi-coins", new { amount = amount.ToString("N0") }), HUDMessage.achievement_type));
+            ModEntry.ModMonitor.Log($"[CKBetterCheatsMenu] Added {amount} Qi Coins. New total: {Game1.player.clubCoins}", LogLevel.Info);
         }
 
         /*********
@@ -320,8 +320,8 @@ namespace PlayerCheats
                 }
             }
 
-            Game1.addHUDMessage(new HUDMessage($"Grew {count} crops!", HUDMessage.achievement_type));
-            ModEntry.ModMonitor.Log($"[PlayerCheats] Grew {count} crops to full maturity.", LogLevel.Info);
+            Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.grew-crops", new { count }), HUDMessage.achievement_type));
+            ModEntry.ModMonitor.Log($"[CKBetterCheatsMenu] Grew {count} crops to full maturity.", LogLevel.Info);
         }
 
         /// <summary>Instantly grow all regular trees to full size.</summary>
@@ -343,8 +343,8 @@ namespace PlayerCheats
                 }
             }
 
-            Game1.addHUDMessage(new HUDMessage($"Grew {count} trees!", HUDMessage.achievement_type));
-            ModEntry.ModMonitor.Log($"[PlayerCheats] Grew {count} regular trees to full size.", LogLevel.Info);
+            Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.grew-trees", new { count }), HUDMessage.achievement_type));
+            ModEntry.ModMonitor.Log($"[CKBetterCheatsMenu] Grew {count} regular trees to full size.", LogLevel.Info);
         }
 
         /// <summary>Instantly grow all fruit trees to full maturity.</summary>
@@ -367,8 +367,8 @@ namespace PlayerCheats
                 }
             }
 
-            Game1.addHUDMessage(new HUDMessage($"Grew {count} fruit trees!", HUDMessage.achievement_type));
-            ModEntry.ModMonitor.Log($"[PlayerCheats] Grew {count} fruit trees to full maturity.", LogLevel.Info);
+            Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.grew-fruit-trees", new { count }), HUDMessage.achievement_type));
+            ModEntry.ModMonitor.Log($"[CKBetterCheatsMenu] Grew {count} fruit trees to full maturity.", LogLevel.Info);
         }
 
         /// <summary>Water all tilled fields on the farm.</summary>
@@ -390,8 +390,8 @@ namespace PlayerCheats
                 }
             }
 
-            Game1.addHUDMessage(new HUDMessage($"Watered {count} tiles!", HUDMessage.achievement_type));
-            ModEntry.ModMonitor.Log($"[PlayerCheats] Watered {count} tilled tiles.", LogLevel.Info);
+            Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.watered-tiles", new { count }), HUDMessage.achievement_type));
+            ModEntry.ModMonitor.Log($"[CKBetterCheatsMenu] Watered {count} tilled tiles.", LogLevel.Info);
         }
 
         /// <summary>Unlock all crafting and cooking recipes for the player.</summary>
@@ -403,8 +403,8 @@ namespace PlayerCheats
             int craftingCount = UnlockAllCraftingRecipesInternal();
             int cookingCount = UnlockAllCookingRecipesInternal();
 
-            Game1.addHUDMessage(new HUDMessage($"Unlocked {craftingCount} crafting + {cookingCount} cooking recipes!", HUDMessage.achievement_type));
-            ModEntry.ModMonitor.Log($"[PlayerCheats] Unlocked {craftingCount} crafting and {cookingCount} cooking recipes.", LogLevel.Info);
+            Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.unlocked-all-recipes", new { crafting = craftingCount, cooking = cookingCount }), HUDMessage.achievement_type));
+            ModEntry.ModMonitor.Log($"[CKBetterCheatsMenu] Unlocked {craftingCount} crafting and {cookingCount} cooking recipes.", LogLevel.Info);
         }
 
         /// <summary>Unlock all crafting recipes for the player.</summary>
@@ -414,8 +414,8 @@ namespace PlayerCheats
                 return;
 
             int count = UnlockAllCraftingRecipesInternal();
-            Game1.addHUDMessage(new HUDMessage($"Unlocked {count} crafting recipes!", HUDMessage.achievement_type));
-            ModEntry.ModMonitor.Log($"[PlayerCheats] Unlocked {count} crafting recipes.", LogLevel.Info);
+            Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.unlocked-crafting", new { count }), HUDMessage.achievement_type));
+            ModEntry.ModMonitor.Log($"[CKBetterCheatsMenu] Unlocked {count} crafting recipes.", LogLevel.Info);
         }
 
         /// <summary>Unlock all cooking recipes for the player.</summary>
@@ -425,8 +425,8 @@ namespace PlayerCheats
                 return;
 
             int count = UnlockAllCookingRecipesInternal();
-            Game1.addHUDMessage(new HUDMessage($"Unlocked {count} cooking recipes!", HUDMessage.achievement_type));
-            ModEntry.ModMonitor.Log($"[PlayerCheats] Unlocked {count} cooking recipes.", LogLevel.Info);
+            Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.unlocked-cooking", new { count }), HUDMessage.achievement_type));
+            ModEntry.ModMonitor.Log($"[CKBetterCheatsMenu] Unlocked {count} cooking recipes.", LogLevel.Info);
         }
 
         /// <summary>Unlock all inventory slots (maximize backpack size).</summary>
@@ -440,15 +440,15 @@ namespace PlayerCheats
 
             if (player.MaxItems >= maxSlots)
             {
-                Game1.addHUDMessage(new HUDMessage("Inventory already at maximum size!", HUDMessage.error_type));
+                Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.inventory-max"), HUDMessage.error_type));
                 return;
             }
 
             int added = maxSlots - player.MaxItems;
             player.increaseBackpackSize(added);
 
-            Game1.addHUDMessage(new HUDMessage($"Unlocked {added} inventory slots!", HUDMessage.achievement_type));
-            ModEntry.ModMonitor.Log($"[PlayerCheats] Increased backpack from {maxSlots - added} to {maxSlots} slots.", LogLevel.Info);
+            Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.unlocked-slots", new { count = added }), HUDMessage.achievement_type));
+            ModEntry.ModMonitor.Log($"[CKBetterCheatsMenu] Increased backpack from {maxSlots - added} to {maxSlots} slots.", LogLevel.Info);
         }
 
         /// <summary>Internal helper to unlock all crafting recipes.</summary>
@@ -539,7 +539,7 @@ namespace PlayerCheats
                 .ThenBy(l => l.LocationName)
                 .ToList();
 
-            ModEntry.ModMonitor.Log($"[PlayerCheats] Loaded {WarpLocations.Count} warp locations.", LogLevel.Trace);
+            ModEntry.ModMonitor.Log($"[CKBetterCheatsMenu] Loaded {WarpLocations.Count} warp locations.", LogLevel.Trace);
         }
 
         /// <summary>Categorize a location for UI grouping.</summary>
@@ -633,14 +633,14 @@ namespace PlayerCheats
             var cc = Game1.getLocationFromName("CommunityCenter") as StardewValley.Locations.CommunityCenter;
             if (cc == null)
             {
-                Game1.addHUDMessage(new HUDMessage("Community Center not found!", HUDMessage.error_type));
+                Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.cc-not-found"), HUDMessage.error_type));
                 return;
             }
 
             // Check if already completed via JojaMart route
             if (Game1.MasterPlayer.mailReceived.Contains("JojaMember"))
             {
-                Game1.addHUDMessage(new HUDMessage("Joja route active - bundles not applicable!", HUDMessage.error_type));
+                Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.joja-active"), HUDMessage.error_type));
                 return;
             }
 
@@ -692,7 +692,7 @@ namespace PlayerCheats
                 Game1.MasterPlayer.mailReceived.Add("ccIsComplete");
             }
 
-            Game1.addHUDMessage(new HUDMessage($"Completed {completedBundles} bundles! All areas done!", HUDMessage.achievement_type));
+            Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.completed-bundles", new { count = completedBundles }), HUDMessage.achievement_type));
             ModEntry.ModMonitor.Log($"[World] Completed all community center bundles ({completedBundles} updated).", LogLevel.Info);
         }
 
@@ -719,12 +719,12 @@ namespace PlayerCheats
 
             if (count > 0)
             {
-                Game1.addHUDMessage(new HUDMessage($"Completed {count} special orders!", HUDMessage.achievement_type));
+                Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.completed-orders", new { count }), HUDMessage.achievement_type));
                 ModEntry.ModMonitor.Log($"[World] Completed {count} active special orders.", LogLevel.Info);
             }
             else
             {
-                Game1.addHUDMessage(new HUDMessage("No active special orders to complete!", HUDMessage.error_type));
+                Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.no-active-orders"), HUDMessage.error_type));
             }
         }
 
@@ -781,7 +781,7 @@ namespace PlayerCheats
 
             Game1.timeOfDay = target;
             Game1.gameTimeInterval = 0;
-            Game1.addHUDMessage(new HUDMessage($"Time set to {Game1.getTimeOfDayString(target)}!", HUDMessage.achievement_type));
+            Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.time-set", new { time = Game1.getTimeOfDayString(target) }), HUDMessage.achievement_type));
             ModEntry.ModMonitor.Log($"[World] Time set to {target}.", LogLevel.Info);
         }
 
@@ -1093,6 +1093,8 @@ namespace PlayerCheats
         /*********
         ** Value Formatters for Sliders (must be Func<float, string> properties for StardewUI binding)
         *********/
+        private static string T(string key) => ModEntry.ModHelper.Translation.Get(key);
+
         public Func<float, string> FormatMultiplier { get; } = value => $"{value:F1}x";
 
         public Func<float, string> FormatFlat { get; } = value => $"+{value:F1}";
@@ -1102,7 +1104,7 @@ namespace PlayerCheats
         public Func<float, string> FormatLevel { get; } = value =>
         {
             int v = (int)value;
-            return v < 0 ? "Default" : $"{v}";
+            return v < 0 ? T("format.default") : $"{v}";
         };
 
         public Func<float, string> FormatQuality { get; } = value =>
@@ -1110,11 +1112,11 @@ namespace PlayerCheats
             int v = (int)value;
             return v switch
             {
-                -1 => "Disabled",
-                0 => "Normal",
-                1 => "Silver",
-                2 => "Gold",
-                4 => "Iridium",
+                -1 => T("format.disabled"),
+                0 => T("format.normal-quality"),
+                1 => T("format.silver"),
+                2 => T("format.gold"),
+                4 => T("format.iridium"),
                 _ => $"{v}"
             };
         };
@@ -1122,21 +1124,21 @@ namespace PlayerCheats
         public Func<float, string> FormatHearts { get; } = value =>
         {
             int v = (int)value;
-            return v < 0 ? "Disabled" : $"{v} ♥";
+            return v < 0 ? T("format.disabled") : $"{v} ♥";
         };
 
         public Func<float, string> FormatPercent { get; } = value => $"{value * 100:F0}%";
 
         public Func<float, string> FormatLuck { get; } = value =>
         {
-            if (value <= -0.5f) return "Disabled";
+            if (value <= -0.5f) return T("format.disabled");
             return $"{value:F2}";
         };
 
         public Func<float, string> FormatToolArea { get; } = value =>
         {
             int v = (int)value;
-            return v <= 1 ? "Normal" : $"{v}x{v}";
+            return v <= 1 ? T("format.tool-area-normal") : $"{v}x{v}";
         };
 
         public Func<float, string> FormatRadius { get; } = value =>
@@ -1147,7 +1149,7 @@ namespace PlayerCheats
 
         public Func<float, string> FormatBuyPrice { get; } = value =>
         {
-            if (value <= 0.01f) return "Free!";
+            if (value <= 0.01f) return T("format.buy-free");
             return $"{value:F1}x";
         };
 
@@ -1155,20 +1157,20 @@ namespace PlayerCheats
         {
             return ((int)value) switch
             {
-                1 => "Sunny",
-                2 => "Rain",
-                3 => "Storm",
-                4 => "Snow",
-                5 => "Wind",
-                _ => "No Override"
+                1 => T("format.weather-sunny"),
+                2 => T("format.weather-rain"),
+                3 => T("format.weather-storm"),
+                4 => T("format.weather-snow"),
+                5 => T("format.weather-wind"),
+                _ => T("format.weather-none")
             };
         };
 
         public Func<float, string> FormatLadderChance { get; } = value =>
         {
             int v = (int)value;
-            if (v <= 0) return "Disabled";
-            if (v >= 100) return "Always";
+            if (v <= 0) return T("format.ladder-disabled");
+            if (v >= 100) return T("format.ladder-always");
             return $"{v}%";
         };
 

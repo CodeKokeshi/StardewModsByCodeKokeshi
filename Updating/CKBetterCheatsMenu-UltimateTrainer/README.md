@@ -1,4 +1,4 @@
-# Ultimate Player Cheats (StardewUI Edition)
+# CK Better Cheats Menu (StardewUI Edition)
 
 A comprehensive player customization mod for Stardew Valley with a beautiful **tabbed UI** powered by [StardewUI Framework](https://github.com/focustense/StardewUI).
 

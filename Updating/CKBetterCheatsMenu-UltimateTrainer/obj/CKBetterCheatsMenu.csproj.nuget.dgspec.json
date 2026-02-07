@@ -1,0 +1,83 @@
+{
+  "format": 1,
+  "restore": {
+    "D:\\December 2025 OS\\Development\\StardewModding\\Updating\\CKBetterCheatsMenu-UltimateTrainer\\CKBetterCheatsMenu.csproj": {}
+  },
+  "projects": {
+    "D:\\December 2025 OS\\Development\\StardewModding\\Updating\\CKBetterCheatsMenu-UltimateTrainer\\CKBetterCheatsMenu.csproj": {
+      "version": "2.0.0",
+      "restore": {
+        "projectUniqueName": "D:\\December 2025 OS\\Development\\StardewModding\\Updating\\CKBetterCheatsMenu-UltimateTrainer\\CKBetterCheatsMenu.csproj",
+        "projectName": "CKBetterCheatsMenu",
+        "projectPath": "D:\\December 2025 OS\\Development\\StardewModding\\Updating\\CKBetterCheatsMenu-UltimateTrainer\\CKBetterCheatsMenu.csproj",
+        "packagesPath": "C:\\Users\\Aikawa\\.nuget\\packages\\",
+        "outputPath": "D:\\December 2025 OS\\Development\\StardewModding\\Updating\\CKBetterCheatsMenu-UltimateTrainer\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\Aikawa\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net6.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net6.0": {
+            "targetAlias": "net6.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "9.0.300"
+      },
+      "frameworks": {
+        "net6.0": {
+          "targetAlias": "net6.0",
+          "dependencies": {
+            "Lib.Harmony": {
+              "target": "Package",
+              "version": "[2.3.3, )"
+            },
+            "Pathoschild.Stardew.ModBuildConfig": {
+              "target": "Package",
+              "version": "[4.1.1, )"
+            },
+            "PropertyChanged.SourceGenerator": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[1.0.8, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.308\\RuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

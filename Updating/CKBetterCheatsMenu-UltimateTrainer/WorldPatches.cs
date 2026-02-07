@@ -14,7 +14,7 @@ using StardewValley.Network.NetEvents;
 using StardewValley.Quests;
 using SObject = StardewValley.Object;
 
-namespace PlayerCheats
+namespace CKBetterCheatsMenu
 {
     /// <summary>Harmony patches for world cheats.</summary>
     public static class WorldPatches

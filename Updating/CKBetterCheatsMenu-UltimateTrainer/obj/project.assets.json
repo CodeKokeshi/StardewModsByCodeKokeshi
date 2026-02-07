@@ -289,11 +289,11 @@
   "project": {
     "version": "2.0.0",
     "restore": {
-      "projectUniqueName": "D:\\December 2025 OS\\Development\\StardewModding\\Updating\\UltimatePlayerCheats-StardewUI\\UltimatePlayerCheats.csproj",
-      "projectName": "UltimatePlayerCheats",
-      "projectPath": "D:\\December 2025 OS\\Development\\StardewModding\\Updating\\UltimatePlayerCheats-StardewUI\\UltimatePlayerCheats.csproj",
+      "projectUniqueName": "D:\\December 2025 OS\\Development\\StardewModding\\Updating\\CKBetterCheatsMenu-UltimateTrainer\\CKBetterCheatsMenu.csproj",
+      "projectName": "CKBetterCheatsMenu",
+      "projectPath": "D:\\December 2025 OS\\Development\\StardewModding\\Updating\\CKBetterCheatsMenu-UltimateTrainer\\CKBetterCheatsMenu.csproj",
       "packagesPath": "C:\\Users\\Aikawa\\.nuget\\packages\\",
-      "outputPath": "D:\\December 2025 OS\\Development\\StardewModding\\Updating\\UltimatePlayerCheats-StardewUI\\obj\\",
+      "outputPath": "D:\\December 2025 OS\\Development\\StardewModding\\Updating\\CKBetterCheatsMenu-UltimateTrainer\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\Aikawa\\AppData\\Roaming\\NuGet\\NuGet.Config"

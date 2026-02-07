@@ -1,0 +1,11 @@
+D:\December 2025 OS\Development\StardewModding\Updating\CKBetterCheatsMenu-UltimateTrainer\bin\Debug\net6.0\assets\Icons.png
+D:\December 2025 OS\Development\StardewModding\Updating\CKBetterCheatsMenu-UltimateTrainer\bin\Debug\net6.0\assets\views\CheatsMenu.sml
+D:\December 2025 OS\Development\StardewModding\Updating\CKBetterCheatsMenu-UltimateTrainer\bin\Debug\net6.0\CKBetterCheatsMenu.deps.json
+D:\December 2025 OS\Development\StardewModding\Updating\CKBetterCheatsMenu-UltimateTrainer\bin\Debug\net6.0\CKBetterCheatsMenu.dll
+D:\December 2025 OS\Development\StardewModding\Updating\CKBetterCheatsMenu-UltimateTrainer\obj\Debug\net6.0\CKBetterCheatsMenu.csproj.AssemblyReference.cache
+D:\December 2025 OS\Development\StardewModding\Updating\CKBetterCheatsMenu-UltimateTrainer\obj\Debug\net6.0\CKBetterCheatsMenu.GeneratedMSBuildEditorConfig.editorconfig
+D:\December 2025 OS\Development\StardewModding\Updating\CKBetterCheatsMenu-UltimateTrainer\obj\Debug\net6.0\CKBetterCheatsMenu.AssemblyInfoInputs.cache
+D:\December 2025 OS\Development\StardewModding\Updating\CKBetterCheatsMenu-UltimateTrainer\obj\Debug\net6.0\CKBetterCheatsMenu.AssemblyInfo.cs
+D:\December 2025 OS\Development\StardewModding\Updating\CKBetterCheatsMenu-UltimateTrainer\obj\Debug\net6.0\CKBetterCheatsMenu.csproj.CoreCompileInputs.cache
+D:\December 2025 OS\Development\StardewModding\Updating\CKBetterCheatsMenu-UltimateTrainer\obj\Debug\net6.0\CKBetterCheatsMenu.sourcelink.json
+D:\December 2025 OS\Development\StardewModding\Updating\CKBetterCheatsMenu-UltimateTrainer\obj\Debug\net6.0\CKBetterCheatsMenu.dll

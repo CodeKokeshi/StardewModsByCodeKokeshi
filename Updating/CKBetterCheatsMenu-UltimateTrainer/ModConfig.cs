@@ -1,7 +1,7 @@
 using StardewModdingAPI;
 using StardewModdingAPI.Utilities;
 
-namespace PlayerCheats
+namespace CKBetterCheatsMenu
 {
     /// <summary>Configuration settings for Player Cheats mod.</summary>
     public class ModConfig

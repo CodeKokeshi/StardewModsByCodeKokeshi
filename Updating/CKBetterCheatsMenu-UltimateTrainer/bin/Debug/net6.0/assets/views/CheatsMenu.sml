@@ -3,7 +3,7 @@
     <banner background={@Mods/StardewUI/Sprites/BannerBackground}
             background-border-thickness="48,0"
             padding="12"
-            text="Ultimate Trainer" />
+            text={#banner.title} />
 
     <!-- Tab Bar -->
     <lane margin="32, 8, 0, -16" z-index="1">
@@ -27,13 +27,13 @@
         <!-- ==================== 1. GENERAL TAB ==================== -->
         <scrollable *case="General" peeking="64">
             <lane layout="stretch content" orientation="vertical">
-                <section-header text="Master Toggle" />
-                <cheat-toggle label="Mod Enabled" tooltip="Enable or disable all cheats." checked={<>ModEnabled} />
+                <section-header text={#general.section.master-toggle} />
+                <cheat-toggle label={#general.mod-enabled.label} tooltip={#general.mod-enabled.tooltip} checked={<>ModEnabled} />
                 <lane layout="stretch content" margin="0, 16, 0, 0">
                     <label layout="stretch content"
                            margin="16, 0"
                            color="#888"
-                           text="Press the menu hotkey (default: K) to open this menu at any time. Configure the hotkey in config.json." />
+                           text={#general.hotkey-hint} />
                 </lane>
             </lane>
         </scrollable>
@@ -41,45 +41,45 @@
         <!-- ==================== 2. PLAYER TAB ==================== -->
         <scrollable *case="Player" peeking="64">
             <lane layout="stretch content" orientation="vertical">
-                <section-header text="Movement and Speed" />
-                <cheat-slider label="Speed Multiplier"
-                              tooltip="Movement speed multiplier. 1.0 = normal, 2.0 = 2x speed."
+                <section-header text={#player.section.movement} />
+                <cheat-slider label={#player.speed-multiplier.label}
+                              tooltip={#player.speed-multiplier.tooltip}
                               min="0.5" max="20" interval="0.5"
                               value={<>SpeedMultiplier}
                               value-format={:FormatMultiplier} />
-                <cheat-slider label="Speed Bonus"
-                              tooltip="Flat speed bonus added to base movement."
+                <cheat-slider label={#player.speed-bonus.label}
+                              tooltip={#player.speed-bonus.tooltip}
                               min="0" max="20" interval="0.5"
                               value={<>AddedSpeedBonus}
                               value-format={:FormatFlat} />
-                <cheat-toggle label="No Clip"
-                              tooltip="Walk through walls, buildings, and all obstacles."
+                <cheat-toggle label={#player.no-clip.label}
+                              tooltip={#player.no-clip.tooltip}
                               checked={<>NoClip} />
 
-                <section-header text="Health and Stamina" />
-                <cheat-toggle label="Infinite Stamina/Energy"
-                              tooltip="Never get tired. Stamina always stays at max."
+                <section-header text={#player.section.health-stamina} />
+                <cheat-toggle label={#player.infinite-stamina.label}
+                              tooltip={#player.infinite-stamina.tooltip}
                               checked={<>InfiniteStamina} />
-                <cheat-toggle label="Infinite Health"
-                              tooltip="Never die. Complete invincibility!"
+                <cheat-toggle label={#player.infinite-health.label}
+                              tooltip={#player.infinite-health.tooltip}
                               checked={<>InfiniteHealth} />
-                <cheat-slider label="Max Stamina/Energy Override"
-                              tooltip="Override max stamina. 0 = use default."
+                <cheat-slider label={#player.max-stamina-override.label}
+                              tooltip={#player.max-stamina-override.tooltip}
                               min="0" max="1100" interval="10"
                               value={<>MaxStaminaOverride}
                               value-format={:FormatInt} />
-                <cheat-slider label="Max Health Override"
-                              tooltip="Override max health. 0 = use default."
+                <cheat-slider label={#player.max-health-override.label}
+                              tooltip={#player.max-health-override.tooltip}
                               min="0" max="620" interval="10"
                               value={<>MaxHealthOverride}
                               value-format={:FormatInt} />
-                <cheat-slider label="Stamina Regen / Sec"
-                              tooltip="How much stamina regenerates every second. 0 = none."
+                <cheat-slider label={#player.stamina-regen.label}
+                              tooltip={#player.stamina-regen.tooltip}
                               min="0" max="100" interval="1"
                               value={<>StaminaRegenPerSecond}
                               value-format={:FormatInt} />
-                <cheat-slider label="Health Regen / Sec"
-                              tooltip="How much health regenerates every second. 0 = none."
+                <cheat-slider label={#player.health-regen.label}
+                              tooltip={#player.health-regen.tooltip}
                               min="0" max="100" interval="1"
                               value={<>HealthRegenPerSecond}
                               value-format={:FormatInt} />
@@ -89,40 +89,40 @@
         <!-- ==================== 3. COMBAT TAB ==================== -->
         <scrollable *case="Combat" peeking="64">
             <lane layout="stretch content" orientation="vertical">
-                <section-header text="Combat" />
-                <cheat-toggle label="One Hit Kill"
-                              tooltip="All enemies die in one hit."
+                <section-header text={#combat.section.combat} />
+                <cheat-toggle label={#combat.one-hit-kill.label}
+                              tooltip={#combat.one-hit-kill.tooltip}
                               checked={<>OneHitKill} />
-                <cheat-toggle label="100% Critical Chance"
-                              tooltip="All attacks are critical hits."
+                <cheat-toggle label={#combat.always-crit.label}
+                              tooltip={#combat.always-crit.tooltip}
                               checked={<>AlwaysCrit} />
-                <cheat-slider label="Damage Multiplier"
-                              tooltip="Multiply all weapon damage. 1.0 = normal."
+                <cheat-slider label={#combat.damage-multiplier.label}
+                              tooltip={#combat.damage-multiplier.tooltip}
                               min="1" max="100" interval="1"
                               value={<>DamageMultiplier}
                               value-format={:FormatMultiplier} />
-                <cheat-slider label="Crit Damage Multiplier"
-                              tooltip="Multiply critical hit damage. 1.0 = normal."
+                <cheat-slider label={#combat.crit-damage-multiplier.label}
+                              tooltip={#combat.crit-damage-multiplier.tooltip}
                               min="1" max="100" interval="1"
                               value={<>CritDamageMultiplier}
                               value-format={:FormatMultiplier} />
-                <cheat-slider label="Added Attack"
-                              tooltip="Flat bonus attack points."
+                <cheat-slider label={#combat.added-attack.label}
+                              tooltip={#combat.added-attack.tooltip}
                               min="0" max="500" interval="5"
                               value={<>AddedAttack}
                               value-format={:FormatInt} />
-                <cheat-slider label="Added Defense"
-                              tooltip="Flat bonus defense points."
+                <cheat-slider label={#combat.added-defense.label}
+                              tooltip={#combat.added-defense.tooltip}
                               min="0" max="500" interval="5"
                               value={<>AddedDefense}
                               value-format={:FormatInt} />
-                <cheat-slider label="Added Immunity"
-                              tooltip="Flat bonus immunity points."
+                <cheat-slider label={#combat.added-immunity.label}
+                              tooltip={#combat.added-immunity.tooltip}
                               min="0" max="100" interval="1"
                               value={<>AddedImmunity}
                               value-format={:FormatInt} />
-                <cheat-toggle label="No Monster Spawns"
-                              tooltip="Removes all monsters from the current location."
+                <cheat-toggle label={#combat.no-monster-spawns.label}
+                              tooltip={#combat.no-monster-spawns.tooltip}
                               checked={<>NoMonsterSpawns} />
             </lane>
         </scrollable>
@@ -130,36 +130,36 @@
         <!-- ==================== 4. SKILLS & LEVELS TAB ==================== -->
         <scrollable *case="Skills" peeking="64">
             <lane layout="stretch content" orientation="vertical">
-                <section-header text="Experience" />
-                <cheat-slider label="XP Multiplier"
-                              tooltip="Multiply all XP gains. 1.0 = normal."
+                <section-header text={#skills.section.experience} />
+                <cheat-slider label={#skills.xp-multiplier.label}
+                              tooltip={#skills.xp-multiplier.tooltip}
                               min="1" max="1000" interval="10"
                               value={<>XpMultiplier}
                               value-format={:FormatMultiplier} />
 
-                <section-header text="Skill Level Overrides" />
-                <cheat-slider label="Farming Level Override"
-                              tooltip="Force farming level. -1 = normal."
+                <section-header text={#skills.section.overrides} />
+                <cheat-slider label={#skills.farming-override.label}
+                              tooltip={#skills.farming-override.tooltip}
                               min="-1" max="10" interval="1"
                               value={<>FarmingLevelOverride}
                               value-format={:FormatLevel} />
-                <cheat-slider label="Mining Level Override"
-                              tooltip="Force mining level. -1 = normal."
+                <cheat-slider label={#skills.mining-override.label}
+                              tooltip={#skills.mining-override.tooltip}
                               min="-1" max="10" interval="1"
                               value={<>MiningLevelOverride}
                               value-format={:FormatLevel} />
-                <cheat-slider label="Foraging Level Override"
-                              tooltip="Force foraging level. -1 = normal."
+                <cheat-slider label={#skills.foraging-override.label}
+                              tooltip={#skills.foraging-override.tooltip}
                               min="-1" max="10" interval="1"
                               value={<>ForagingLevelOverride}
                               value-format={:FormatLevel} />
-                <cheat-slider label="Fishing Level Override"
-                              tooltip="Force fishing level. -1 = normal."
+                <cheat-slider label={#skills.fishing-override.label}
+                              tooltip={#skills.fishing-override.tooltip}
                               min="-1" max="10" interval="1"
                               value={<>FishingLevelOverride}
                               value-format={:FormatLevel} />
-                <cheat-slider label="Combat Level Override"
-                              tooltip="Force combat level. -1 = normal."
+                <cheat-slider label={#skills.combat-override.label}
+                              tooltip={#skills.combat-override.tooltip}
                               min="-1" max="10" interval="1"
                               value={<>CombatLevelOverride}
                               value-format={:FormatLevel} />
@@ -169,30 +169,30 @@
         <!-- ==================== 5. TOOLS & CRAFTING TAB ==================== -->
         <scrollable *case="Tools" peeking="64">
             <lane layout="stretch content" orientation="vertical">
-                <section-header text="Tools" />
-                <cheat-slider label="Tool Area Multiplier"
-                              tooltip="Multiply area affected by hoe/watering can. 1 = normal."
+                <section-header text={#tools.section.tools} />
+                <cheat-slider label={#tools.tool-area-multiplier.label}
+                              tooltip={#tools.tool-area-multiplier.tooltip}
                               min="1" max="11" interval="2"
                               value={<>ToolAreaMultiplier}
                               value-format={:FormatToolArea} />
-                <cheat-toggle label="No Tool Stamina Cost"
-                              tooltip="Using tools costs no stamina."
+                <cheat-toggle label={#tools.no-tool-stamina.label}
+                              tooltip={#tools.no-tool-stamina.tooltip}
                               checked={<>NoToolStaminaCost} />
-                <cheat-toggle label="Infinite Water"
-                              tooltip="Watering can never runs out."
+                <cheat-toggle label={#tools.infinite-water.label}
+                              tooltip={#tools.infinite-water.tooltip}
                               checked={<>InfiniteWater} />
-                <cheat-toggle label="One Hit Tools"
-                              tooltip="Axe destroys trees/stumps in one hit. Pickaxe destroys rocks/boulders in one hit."
+                <cheat-toggle label={#tools.one-hit-tools.label}
+                              tooltip={#tools.one-hit-tools.tooltip}
                               checked={<>OneHitTools} />
 
-                <section-header text="Tool Upgrades" />
-                <cheat-toggle label="Instant Tool Upgrade"
-                              tooltip="Tool upgrades at the blacksmith complete instantly."
+                <section-header text={#tools.section.upgrades} />
+                <cheat-toggle label={#tools.instant-tool-upgrade.label}
+                              tooltip={#tools.instant-tool-upgrade.tooltip}
                               checked={<>InstantToolUpgrade} />
 
-                <section-header text="Crafting" />
-                <cheat-toggle label="Free Crafting"
-                              tooltip="Crafting does not consume ingredients."
+                <section-header text={#tools.section.crafting} />
+                <cheat-toggle label={#tools.free-crafting.label}
+                              tooltip={#tools.free-crafting.tooltip}
                               checked={<>FreeCrafting} />
             </lane>
         </scrollable>
@@ -200,80 +200,80 @@
         <!-- ==================== 6. FARMING TAB ==================== -->
         <scrollable *case="Farming" peeking="64">
             <lane layout="stretch content" orientation="vertical">
-                <section-header text="Crop Settings" />
-                <cheat-toggle label="Crops Never Die"
-                              tooltip="Crops survive season changes and lack of water."
+                <section-header text={#farming.section.crops} />
+                <cheat-toggle label={#farming.crops-never-die.label}
+                              tooltip={#farming.crops-never-die.tooltip}
                               checked={<>CropsNeverDie} />
-                <cheat-slider label="Force Forage Quality"
-                              tooltip="-1=disabled, 0=normal, 1=silver, 2=gold, 4=iridium."
+                <cheat-slider label={#farming.forage-quality.label}
+                              tooltip={#farming.forage-quality.tooltip}
                               min="-1" max="4" interval="1"
                               value={<>ForceForageQuality}
                               value-format={:FormatQuality} />
 
-                <section-header text="Instant Growth Actions" />
+                <section-header text={#farming.section.growth} />
                 <lane layout="stretch content" margin="16, 4" vertical-content-alignment="middle">
                     <label layout="320px content"
                            margin="0, 6"
-                           text="Grow All Crops"
-                           tooltip="Instantly grow all crops to harvestable state."
+                           text={#farming.grow-crops.label}
+                           tooltip={#farming.grow-crops.tooltip}
                            shadow-alpha="0.6"
                            shadow-color="#4448"
                            shadow-offset="-1, 1" />
                     <button layout="100px 36px"
-                            text="Apply"
-                            tooltip="Instantly grow all crops to harvestable state."
+                            text={#button.apply}
+                            tooltip={#farming.grow-crops.tooltip}
                             hover-background={@Mods/StardewUI/Sprites/ButtonLight}
                             left-click=|GrowAllCrops()| />
                 </lane>
                 <lane layout="stretch content" margin="16, 4" vertical-content-alignment="middle">
                     <label layout="320px content"
                            margin="0, 6"
-                           text="Grow All Trees"
-                           tooltip="Instantly grow all regular trees to full size."
+                           text={#farming.grow-trees.label}
+                           tooltip={#farming.grow-trees.tooltip}
                            shadow-alpha="0.6"
                            shadow-color="#4448"
                            shadow-offset="-1, 1" />
                     <button layout="100px 36px"
-                            text="Apply"
-                            tooltip="Instantly grow all regular trees to full size."
+                            text={#button.apply}
+                            tooltip={#farming.grow-trees.tooltip}
                             hover-background={@Mods/StardewUI/Sprites/ButtonLight}
                             left-click=|GrowAllTrees()| />
                 </lane>
                 <lane layout="stretch content" margin="16, 4" vertical-content-alignment="middle">
                     <label layout="320px content"
                            margin="0, 6"
-                           text="Grow All Fruit Trees"
-                           tooltip="Instantly grow all fruit trees to full maturity."
+                           text={#farming.grow-fruit-trees.label}
+                           tooltip={#farming.grow-fruit-trees.tooltip}
                            shadow-alpha="0.6"
                            shadow-color="#4448"
                            shadow-offset="-1, 1" />
                     <button layout="100px 36px"
-                            text="Apply"
-                            tooltip="Instantly grow all fruit trees to full maturity."
+                            text={#button.apply}
+                            tooltip={#farming.grow-fruit-trees.tooltip}
                             hover-background={@Mods/StardewUI/Sprites/ButtonLight}
                             left-click=|GrowAllFruitTrees()| />
                 </lane>
                 <lane layout="stretch content" margin="16, 4" vertical-content-alignment="middle">
                     <label layout="320px content"
                            margin="0, 6"
-                           text="Water All Fields"
-                           tooltip="Water all tilled fields on the farm."
+                           text={#farming.water-fields.label}
+                           tooltip={#farming.water-fields.tooltip}
                            shadow-alpha="0.6"
                            shadow-color="#4448"
                            shadow-offset="-1, 1" />
                     <button layout="100px 36px"
-                            text="Apply"
-                            tooltip="Water all tilled fields on the farm."
+                            text={#button.apply}
+                            tooltip={#farming.water-fields.tooltip}
                             hover-background={@Mods/StardewUI/Sprites/ButtonLight}
                             left-click=|WaterAllFields()| />
                 </lane>
 
-                <section-header text="Field Protection" />
-                <cheat-toggle label="Prevent Debris Spawn"
-                              tooltip="Stop weeds, stones, and twigs from spawning on the farm."
+                <section-header text={#farming.section.protection} />
+                <cheat-toggle label={#farming.prevent-debris.label}
+                              tooltip={#farming.prevent-debris.tooltip}
                               checked={<>PreventDebrisSpawn} />
-                <cheat-toggle label="Tilled Soil Don't Decay"
-                              tooltip="Tilled soil stays tilled indefinitely."
+                <cheat-toggle label={#farming.soil-dont-decay.label}
+                              tooltip={#farming.soil-dont-decay.tooltip}
                               checked={<>TilledSoilDontDecay} />
             </lane>
         </scrollable>
@@ -281,38 +281,38 @@
         <!-- ==================== 7. ANIMALS & PETS TAB ==================== -->
         <scrollable *case="Animals" peeking="64">
             <lane layout="stretch content" orientation="vertical">
-                <section-header text="Farm Animals" />
-                <cheat-toggle label="Max Animal Happiness"
-                              tooltip="All farm animals are always at max happiness."
+                <section-header text={#animals.section.farm-animals} />
+                <cheat-toggle label={#animals.max-happiness.label}
+                              tooltip={#animals.max-happiness.tooltip}
                               checked={<>MaxAnimalHappiness} />
-                <cheat-toggle label="Buy Animals Fully Matured"
-                              tooltip="Purchased animals are fully grown immediately."
+                <cheat-toggle label={#animals.buy-matured.label}
+                              tooltip={#animals.buy-matured.tooltip}
                               checked={<>BuyAnimalsFullyMatured} />
-                <cheat-toggle label="Auto-Pet Animals"
-                              tooltip="Automatically pet all farm animals each day."
+                <cheat-toggle label={#animals.auto-pet.label}
+                              tooltip={#animals.auto-pet.tooltip}
                               checked={<>AutoPetAnimals} />
-                <cheat-toggle label="Auto-Feed Animals"
-                              tooltip="Automatically fill all feeding troughs with hay."
+                <cheat-toggle label={#animals.auto-feed.label}
+                              tooltip={#animals.auto-feed.tooltip}
                               checked={<>AutoFeedAnimals} />
-                <cheat-toggle label="Animals Produce Daily"
-                              tooltip="All animals produce every day regardless of schedule."
+                <cheat-toggle label={#animals.produce-daily.label}
+                              tooltip={#animals.produce-daily.tooltip}
                               checked={<>AnimalsProduceDaily} />
-                <cheat-slider label="Farm Animal Hearts"
-                              tooltip="-1=disabled, 0-10=override friendship hearts for all farm animals."
+                <cheat-slider label={#animals.farm-hearts.label}
+                              tooltip={#animals.farm-hearts.tooltip}
                               min="-1" max="10" interval="1"
                               value={<>FarmAnimalHeartsOverride}
                               value-format={:FormatHearts} />
 
-                <section-header text="Pets" />
-                <cheat-slider label="Pet Hearts"
-                              tooltip="-1=disabled, 0-10=override friendship hearts for all pets."
+                <section-header text={#animals.section.pets} />
+                <cheat-slider label={#animals.pet-hearts.label}
+                              tooltip={#animals.pet-hearts.tooltip}
                               min="-1" max="10" interval="1"
                               value={<>PetHeartsOverride}
                               value-format={:FormatHearts} />
 
-                <section-header text="Silos" />
-                <cheat-toggle label="Infinite Hay"
-                              tooltip="Silos always have infinite hay."
+                <section-header text={#animals.section.silos} />
+                <cheat-toggle label={#animals.infinite-hay.label}
+                              tooltip={#animals.infinite-hay.tooltip}
                               checked={<>InfiniteHay} />
             </lane>
         </scrollable>
@@ -320,18 +320,18 @@
         <!-- ==================== 8. FISHING TAB ==================== -->
         <scrollable *case="Fishing" peeking="64">
             <lane layout="stretch content" orientation="vertical">
-                <section-header text="Fishing" />
-                <cheat-toggle label="Instant Fish Bite"
-                              tooltip="Fish bite immediately when you cast."
+                <section-header text={#fishing.section.fishing} />
+                <cheat-toggle label={#fishing.instant-bite.label}
+                              tooltip={#fishing.instant-bite.tooltip}
                               checked={<>InstantFishBite} />
-                <cheat-toggle label="Instant Catch"
-                              tooltip="Skip the fishing minigame entirely."
+                <cheat-toggle label={#fishing.instant-catch.label}
+                              tooltip={#fishing.instant-catch.tooltip}
                               checked={<>InstantCatch} />
-                <cheat-toggle label="Max Fish Quality"
-                              tooltip="All caught fish are iridium quality."
+                <cheat-toggle label={#fishing.max-quality.label}
+                              tooltip={#fishing.max-quality.tooltip}
                               checked={<>MaxFishQuality} />
-                <cheat-toggle label="Always Find Treasure"
-                              tooltip="Always find treasure when fishing."
+                <cheat-toggle label={#fishing.always-treasure.label}
+                              tooltip={#fishing.always-treasure.tooltip}
                               checked={<>AlwaysFindTreasure} />
             </lane>
         </scrollable>
@@ -339,77 +339,77 @@
         <!-- ==================== 9. ITEMS & INVENTORY TAB ==================== -->
         <scrollable *case="Items" peeking="64">
             <lane layout="stretch content" orientation="vertical">
-                <section-header text="Items and Inventory" />
-                <cheat-slider label="Magnetic Radius Multiplier"
-                              tooltip="Item pickup range multiplier. 1.0 = normal."
+                <section-header text={#items.section.items} />
+                <cheat-slider label={#items.magnetic-multiplier.label}
+                              tooltip={#items.magnetic-multiplier.tooltip}
                               min="1" max="50" interval="1"
                               value={<>MagneticRadiusMultiplier}
                               value-format={:FormatMultiplier} />
-                <cheat-slider label="Added Magnetic Radius"
-                              tooltip="Flat bonus to pickup range in pixels. 128 = 2 tiles."
+                <cheat-slider label={#items.magnetic-bonus.label}
+                              tooltip={#items.magnetic-bonus.tooltip}
                               min="0" max="2000" interval="64"
                               value={<>AddedMagneticRadius}
                               value-format={:FormatRadius} />
-                <cheat-toggle label="Infinite Items"
-                              tooltip="Items don't get consumed when used. (Experimental)"
+                <cheat-toggle label={#items.infinite-items.label}
+                              tooltip={#items.infinite-items.tooltip}
                               checked={<>InfiniteItems} />
 
-                <section-header text="Recipes" />
+                <section-header text={#items.section.recipes} />
                 <lane layout="stretch content" margin="16, 4" vertical-content-alignment="middle">
                     <label layout="320px content"
                            margin="0, 6"
-                           text="Unlock All Recipes"
-                           tooltip="Unlock all crafting and cooking recipes."
+                           text={#items.unlock-all-recipes.label}
+                           tooltip={#items.unlock-all-recipes.tooltip}
                            shadow-alpha="0.6"
                            shadow-color="#4448"
                            shadow-offset="-1, 1" />
                     <button layout="100px 36px"
-                            text="Apply"
-                            tooltip="Unlock all crafting and cooking recipes."
+                            text={#button.apply}
+                            tooltip={#items.unlock-all-recipes.tooltip}
                             hover-background={@Mods/StardewUI/Sprites/ButtonLight}
                             left-click=|UnlockAllRecipes()| />
                 </lane>
                 <lane layout="stretch content" margin="16, 4" vertical-content-alignment="middle">
                     <label layout="320px content"
                            margin="0, 6"
-                           text="Unlock All Crafting Recipes"
-                           tooltip="Unlock all crafting recipes."
+                           text={#items.unlock-crafting.label}
+                           tooltip={#items.unlock-crafting.tooltip}
                            shadow-alpha="0.6"
                            shadow-color="#4448"
                            shadow-offset="-1, 1" />
                     <button layout="100px 36px"
-                            text="Apply"
-                            tooltip="Unlock all crafting recipes."
+                            text={#button.apply}
+                            tooltip={#items.unlock-crafting.tooltip}
                             hover-background={@Mods/StardewUI/Sprites/ButtonLight}
                             left-click=|UnlockAllCraftingRecipes()| />
                 </lane>
                 <lane layout="stretch content" margin="16, 4" vertical-content-alignment="middle">
                     <label layout="320px content"
                            margin="0, 6"
-                           text="Unlock All Cooking Recipes"
-                           tooltip="Unlock all cooking recipes."
+                           text={#items.unlock-cooking.label}
+                           tooltip={#items.unlock-cooking.tooltip}
                            shadow-alpha="0.6"
                            shadow-color="#4448"
                            shadow-offset="-1, 1" />
                     <button layout="100px 36px"
-                            text="Apply"
-                            tooltip="Unlock all cooking recipes."
+                            text={#button.apply}
+                            tooltip={#items.unlock-cooking.tooltip}
                             hover-background={@Mods/StardewUI/Sprites/ButtonLight}
                             left-click=|UnlockAllCookingRecipes()| />
                 </lane>
 
-                <section-header text="Backpack" />
+                <section-header text={#items.section.backpack} />
                 <lane layout="stretch content" margin="16, 4" vertical-content-alignment="middle">
                     <label layout="320px content"
                            margin="0, 6"
-                           text="Unlock All Inventory Slots"
-                           tooltip="Maximize backpack to 36 slots (3 rows)."
+                           text={#items.unlock-inventory.label}
+                           tooltip={#items.unlock-inventory.tooltip}
                            shadow-alpha="0.6"
                            shadow-color="#4448"
                            shadow-offset="-1, 1" />
                     <button layout="100px 36px"
-                            text="Apply"
-                            tooltip="Maximize backpack to 36 slots (3 rows)."
+                            text={#button.apply}
+                            tooltip={#items.unlock-inventory.tooltip}
                             hover-background={@Mods/StardewUI/Sprites/ButtonLight}
                             left-click=|UnlockAllInventorySlots()| />
                 </lane>
@@ -419,59 +419,59 @@
         <!-- ==================== 10. ECONOMY TAB ==================== -->
         <scrollable *case="Economy" peeking="64">
             <lane layout="stretch content" orientation="vertical">
-                <section-header text="Prices" />
-                <cheat-slider label="Sell Price Multiplier"
-                              tooltip="Multiply prices when selling. 1.0 = normal."
+                <section-header text={#economy.section.prices} />
+                <cheat-slider label={#economy.sell-price.label}
+                              tooltip={#economy.sell-price.tooltip}
                               min="1" max="100" interval="0.5"
                               value={<>SellPriceMultiplier}
                               value-format={:FormatMultiplier} />
-                <cheat-slider label="Buy Price Modifier"
-                              tooltip="Multiply prices when buying. 0 = free!"
+                <cheat-slider label={#economy.buy-price.label}
+                              tooltip={#economy.buy-price.tooltip}
                               min="0" max="2" interval="0.1"
                               value={<>BuyPriceMultiplier}
                               value-format={:FormatBuyPrice} />
 
-                <section-header text="Shopping" />
-                <cheat-toggle label="Free Shop Purchases"
-                              tooltip="All shop purchases are free (no gold cost)."
+                <section-header text={#economy.section.shopping} />
+                <cheat-toggle label={#economy.free-shop.label}
+                              tooltip={#economy.free-shop.tooltip}
                               checked={<>FreeShopPurchases} />
-                <cheat-toggle label="Free Geode Processing"
-                              tooltip="Geode processing at Clint's is free (no 25g cost)."
+                <cheat-toggle label={#economy.free-geodes.label}
+                              tooltip={#economy.free-geodes.tooltip}
                               checked={<>FreeGeodeProcessing} />
 
-                <section-header text="Add Currency" />
+                <section-header text={#economy.section.currency} />
                 <!-- Add Money -->
                 <lane layout="stretch content" margin="8, 4">
                     <lane layout="200px content" vertical-content-alignment="middle">
-                        <label text="Add Money" />
+                        <label text={#economy.add-money.label} />
                     </lane>
                     <slider layout="250px content"
                             min="100" max="100000" interval="100"
                             value={<>AddMoneyAmount}
                             value-format={:FormatMoney}
-                            tooltip="Choose amount of gold to add." />
+                            tooltip={#economy.add-money-slider.tooltip} />
                     <button layout="100px 36px"
                             margin="16, 0, 0, 0"
-                            text="Add"
+                            text={#button.add}
                             hover-background={@Mods/StardewUI/Sprites/ButtonLight}
-                            tooltip="Add the selected amount to your wallet and profit."
+                            tooltip={#economy.add-money-button.tooltip}
                             left-click=|AddMoney()| />
                 </lane>
                 <!-- Add Casino Coins -->
                 <lane layout="stretch content" margin="8, 4">
                     <lane layout="200px content" vertical-content-alignment="middle">
-                        <label text="Add Qi Coins" />
+                        <label text={#economy.add-qi-coins.label} />
                     </lane>
                     <slider layout="250px content"
                             min="10" max="10000" interval="10"
                             value={<>AddCasinoCoinsAmount}
                             value-format={:FormatQiCoins}
-                            tooltip="Choose amount of Qi Coins to add." />
+                            tooltip={#economy.add-qi-slider.tooltip} />
                     <button layout="100px 36px"
                             margin="16, 0, 0, 0"
-                            text="Add"
+                            text={#button.add}
                             hover-background={@Mods/StardewUI/Sprites/ButtonLight}
-                            tooltip="Add the selected Qi Coins to your account."
+                            tooltip={#economy.add-qi-button.tooltip}
                             left-click=|AddCasinoCoins()| />
                 </lane>
             </lane>
@@ -480,26 +480,26 @@
         <!-- ==================== 11. BUILDINGS & MACHINES TAB ==================== -->
         <scrollable *case="Buildings" peeking="64">
             <lane layout="stretch content" orientation="vertical">
-                <section-header text="Machines" />
-                <cheat-toggle label="Instant Machine Processing"
-                              tooltip="All machines produce output instantly (no processing time)."
+                <section-header text={#buildings.section.machines} />
+                <cheat-toggle label={#buildings.instant-machines.label}
+                              tooltip={#buildings.instant-machines.tooltip}
                               checked={<>InstantMachineProcessing} />
 
-                <section-header text="Buildings and Construction" />
-                <cheat-toggle label="Instant Build Construction"
-                              tooltip="Buildings finish constructing instantly when placed."
+                <section-header text={#buildings.section.construction} />
+                <cheat-toggle label={#buildings.instant-build.label}
+                              tooltip={#buildings.instant-build.tooltip}
                               checked={<>InstantBuildConstruction} />
-                <cheat-toggle label="Instant Build Upgrade"
-                              tooltip="Building upgrades complete instantly."
+                <cheat-toggle label={#buildings.instant-upgrade.label}
+                              tooltip={#buildings.instant-upgrade.tooltip}
                               checked={<>InstantBuildUpgrade} />
-                <cheat-toggle label="Instant House Upgrade"
-                              tooltip="Farmhouse upgrades complete instantly."
+                <cheat-toggle label={#buildings.instant-house.label}
+                              tooltip={#buildings.instant-house.tooltip}
                               checked={<>InstantHouseUpgrade} />
-                <cheat-toggle label="Instant Community Upgrade"
-                              tooltip="Community upgrades (Pam's house, shortcuts) complete instantly."
+                <cheat-toggle label={#buildings.instant-community.label}
+                              tooltip={#buildings.instant-community.tooltip}
                               checked={<>InstantCommunityUpgrade} />
-                <cheat-toggle label="Free Building Construction"
-                              tooltip="Buildings cost no gold or materials to construct."
+                <cheat-toggle label={#buildings.free-construction.label}
+                              tooltip={#buildings.free-construction.tooltip}
                               checked={<>FreeBuildingConstruction} />
             </lane>
         </scrollable>
@@ -507,129 +507,129 @@
         <!-- ==================== 12. WORLD TAB ==================== -->
         <scrollable *case="World" peeking="64">
             <lane layout="stretch content" orientation="vertical">
-                <section-header text="Time" />
-                <cheat-toggle label="Freeze Time"
-                              tooltip="Time never passes."
+                <section-header text={#world.section.time} />
+                <cheat-toggle label={#world.freeze-time.label}
+                              tooltip={#world.freeze-time.tooltip}
                               checked={<>FreezeTime} />
-                <cheat-toggle label="Freeze Time Indoors"
-                              tooltip="Time stops when you're inside buildings."
+                <cheat-toggle label={#world.freeze-time-indoors.label}
+                              tooltip={#world.freeze-time-indoors.tooltip}
                               checked={<>FreezeTimeIndoors} />
-                <cheat-toggle label="Freeze Time in Mines"
-                              tooltip="Time stops while inside mines, skull cavern, and volcano dungeon."
+                <cheat-toggle label={#world.freeze-time-mines.label}
+                              tooltip={#world.freeze-time-mines.tooltip}
                               checked={<>FreezeTimeMines} />
-                <cheat-toggle label="Never Pass Out"
-                              tooltip="Stay awake past 2am without passing out."
+                <cheat-toggle label={#world.never-pass-out.label}
+                              tooltip={#world.never-pass-out.tooltip}
                               checked={<>NeverPassOut} />
 
-                <section-header text="Adjust Time" />
+                <section-header text={#world.section.adjust-time} />
                 <lane layout="stretch content" margin="16, 4" vertical-content-alignment="middle">
                     <label layout="320px content"
                            margin="0, 6"
-                           text="Subtract 10 Minutes"
-                           tooltip="Go back 10 minutes in game time."
+                           text={#world.subtract-time.label}
+                           tooltip={#world.subtract-time.tooltip}
                            shadow-alpha="0.6"
                            shadow-color="#4448"
                            shadow-offset="-1, 1" />
                     <button layout="128px 36px"
-                            text="-10 min"
-                            tooltip="Subtract 10 minutes from the current time."
+                            text={#world.subtract-time-button}
+                            tooltip={#world.subtract-time-button.tooltip}
                             hover-background={@Mods/StardewUI/Sprites/ButtonLight}
                             left-click=|SubtractTime()| />
                 </lane>
                 <lane layout="stretch content" margin="16, 4" vertical-content-alignment="middle">
                     <label layout="320px content"
                            margin="0, 6"
-                           text="Add 10 Minutes"
-                           tooltip="Advance time by 10 minutes."
+                           text={#world.add-time.label}
+                           tooltip={#world.add-time.tooltip}
                            shadow-alpha="0.6"
                            shadow-color="#4448"
                            shadow-offset="-1, 1" />
                     <button layout="128px 36px"
-                            text="+10 min"
-                            tooltip="Add 10 minutes to the current time."
+                            text={#world.add-time-button}
+                            tooltip={#world.add-time-button.tooltip}
                             hover-background={@Mods/StardewUI/Sprites/ButtonLight}
                             left-click=|AddTime()| />
                 </lane>
                 <lane layout="stretch content" margin="8, 4">
                     <lane layout="200px content" vertical-content-alignment="middle">
-                        <label text="Set Current Time" />
+                        <label text={#world.set-time.label} />
                     </lane>
                     <slider layout="250px content"
                             min="600" max="2600" interval="10"
                             value={<>SetTimeTarget}
                             value-format={:FormatTime}
-                            tooltip="Choose the time to set." />
+                            tooltip={#world.set-time-slider.tooltip} />
                     <button layout="100px 36px"
                             margin="16, 0, 0, 0"
-                            text="Set"
+                            text={#button.set}
                             hover-background={@Mods/StardewUI/Sprites/ButtonLight}
-                            tooltip="Set the current game time to the selected value."
+                            tooltip={#world.set-time-button.tooltip}
                             left-click=|SetCurrentTime()| />
                 </lane>
 
-                <section-header text="Luck" />
-                <cheat-toggle label="Always Max Luck"
-                              tooltip="Every day is the luckiest day possible."
+                <section-header text={#world.section.luck} />
+                <cheat-toggle label={#world.max-luck.label}
+                              tooltip={#world.max-luck.tooltip}
                               checked={<>AlwaysMaxLuck} />
 
-                <section-header text="Weather" />
-                <cheat-slider label="Weather Tomorrow"
-                              tooltip="Override tomorrow's weather. No Override = game default."
+                <section-header text={#world.section.weather} />
+                <cheat-slider label={#world.weather.label}
+                              tooltip={#world.weather.tooltip}
                               min="0" max="5" interval="1"
                               value={<>WeatherIndex}
                               value-format={:FormatWeather} />
 
-                <section-header text="Bypass All Doors" />
-                <cheat-toggle label="Bypass Friendship Doors"
-                              tooltip="Bypass NPC bedroom doors that require 2+ hearts friendship."
+                <section-header text={#world.section.doors} />
+                <cheat-toggle label={#world.bypass-friendship.label}
+                              tooltip={#world.bypass-friendship.tooltip}
                               checked={<>BypassFriendshipDoors} />
-                <cheat-toggle label="Bypass Time Restrictions"
-                              tooltip="Enter buildings even when they're closed (shop hours)."
+                <cheat-toggle label={#world.bypass-time.label}
+                              tooltip={#world.bypass-time.tooltip}
                               checked={<>BypassTimeRestrictions} />
-                <cheat-toggle label="Bypass Festival Closures"
-                              tooltip="Enter buildings during festivals when everything is normally closed."
+                <cheat-toggle label={#world.bypass-festivals.label}
+                              tooltip={#world.bypass-festivals.tooltip}
                               checked={<>BypassFestivalClosures} />
-                <cheat-toggle label="Bypass Conditional Doors"
-                              tooltip="Bypass conditional doors that use Game State Queries."
+                <cheat-toggle label={#world.bypass-conditional.label}
+                              tooltip={#world.bypass-conditional.tooltip}
                               checked={<>BypassConditionalDoors} />
-                <cheat-toggle label="Bypass Special Closures"
-                              tooltip="Bypass special closures like Pierre's Wednesday closure."
+                <cheat-toggle label={#world.bypass-special.label}
+                              tooltip={#world.bypass-special.tooltip}
                               checked={<>BypassSpecialClosures} />
 
-                <section-header text="Quests" />
-                <cheat-toggle label="Auto-Accept Quests"
-                              tooltip="Automatically accept the daily quest from the Help Wanted board."
+                <section-header text={#world.section.quests} />
+                <cheat-toggle label={#world.auto-accept-quests.label}
+                              tooltip={#world.auto-accept-quests.tooltip}
                               checked={<>AutoAcceptQuests} />
-                <cheat-toggle label="Infinite Quest Time"
-                              tooltip="Quest timers never expire. Quests won't fail from running out of time."
+                <cheat-toggle label={#world.infinite-quest-time.label}
+                              tooltip={#world.infinite-quest-time.tooltip}
                               checked={<>InfiniteQuestTime} />
 
-                <section-header text="Completion Actions" />
+                <section-header text={#world.section.completion} />
                 <lane layout="stretch content" margin="16, 4" vertical-content-alignment="middle">
                     <label layout="320px content"
                            margin="0, 6"
-                           text="Complete Community Bundle"
-                           tooltip="Complete all community center bundles instantly."
+                           text={#world.complete-bundles.label}
+                           tooltip={#world.complete-bundles.tooltip}
                            shadow-alpha="0.6"
                            shadow-color="#4448"
                            shadow-offset="-1, 1" />
                     <button layout="100px 36px"
-                            text="Apply"
-                            tooltip="Complete all community center bundles."
+                            text={#button.apply}
+                            tooltip={#world.complete-bundles.tooltip}
                             hover-background={@Mods/StardewUI/Sprites/ButtonLight}
                             left-click=|CompleteCommunityBundle()| />
                 </lane>
                 <lane layout="stretch content" margin="16, 4" vertical-content-alignment="middle">
                     <label layout="320px content"
                            margin="0, 6"
-                           text="Complete Special Orders"
-                           tooltip="Complete all active special orders instantly."
+                           text={#world.complete-orders.label}
+                           tooltip={#world.complete-orders.tooltip}
                            shadow-alpha="0.6"
                            shadow-color="#4448"
                            shadow-offset="-1, 1" />
                     <button layout="100px 36px"
-                            text="Apply"
-                            tooltip="Complete all active special orders."
+                            text={#button.apply}
+                            tooltip={#world.complete-orders.tooltip}
                             hover-background={@Mods/StardewUI/Sprites/ButtonLight}
                             left-click=|CompleteSpecialOrders()| />
                 </lane>
@@ -639,17 +639,17 @@
         <!-- ==================== 13. RELATIONSHIPS TAB ==================== -->
         <scrollable *case="Relationships" peeking="64">
             <lane layout="stretch content" orientation="vertical">
-                <section-header text="Relationships" />
-                <cheat-slider label="Friendship Multiplier"
-                              tooltip="Multiply friendship gains. 1.0 = normal."
+                <section-header text={#relationships.section.relationships} />
+                <cheat-slider label={#relationships.friendship-multiplier.label}
+                              tooltip={#relationships.friendship-multiplier.tooltip}
                               min="1" max="100" interval="1"
                               value={<>FriendshipMultiplier}
                               value-format={:FormatMultiplier} />
-                <cheat-toggle label="No Friendship Decay"
-                              tooltip="Friendship never decreases."
+                <cheat-toggle label={#relationships.no-decay.label}
+                              tooltip={#relationships.no-decay.tooltip}
                               checked={<>NoFriendshipDecay} />
-                <cheat-toggle label="Give Gifts Anytime"
-                              tooltip="Bypass daily and weekly gift limits. Give unlimited gifts to NPCs."
+                <cheat-toggle label={#relationships.gifts-anytime.label}
+                              tooltip={#relationships.gifts-anytime.tooltip}
                               checked={<>GiveGiftsAnytime} />
             </lane>
         </scrollable>
@@ -660,7 +660,7 @@
                 <lane layout="stretch content" margin="16, 8, 0, 0">
                     <label layout="stretch content"
                            color="#666"
-                           text="Click a location to instantly warp there." />
+                           text={#warp.hint} />
                 </lane>
                 <lane layout="stretch content" orientation="vertical" margin="0, 8, 0, 0">
                     <warp-location *repeat={:WarpLocations} />
@@ -671,9 +671,9 @@
         <!-- ==================== 15. MINING TAB ==================== -->
         <scrollable *case="Mining" peeking="64">
             <lane layout="stretch content" orientation="vertical">
-                <section-header text="Ladder Spawn" />
-                <cheat-slider label="Force Ladder Chance"
-                              tooltip="Chance to force ladder spawn when breaking rocks. 0 = disabled, 100 = always spawn."
+                <section-header text={#mining.section.ladder} />
+                <cheat-slider label={#mining.ladder-chance.label}
+                              tooltip={#mining.ladder-chance.tooltip}
                               min="0" max="100" interval="5"
                               value={<>ForceLadderChance}
                               value-format={:FormatLadderChance} />
@@ -686,11 +686,11 @@
           margin="16, 12, 16, 0"
           horizontal-content-alignment="end"
           vertical-content-alignment="middle">
-        <button text="Reset Defaults"
+        <button text={#button.reset-defaults}
                 hover-background={@Mods/StardewUI/Sprites/ButtonLight}
                 left-click=|ResetToDefaults()| />
         <button margin="16, 0, 0, 0"
-                text="Save and Close"
+                text={#button.save-close}
                 hover-background={@Mods/StardewUI/Sprites/ButtonLight}
                 left-click=|SaveAndClose()| />
     </lane>
@@ -753,8 +753,8 @@
                shadow-color="#4448"
                shadow-offset="-1, 1" />
         <button layout="128px 36px"
-                text="Warp"
-                tooltip="Teleport to this location"
+                text={#warp.button}
+                tooltip={#warp.button.tooltip}
                 hover-background={@Mods/StardewUI/Sprites/ButtonLight}
                 left-click=|^WarpTo(this)| />
     </lane>

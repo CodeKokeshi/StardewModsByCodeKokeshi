@@ -1,9 +1,0 @@
-D:\December 2025 OS\Development\StardewModding\Updating\UltimateWorldCheats\obj\Debug\net6.0\UltimateWorldCheats.csproj.AssemblyReference.cache
-D:\December 2025 OS\Development\StardewModding\Updating\UltimateWorldCheats\obj\Debug\net6.0\UltimateWorldCheats.GeneratedMSBuildEditorConfig.editorconfig
-D:\December 2025 OS\Development\StardewModding\Updating\UltimateWorldCheats\obj\Debug\net6.0\UltimateWorldCheats.AssemblyInfoInputs.cache
-D:\December 2025 OS\Development\StardewModding\Updating\UltimateWorldCheats\obj\Debug\net6.0\UltimateWorldCheats.AssemblyInfo.cs
-D:\December 2025 OS\Development\StardewModding\Updating\UltimateWorldCheats\obj\Debug\net6.0\UltimateWorldCheats.csproj.CoreCompileInputs.cache
-D:\December 2025 OS\Development\StardewModding\Updating\UltimateWorldCheats\obj\Debug\net6.0\UltimateWorldCheats.sourcelink.json
-D:\December 2025 OS\Development\StardewModding\Updating\UltimateWorldCheats\bin\Debug\net6.0\UltimateWorldCheats.deps.json
-D:\December 2025 OS\Development\StardewModding\Updating\UltimateWorldCheats\bin\Debug\net6.0\UltimateWorldCheats.dll
-D:\December 2025 OS\Development\StardewModding\Updating\UltimateWorldCheats\obj\Debug\net6.0\UltimateWorldCheats.dll

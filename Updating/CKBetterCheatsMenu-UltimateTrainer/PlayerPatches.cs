@@ -11,7 +11,7 @@ using StardewValley.Monsters;
 using StardewValley.TerrainFeatures;
 using StardewValley.Tools;
 
-namespace PlayerCheats
+namespace CKBetterCheatsMenu
 {
     /// <summary>Harmony patches for player cheats.</summary>
     public static class PlayerPatches

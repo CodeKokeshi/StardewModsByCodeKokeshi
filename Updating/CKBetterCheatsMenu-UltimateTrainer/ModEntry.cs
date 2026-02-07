@@ -19,7 +19,7 @@ using StardewValley.TerrainFeatures;
 using StardewValley.Tools;
 using SObject = StardewValley.Object;
 
-namespace PlayerCheats
+namespace CKBetterCheatsMenu
 {
     /// <summary>The mod entry point.</summary>
     public class ModEntry : Mod
@@ -73,7 +73,7 @@ namespace PlayerCheats
             helper.Events.Input.ButtonPressed += OnButtonPressed;
             helper.Events.World.BuildingListChanged += OnBuildingListChanged;
 
-            Monitor.Log("[PlayerCheats] Loaded! Press K to open cheats menu (StardewUI).", LogLevel.Info);
+            Monitor.Log("[CKBetterCheatsMenu] Loaded! Press K to open cheats menu (StardewUI).", LogLevel.Info);
         }
 
         /*********
@@ -87,17 +87,17 @@ namespace PlayerCheats
             {
                 if (original == null)
                 {
-                    Monitor.Log($"[PlayerCheats] WARNING: Could not find method to patch: {description}", LogLevel.Warn);
+                    Monitor.Log($"[CKBetterCheatsMenu] WARNING: Could not find method to patch: {description}", LogLevel.Warn);
                     return;
                 }
                 try
                 {
                     harmony.Patch(original, prefix: prefix, postfix: postfix);
-                    Monitor.Log($"[PlayerCheats] Patched: {description}", LogLevel.Trace);
+                    Monitor.Log($"[CKBetterCheatsMenu] Patched: {description}", LogLevel.Trace);
                 }
                 catch (Exception ex)
                 {
-                    Monitor.Log($"[PlayerCheats] ERROR patching {description}: {ex.Message}", LogLevel.Error);
+                    Monitor.Log($"[CKBetterCheatsMenu] ERROR patching {description}: {ex.Message}", LogLevel.Error);
                 }
             }
 
@@ -457,7 +457,7 @@ namespace PlayerCheats
             }
 
             // Register our view assets
-            viewEngine.RegisterViews("Mods/CodeKokeshi.UltimatePlayerCheats/Views", "assets/views");
+            viewEngine.RegisterViews("Mods/CodeKokeshi.CKBetterCheatsMenu/Views", "assets/views");
 
             Monitor.Log("StardewUI integration complete!", LogLevel.Debug);
         }
@@ -836,7 +836,7 @@ namespace PlayerCheats
             {
                 var viewModel = new CheatsMenuViewModel();
                 var controller = viewEngine.CreateMenuControllerFromAsset(
-                    "Mods/CodeKokeshi.UltimatePlayerCheats/Views/CheatsMenu",
+                    "Mods/CodeKokeshi.CKBetterCheatsMenu/Views/CheatsMenu",
                     viewModel
                 );
 
