@@ -27,31 +27,41 @@ namespace CKBetterCheatsMenu
         /// <summary>Default Y tile position for warping.</summary>
         public int TileY { get; }
 
-        /// <summary>Category for grouping locations in the UI.</summary>
+        /// <summary>Internal category key for sorting (not localized).</summary>
         public string Category { get; }
 
-        public WarpLocationData(string locationName, string displayName, int tileX, int tileY, string category)
+        /// <summary>Localized category display name.</summary>
+        public string CategoryDisplayName { get; }
+
+        public WarpLocationData(string locationName, string displayName, int tileX, int tileY, string category, string categoryDisplayName)
         {
             LocationName = locationName;
             DisplayName = displayName;
             TileX = tileX;
             TileY = tileY;
             Category = category;
+            CategoryDisplayName = categoryDisplayName;
         }
     }
 
     /// <summary>Tab data for the main menu tabs.</summary>
     internal partial class TabData : INotifyPropertyChanged
     {
+        /// <summary>Internal key for switch matching (not localized).</summary>
         public string Name { get; }
+
+        /// <summary>Localized display name shown as tooltip.</summary>
+        public string DisplayName { get; }
+
         public Tuple<Texture2D, Rectangle> Sprite { get; }
 
         [Notify]
         private bool active;
 
-        public TabData(string name, Texture2D texture, Rectangle sourceRect)
+        public TabData(string name, string displayName, Texture2D texture, Rectangle sourceRect)
         {
             Name = name;
+            DisplayName = displayName;
             Sprite = Tuple.Create(texture, sourceRect);
         }
     }
@@ -81,6 +91,7 @@ namespace CKBetterCheatsMenu
         ** General
         *********/
         [Notify] private bool modEnabled;
+        [Notify] private bool enableNotifications;
 
         /*********
         ** Movement & Speed
@@ -281,7 +292,7 @@ namespace CKBetterCheatsMenu
             int amount = (int)AddMoneyAmount;
             Game1.player.Money += amount;
             Game1.player.totalMoneyEarned += (uint)amount;
-            Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.added-gold", new { amount = amount.ToString("N0") }), HUDMessage.achievement_type));
+            ShowHUD(ModEntry.ModHelper.Translation.Get("hud.added-gold", new { amount = amount.ToString("N0") }));
             ModEntry.ModMonitor.Log($"[CKBetterCheatsMenu] Added {amount}g to player. New total: {Game1.player.Money}g", LogLevel.Info);
         }
 
@@ -293,7 +304,7 @@ namespace CKBetterCheatsMenu
 
             int amount = (int)AddCasinoCoinsAmount;
             Game1.player.clubCoins += amount;
-            Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.added-qi-coins", new { amount = amount.ToString("N0") }), HUDMessage.achievement_type));
+            ShowHUD(ModEntry.ModHelper.Translation.Get("hud.added-qi-coins", new { amount = amount.ToString("N0") }));
             ModEntry.ModMonitor.Log($"[CKBetterCheatsMenu] Added {amount} Qi Coins. New total: {Game1.player.clubCoins}", LogLevel.Info);
         }
 
@@ -320,7 +331,7 @@ namespace CKBetterCheatsMenu
                 }
             }
 
-            Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.grew-crops", new { count }), HUDMessage.achievement_type));
+            ShowHUD(ModEntry.ModHelper.Translation.Get("hud.grew-crops", new { count }));
             ModEntry.ModMonitor.Log($"[CKBetterCheatsMenu] Grew {count} crops to full maturity.", LogLevel.Info);
         }
 
@@ -343,7 +354,7 @@ namespace CKBetterCheatsMenu
                 }
             }
 
-            Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.grew-trees", new { count }), HUDMessage.achievement_type));
+            ShowHUD(ModEntry.ModHelper.Translation.Get("hud.grew-trees", new { count }));
             ModEntry.ModMonitor.Log($"[CKBetterCheatsMenu] Grew {count} regular trees to full size.", LogLevel.Info);
         }
 
@@ -367,7 +378,7 @@ namespace CKBetterCheatsMenu
                 }
             }
 
-            Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.grew-fruit-trees", new { count }), HUDMessage.achievement_type));
+            ShowHUD(ModEntry.ModHelper.Translation.Get("hud.grew-fruit-trees", new { count }));
             ModEntry.ModMonitor.Log($"[CKBetterCheatsMenu] Grew {count} fruit trees to full maturity.", LogLevel.Info);
         }
 
@@ -390,7 +401,7 @@ namespace CKBetterCheatsMenu
                 }
             }
 
-            Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.watered-tiles", new { count }), HUDMessage.achievement_type));
+            ShowHUD(ModEntry.ModHelper.Translation.Get("hud.watered-tiles", new { count }));
             ModEntry.ModMonitor.Log($"[CKBetterCheatsMenu] Watered {count} tilled tiles.", LogLevel.Info);
         }
 
@@ -403,7 +414,7 @@ namespace CKBetterCheatsMenu
             int craftingCount = UnlockAllCraftingRecipesInternal();
             int cookingCount = UnlockAllCookingRecipesInternal();
 
-            Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.unlocked-all-recipes", new { crafting = craftingCount, cooking = cookingCount }), HUDMessage.achievement_type));
+            ShowHUD(ModEntry.ModHelper.Translation.Get("hud.unlocked-all-recipes", new { crafting = craftingCount, cooking = cookingCount }));
             ModEntry.ModMonitor.Log($"[CKBetterCheatsMenu] Unlocked {craftingCount} crafting and {cookingCount} cooking recipes.", LogLevel.Info);
         }
 
@@ -414,7 +425,7 @@ namespace CKBetterCheatsMenu
                 return;
 
             int count = UnlockAllCraftingRecipesInternal();
-            Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.unlocked-crafting", new { count }), HUDMessage.achievement_type));
+            ShowHUD(ModEntry.ModHelper.Translation.Get("hud.unlocked-crafting", new { count }));
             ModEntry.ModMonitor.Log($"[CKBetterCheatsMenu] Unlocked {count} crafting recipes.", LogLevel.Info);
         }
 
@@ -425,7 +436,7 @@ namespace CKBetterCheatsMenu
                 return;
 
             int count = UnlockAllCookingRecipesInternal();
-            Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.unlocked-cooking", new { count }), HUDMessage.achievement_type));
+            ShowHUD(ModEntry.ModHelper.Translation.Get("hud.unlocked-cooking", new { count }));
             ModEntry.ModMonitor.Log($"[CKBetterCheatsMenu] Unlocked {count} cooking recipes.", LogLevel.Info);
         }
 
@@ -440,14 +451,14 @@ namespace CKBetterCheatsMenu
 
             if (player.MaxItems >= maxSlots)
             {
-                Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.inventory-max"), HUDMessage.error_type));
+                ShowHUD(ModEntry.ModHelper.Translation.Get("hud.inventory-max"), HUDMessage.error_type);
                 return;
             }
 
             int added = maxSlots - player.MaxItems;
             player.increaseBackpackSize(added);
 
-            Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.unlocked-slots", new { count = added }), HUDMessage.achievement_type));
+            ShowHUD(ModEntry.ModHelper.Translation.Get("hud.unlocked-slots", new { count = added }));
             ModEntry.ModMonitor.Log($"[CKBetterCheatsMenu] Increased backpack from {maxSlots - added} to {maxSlots} slots.", LogLevel.Info);
         }
 
@@ -512,9 +523,13 @@ namespace CKBetterCheatsMenu
                 // Get display name for tooltip (falls back to Name if DisplayName is not set)
                 string displayName = gameLocation.DisplayName ?? gameLocation.Name;
 
+                // Categorize locations
+                string category = CategorizeLocation(gameLocation);
+                string categoryDisplay = GetLocalizedCategory(category);
+
                 // If display name is same as location name, show category instead
                 if (displayName == gameLocation.Name)
-                    displayName = CategorizeLocation(gameLocation);
+                    displayName = categoryDisplay;
 
                 // Get default warp position
                 int x = 0, y = 0;
@@ -527,10 +542,7 @@ namespace CKBetterCheatsMenu
                     y = gameLocation.Map.Layers[0].LayerHeight / 2;
                 }
 
-                // Categorize locations
-                string category = CategorizeLocation(gameLocation);
-
-                locations.Add(new WarpLocationData(gameLocation.Name, displayName, x, y, category));
+                locations.Add(new WarpLocationData(gameLocation.Name, displayName, x, y, category, categoryDisplay));
             }
 
             // Sort by category, then by location name
@@ -620,6 +632,26 @@ namespace CKBetterCheatsMenu
             };
         }
 
+        /// <summary>Get localized display name for a warp category.</summary>
+        private static string GetLocalizedCategory(string category)
+        {
+            return category switch
+            {
+                "Farm" => T("warp.category.farm"),
+                "Farm Buildings" => T("warp.category.farm-buildings"),
+                "Town" => T("warp.category.town"),
+                "Beach" => T("warp.category.beach"),
+                "Forest" => T("warp.category.forest"),
+                "Mountain" => T("warp.category.mountain"),
+                "Mines & Caves" => T("warp.category.mines"),
+                "Desert" => T("warp.category.desert"),
+                "Railroad & Spa" => T("warp.category.railroad"),
+                "Ginger Island" => T("warp.category.island"),
+                "Special" => T("warp.category.special"),
+                _ => T("warp.category.other")
+            };
+        }
+
         /*********
         ** World Actions — Phase 7
         *********/
@@ -633,14 +665,14 @@ namespace CKBetterCheatsMenu
             var cc = Game1.getLocationFromName("CommunityCenter") as StardewValley.Locations.CommunityCenter;
             if (cc == null)
             {
-                Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.cc-not-found"), HUDMessage.error_type));
+                ShowHUD(ModEntry.ModHelper.Translation.Get("hud.cc-not-found"), HUDMessage.error_type);
                 return;
             }
 
             // Check if already completed via JojaMart route
             if (Game1.MasterPlayer.mailReceived.Contains("JojaMember"))
             {
-                Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.joja-active"), HUDMessage.error_type));
+                ShowHUD(ModEntry.ModHelper.Translation.Get("hud.joja-active"), HUDMessage.error_type);
                 return;
             }
 
@@ -692,7 +724,7 @@ namespace CKBetterCheatsMenu
                 Game1.MasterPlayer.mailReceived.Add("ccIsComplete");
             }
 
-            Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.completed-bundles", new { count = completedBundles }), HUDMessage.achievement_type));
+            ShowHUD(ModEntry.ModHelper.Translation.Get("hud.completed-bundles", new { count = completedBundles }));
             ModEntry.ModMonitor.Log($"[World] Completed all community center bundles ({completedBundles} updated).", LogLevel.Info);
         }
 
@@ -719,12 +751,12 @@ namespace CKBetterCheatsMenu
 
             if (count > 0)
             {
-                Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.completed-orders", new { count }), HUDMessage.achievement_type));
+                ShowHUD(ModEntry.ModHelper.Translation.Get("hud.completed-orders", new { count }));
                 ModEntry.ModMonitor.Log($"[World] Completed {count} active special orders.", LogLevel.Info);
             }
             else
             {
-                Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.no-active-orders"), HUDMessage.error_type));
+                ShowHUD(ModEntry.ModHelper.Translation.Get("hud.no-active-orders"), HUDMessage.error_type);
             }
         }
 
@@ -781,7 +813,7 @@ namespace CKBetterCheatsMenu
 
             Game1.timeOfDay = target;
             Game1.gameTimeInterval = 0;
-            Game1.addHUDMessage(new HUDMessage(ModEntry.ModHelper.Translation.Get("hud.time-set", new { time = Game1.getTimeOfDayString(target) }), HUDMessage.achievement_type));
+            ShowHUD(ModEntry.ModHelper.Translation.Get("hud.time-set", new { time = Game1.getTimeOfDayString(target) }));
             ModEntry.ModMonitor.Log($"[World] Time set to {target}.", LogLevel.Info);
         }
 
@@ -811,21 +843,21 @@ namespace CKBetterCheatsMenu
             // Custom 16x16 icons in a horizontal strip (240x16 image, 15 tabs)
             Tabs = new List<TabData>
             {
-                new TabData("General",       icons, new Rectangle(0,   0, 16, 16)),
-                new TabData("Player",        icons, new Rectangle(16,  0, 16, 16)),
-                new TabData("Combat",        icons, new Rectangle(32,  0, 16, 16)),
-                new TabData("Skills",        icons, new Rectangle(48,  0, 16, 16)),
-                new TabData("Tools",         icons, new Rectangle(64,  0, 16, 16)),
-                new TabData("Farming",       icons, new Rectangle(80,  0, 16, 16)),
-                new TabData("Animals",       icons, new Rectangle(96,  0, 16, 16)),
-                new TabData("Fishing",       icons, new Rectangle(112, 0, 16, 16)),
-                new TabData("Items",         icons, new Rectangle(128, 0, 16, 16)),
-                new TabData("Economy",       icons, new Rectangle(144, 0, 16, 16)),
-                new TabData("Buildings",     icons, new Rectangle(160, 0, 16, 16)),
-                new TabData("World",         icons, new Rectangle(176, 0, 16, 16)),
-                new TabData("Relationships", icons, new Rectangle(192, 0, 16, 16)),
-                new TabData("Warp",          icons, new Rectangle(208, 0, 16, 16)),
-                new TabData("Mining",        icons, new Rectangle(224, 0, 16, 16)),
+                new TabData("General",       T("tab.general"),       icons, new Rectangle(0,   0, 16, 16)),
+                new TabData("Player",        T("tab.player"),        icons, new Rectangle(16,  0, 16, 16)),
+                new TabData("Combat",        T("tab.combat"),        icons, new Rectangle(32,  0, 16, 16)),
+                new TabData("Skills",        T("tab.skills"),        icons, new Rectangle(48,  0, 16, 16)),
+                new TabData("Tools",         T("tab.tools"),         icons, new Rectangle(64,  0, 16, 16)),
+                new TabData("Farming",       T("tab.farming"),       icons, new Rectangle(80,  0, 16, 16)),
+                new TabData("Animals",       T("tab.animals"),       icons, new Rectangle(96,  0, 16, 16)),
+                new TabData("Fishing",       T("tab.fishing"),       icons, new Rectangle(112, 0, 16, 16)),
+                new TabData("Items",         T("tab.items"),         icons, new Rectangle(128, 0, 16, 16)),
+                new TabData("Economy",       T("tab.economy"),       icons, new Rectangle(144, 0, 16, 16)),
+                new TabData("Buildings",     T("tab.buildings"),     icons, new Rectangle(160, 0, 16, 16)),
+                new TabData("World",         T("tab.world"),         icons, new Rectangle(176, 0, 16, 16)),
+                new TabData("Relationships", T("tab.relationships"), icons, new Rectangle(192, 0, 16, 16)),
+                new TabData("Warp",          T("tab.warp"),          icons, new Rectangle(208, 0, 16, 16)),
+                new TabData("Mining",        T("tab.mining"),        icons, new Rectangle(224, 0, 16, 16)),
             };
             Tabs[0].Active = true;
         }
@@ -834,6 +866,7 @@ namespace CKBetterCheatsMenu
         public void LoadFromConfig(ModConfig config)
         {
             ModEnabled = config.ModEnabled;
+            EnableNotifications = config.EnableNotifications;
 
             SpeedMultiplier = config.SpeedMultiplier;
             AddedSpeedBonus = config.AddedSpeedBonus;
@@ -941,6 +974,7 @@ namespace CKBetterCheatsMenu
         public void SaveToConfig(ModConfig config)
         {
             config.ModEnabled = ModEnabled;
+            config.EnableNotifications = EnableNotifications;
 
             config.SpeedMultiplier = SpeedMultiplier;
             config.AddedSpeedBonus = AddedSpeedBonus;
@@ -1050,11 +1084,13 @@ namespace CKBetterCheatsMenu
             // Preserve non-cheat settings
             bool savedEnabled = ModEntry.Config.ModEnabled;
             var savedKey = ModEntry.Config.OpenMenuKey;
+            bool savedNotifications = ModEntry.Config.EnableNotifications;
 
             var defaults = new ModConfig
             {
                 ModEnabled = savedEnabled,
-                OpenMenuKey = savedKey
+                OpenMenuKey = savedKey,
+                EnableNotifications = savedNotifications
             };
             LoadFromConfig(defaults);
 
@@ -1173,13 +1209,12 @@ namespace CKBetterCheatsMenu
             {
                 ModEnabled = ModEntry.Config.ModEnabled,
                 OpenMenuKey = ModEntry.Config.OpenMenuKey,
+                EnableNotifications = ModEntry.Config.EnableNotifications,
                 Saved = saved
             };
             ModEntry.ModHelper.WriteConfig(diskConfig);
 
-            Game1.addHUDMessage(new HUDMessage(
-                ModEntry.ModHelper.Translation.Get("hud.config-saved"),
-                HUDMessage.achievement_type));
+            ShowHUD(ModEntry.ModHelper.Translation.Get("hud.config-saved"));
             ModEntry.ModMonitor.Log("[CKBetterCheatsMenu] Cheats saved to config file.", LogLevel.Info);
         }
 
@@ -1193,6 +1228,13 @@ namespace CKBetterCheatsMenu
         ** Value Formatters for Sliders (must be Func<float, string> properties for StardewUI binding)
         *********/
         private static string T(string key) => ModEntry.ModHelper.Translation.Get(key);
+
+        /// <summary>Show a HUD message only if notifications are enabled.</summary>
+        private static void ShowHUD(string message, int type = HUDMessage.achievement_type)
+        {
+            if (ModEntry.Config.EnableNotifications)
+                Game1.addHUDMessage(new HUDMessage(message, type));
+        }
 
         public Func<float, string> FormatMultiplier { get; } = value => $"{value:F1}x";
 
@@ -1243,7 +1285,7 @@ namespace CKBetterCheatsMenu
         public Func<float, string> FormatRadius { get; } = value =>
         {
             int v = (int)value;
-            return $"{v}px ({v / 64f:F1} tiles)";
+            return ModEntry.ModHelper.Translation.Get("format.radius", new { px = v, tiles = $"{v / 64f:F1}" });
         };
 
         public Func<float, string> FormatBuyPrice { get; } = value =>
@@ -1273,21 +1315,15 @@ namespace CKBetterCheatsMenu
             return $"{v}%";
         };
 
-        public Func<float, string> FormatMoney { get; } = value => $"{(int)value:N0}g";
+        public Func<float, string> FormatMoney { get; } = value =>
+            ModEntry.ModHelper.Translation.Get("format.money", new { amount = $"{(int)value:N0}" });
 
         public Func<float, string> FormatQiCoins { get; } = value => $"{(int)value:N0}";
 
         public Func<float, string> FormatTime { get; } = value =>
         {
             int v = (int)value;
-            int hours = v / 100;
-            int minutes = v % 100;
-            // Convert to 12-hour format
-            string period = hours >= 12 && hours < 24 ? "PM" : "AM";
-            if (hours > 24) { hours -= 24; period = "AM"; }
-            int displayHour = hours % 12;
-            if (displayHour == 0) displayHour = 12;
-            return $"{displayHour}:{minutes:D2} {period}";
+            return Game1.getTimeOfDayString(v);
         };
     }
 }

@@ -16,6 +16,9 @@ namespace CKBetterCheatsMenu
         /// <summary>Hotkey to open the cheats menu.</summary>
         public KeybindList OpenMenuKey { get; set; } = new KeybindList(SButton.K);
 
+        /// <summary>Whether the mod should show HUD notification messages. Disabled by default.</summary>
+        public bool EnableNotifications { get; set; } = false;
+
         /// <summary>Saved cheats that persist across game restarts.</summary>
         public SavedCheats Saved { get; set; } = new SavedCheats();
 

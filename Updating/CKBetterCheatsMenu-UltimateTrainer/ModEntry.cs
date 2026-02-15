@@ -56,7 +56,8 @@ namespace CKBetterCheatsMenu
             Config = new ModConfig
             {
                 ModEnabled = diskConfig.ModEnabled,
-                OpenMenuKey = diskConfig.OpenMenuKey
+                OpenMenuKey = diskConfig.OpenMenuKey,
+                EnableNotifications = diskConfig.EnableNotifications
             };
 
             // Restore saved cheats from config file (persistent across game restarts)
@@ -467,6 +468,18 @@ namespace CKBetterCheatsMenu
 
         private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
         {
+            // Re-read config from disk every time a save is loaded.
+            // This ensures returning to title and loading behaves identically to relaunching the game.
+            var diskConfig = Helper.ReadConfig<ModConfig>();
+            Config = new ModConfig
+            {
+                ModEnabled = diskConfig.ModEnabled,
+                OpenMenuKey = diskConfig.OpenMenuKey,
+                EnableNotifications = diskConfig.EnableNotifications
+            };
+            ApplySavedCheats(diskConfig.Saved);
+            Monitor.Log("[CKBetterCheatsMenu] Config reloaded from disk on save load.", LogLevel.Debug);
+
             if (!Config.ModEnabled)
                 return;
 

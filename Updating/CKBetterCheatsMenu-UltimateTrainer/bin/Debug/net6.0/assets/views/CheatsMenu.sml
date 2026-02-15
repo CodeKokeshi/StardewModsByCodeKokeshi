@@ -10,7 +10,7 @@
         <tab *repeat={:Tabs}
              layout="64px"
              active={<>Active}
-             tooltip={:Name}
+             tooltip={:DisplayName}
              activate=|^OnTabActivated(Name)|>
             <image layout="32px" sprite={:Sprite} vertical-alignment="middle" />
         </tab>
@@ -29,6 +29,7 @@
             <lane layout="stretch content" orientation="vertical">
                 <section-header text={#general.section.master-toggle} />
                 <cheat-toggle label={#general.mod-enabled.label} tooltip={#general.mod-enabled.tooltip} checked={<>ModEnabled} />
+                <cheat-toggle label={#general.enable-notifications.label} tooltip={#general.enable-notifications.tooltip} checked={<>EnableNotifications} />
                 <lane layout="stretch content" margin="0, 16, 0, 0">
                     <label layout="stretch content"
                            margin="16, 0"
@@ -684,15 +685,19 @@
     <!-- Bottom Buttons -->
     <lane layout="stretch content"
           margin="16, 12, 16, 0"
-          horizontal-content-alignment="end"
+          horizontal-content-alignment="middle"
           vertical-content-alignment="middle">
         <button text={#button.reset-defaults}
                 hover-background={@Mods/StardewUI/Sprites/ButtonLight}
                 left-click=|ResetToDefaults()| />
         <button margin="16, 0, 0, 0"
-                text={#button.save-close}
+                text={#button.save-config}
                 hover-background={@Mods/StardewUI/Sprites/ButtonLight}
-                left-click=|SaveAndClose()| />
+                left-click=|SaveToConfigFile()| />
+        <button margin="16, 0, 0, 0"
+                text={#button.close}
+                hover-background={@Mods/StardewUI/Sprites/ButtonLight}
+                left-click=|CloseMenu()| />
     </lane>
 </lane>
 
