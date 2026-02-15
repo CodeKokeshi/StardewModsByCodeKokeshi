@@ -1068,23 +1068,122 @@ namespace CKBetterCheatsMenu
             }
         }
 
-        /// <summary>Save to memory config (not persisted to file) and close.</summary>
-        public void SaveAndClose()
+        /// <summary>Save specified cheats to config file for persistence across game restarts.</summary>
+        public void SaveToConfigFile()
         {
-            SaveToConfig(ModEntry.Config);
-            // NOTE: We intentionally do NOT call ModEntry.ModHelper.WriteConfig()
-            // This ensures cheats reset when the game restarts or player returns to title.
-
-            // Apply game state for things that need immediate effect
-            if (Context.IsWorldReady && Game1.player != null)
+            var saved = new SavedCheats
             {
-                Game1.player.ignoreCollisions = ModEntry.Config.NoClip;
-            }
+                // Player: Movement & Speed (no NoClip)
+                SpeedMultiplier = SpeedMultiplier,
+                AddedSpeedBonus = AddedSpeedBonus,
 
-            Game1.activeClickableMenu?.exitThisMenu();
+                // Player: Health & Stamina
+                InfiniteStamina = InfiniteStamina,
+                InfiniteHealth = InfiniteHealth,
+                MaxStaminaOverride = (int)MaxStaminaOverride,
+                MaxHealthOverride = (int)MaxHealthOverride,
+                StaminaRegenPerSecond = StaminaRegenPerSecond,
+                HealthRegenPerSecond = HealthRegenPerSecond,
+
+                // Combat: All
+                DamageMultiplier = DamageMultiplier,
+                OneHitKill = OneHitKill,
+                AlwaysCrit = AlwaysCrit,
+                CritDamageMultiplier = CritDamageMultiplier,
+                AddedDefense = (int)AddedDefense,
+                AddedAttack = (int)AddedAttack,
+                AddedImmunity = (int)AddedImmunity,
+                NoMonsterSpawns = NoMonsterSpawns,
+
+                // Skills: XP Multiplier only
+                XPMultiplier = XpMultiplier,
+
+                // Tools: All
+                ToolAreaMultiplier = (int)ToolAreaMultiplier,
+                NoToolStaminaCost = NoToolStaminaCost,
+                InfiniteWater = InfiniteWater,
+                OneHitTools = OneHitTools,
+                InstantToolUpgrade = InstantToolUpgrade,
+                FreeCrafting = FreeCrafting,
+
+                // Farming: Crop Settings + Field Protection
+                CropsNeverDie = CropsNeverDie,
+                ForceForageQuality = (int)ForceForageQuality,
+                PreventDebrisSpawn = PreventDebrisSpawn,
+                TilledSoilDontDecay = TilledSoilDontDecay,
+
+                // Animals: All except hearts overrides
+                MaxAnimalHappiness = MaxAnimalHappiness,
+                BuyAnimalsFullyMatured = BuyAnimalsFullyMatured,
+                AutoPetAnimals = AutoPetAnimals,
+                AutoFeedAnimals = AutoFeedAnimals,
+                InfiniteHay = InfiniteHay,
+                AnimalsProduceDaily = AnimalsProduceDaily,
+
+                // Fishing: All
+                InstantFishBite = InstantFishBite,
+                InstantCatch = InstantCatch,
+                MaxFishQuality = MaxFishQuality,
+                AlwaysFindTreasure = AlwaysFindTreasure,
+
+                // Items: Items and Inventory only
+                MagneticRadiusMultiplier = MagneticRadiusMultiplier,
+                AddedMagneticRadius = (int)AddedMagneticRadius,
+                InfiniteItems = InfiniteItems,
+
+                // Economy: Prices and Shopping only
+                SellPriceMultiplier = SellPriceMultiplier,
+                BuyPriceMultiplier = BuyPriceMultiplier,
+                FreeShopPurchases = FreeShopPurchases,
+                FreeGeodeProcessing = FreeGeodeProcessing,
+
+                // Buildings: All
+                InstantBuildConstruction = InstantBuildConstruction,
+                InstantBuildUpgrade = InstantBuildUpgrade,
+                InstantHouseUpgrade = InstantHouseUpgrade,
+                InstantCommunityUpgrade = InstantCommunityUpgrade,
+                FreeBuildingConstruction = FreeBuildingConstruction,
+                InstantMachineProcessing = InstantMachineProcessing,
+
+                // World: Specific ones only
+                NeverPassOut = NeverPassOut,
+                AlwaysMaxLuck = AlwaysMaxLuck,
+                BypassFriendshipDoors = BypassFriendshipDoors,
+                BypassTimeRestrictions = BypassTimeRestrictions,
+                BypassFestivalClosures = BypassFestivalClosures,
+                BypassConditionalDoors = BypassConditionalDoors,
+                BypassSpecialClosures = BypassSpecialClosures,
+                AutoAcceptQuests = AutoAcceptQuests,
+                InfiniteQuestTime = InfiniteQuestTime,
+
+                // Relationships: All
+                FriendshipMultiplier = FriendshipMultiplier,
+                NoFriendshipDecay = NoFriendshipDecay,
+                GiveGiftsAnytime = GiveGiftsAnytime,
+
+                // Mining
+                ForceLadderChance = (int)ForceLadderChance
+            };
+
+            // Update in-memory config
+            ModEntry.Config.Saved = saved;
+
+            // Write clean config to disk (only persistent values + saved cheats)
+            var diskConfig = new ModConfig
+            {
+                ModEnabled = ModEntry.Config.ModEnabled,
+                OpenMenuKey = ModEntry.Config.OpenMenuKey,
+                Saved = saved
+            };
+            ModEntry.ModHelper.WriteConfig(diskConfig);
+
+            Game1.addHUDMessage(new HUDMessage(
+                ModEntry.ModHelper.Translation.Get("hud.config-saved"),
+                HUDMessage.achievement_type));
+            ModEntry.ModMonitor.Log("[CKBetterCheatsMenu] Cheats saved to config file.", LogLevel.Info);
         }
 
-        /// <summary>Close without saving.</summary>
+        /// <summary>Close the menu. Runtime config stays synced via property change handlers.</summary>
         public void CloseMenu()
         {
             Game1.activeClickableMenu?.exitThisMenu();

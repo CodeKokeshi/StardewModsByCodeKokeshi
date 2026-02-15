@@ -280,7 +280,8 @@
     "button.add": "Add",
     "button.set": "Set",
     "button.reset-defaults": "Reset Defaults",
-    "button.save-close": "Save and Close",
+    "button.save-config": "Save to Config",
+    "button.close": "Close",
 
     "_comment_formatters": "=== Value Formatters ===",
     "format.default": "Default",
@@ -317,5 +318,6 @@
     "hud.joja-active": "Joja route active - bundles not applicable!",
     "hud.completed-orders": "Completed {{count}} special orders!",
     "hud.no-active-orders": "No active special orders to complete!",
-    "hud.time-set": "Time set to {{time}}!"
+    "hud.time-set": "Time set to {{time}}!",
+    "hud.config-saved": "Cheats saved to config! They will restore on next game launch."
 }

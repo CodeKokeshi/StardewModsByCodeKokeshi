@@ -684,15 +684,19 @@
     <!-- Bottom Buttons -->
     <lane layout="stretch content"
           margin="16, 12, 16, 0"
-          horizontal-content-alignment="end"
+          horizontal-content-alignment="middle"
           vertical-content-alignment="middle">
         <button text={#button.reset-defaults}
                 hover-background={@Mods/StardewUI/Sprites/ButtonLight}
                 left-click=|ResetToDefaults()| />
         <button margin="16, 0, 0, 0"
-                text={#button.save-close}
+                text={#button.save-config}
                 hover-background={@Mods/StardewUI/Sprites/ButtonLight}
-                left-click=|SaveAndClose()| />
+                left-click=|SaveToConfigFile()| />
+        <button margin="16, 0, 0, 0"
+                text={#button.close}
+                hover-background={@Mods/StardewUI/Sprites/ButtonLight}
+                left-click=|CloseMenu()| />
     </lane>
 </lane>
 

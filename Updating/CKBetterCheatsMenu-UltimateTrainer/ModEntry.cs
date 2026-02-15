@@ -59,6 +59,9 @@ namespace CKBetterCheatsMenu
                 OpenMenuKey = diskConfig.OpenMenuKey
             };
 
+            // Restore saved cheats from config file (persistent across game restarts)
+            ApplySavedCheats(diskConfig.Saved);
+
             harmony = new Harmony(this.ModManifest.UniqueID);
             ApplyPatches();
 
@@ -808,6 +811,105 @@ namespace CKBetterCheatsMenu
                     Monitor.Log($"Instant completed new building: {building.buildingType.Value}", LogLevel.Info);
                 }
             }
+        }
+
+        /// <summary>Apply saved cheats from config file to the runtime config.</summary>
+        private static void ApplySavedCheats(SavedCheats saved)
+        {
+            if (saved == null) return;
+
+            // Player: Movement & Speed (no NoClip)
+            Config.SpeedMultiplier = saved.SpeedMultiplier;
+            Config.AddedSpeedBonus = saved.AddedSpeedBonus;
+
+            // Player: Health & Stamina
+            Config.InfiniteStamina = saved.InfiniteStamina;
+            Config.InfiniteHealth = saved.InfiniteHealth;
+            Config.MaxStaminaOverride = saved.MaxStaminaOverride;
+            Config.MaxHealthOverride = saved.MaxHealthOverride;
+            Config.StaminaRegenPerSecond = saved.StaminaRegenPerSecond;
+            Config.HealthRegenPerSecond = saved.HealthRegenPerSecond;
+
+            // Combat: All
+            Config.DamageMultiplier = saved.DamageMultiplier;
+            Config.OneHitKill = saved.OneHitKill;
+            Config.AlwaysCrit = saved.AlwaysCrit;
+            Config.CritDamageMultiplier = saved.CritDamageMultiplier;
+            Config.AddedDefense = saved.AddedDefense;
+            Config.AddedAttack = saved.AddedAttack;
+            Config.AddedImmunity = saved.AddedImmunity;
+            Config.NoMonsterSpawns = saved.NoMonsterSpawns;
+
+            // Skills: XP Multiplier only (no level overrides)
+            Config.XPMultiplier = saved.XPMultiplier;
+
+            // Tools: All
+            Config.ToolAreaMultiplier = saved.ToolAreaMultiplier;
+            Config.NoToolStaminaCost = saved.NoToolStaminaCost;
+            Config.InfiniteWater = saved.InfiniteWater;
+            Config.OneHitTools = saved.OneHitTools;
+            Config.InstantToolUpgrade = saved.InstantToolUpgrade;
+            Config.FreeCrafting = saved.FreeCrafting;
+
+            // Farming: Crop Settings + Field Protection
+            Config.CropsNeverDie = saved.CropsNeverDie;
+            Config.ForceForageQuality = saved.ForceForageQuality;
+            Config.PreventDebrisSpawn = saved.PreventDebrisSpawn;
+            Config.TilledSoilDontDecay = saved.TilledSoilDontDecay;
+
+            // Animals: All except hearts overrides
+            Config.MaxAnimalHappiness = saved.MaxAnimalHappiness;
+            Config.BuyAnimalsFullyMatured = saved.BuyAnimalsFullyMatured;
+            Config.AutoPetAnimals = saved.AutoPetAnimals;
+            Config.AutoFeedAnimals = saved.AutoFeedAnimals;
+            Config.InfiniteHay = saved.InfiniteHay;
+            Config.AnimalsProduceDaily = saved.AnimalsProduceDaily;
+
+            // Fishing: All
+            Config.InstantFishBite = saved.InstantFishBite;
+            Config.InstantCatch = saved.InstantCatch;
+            Config.MaxFishQuality = saved.MaxFishQuality;
+            Config.AlwaysFindTreasure = saved.AlwaysFindTreasure;
+
+            // Items: Items and Inventory only
+            Config.MagneticRadiusMultiplier = saved.MagneticRadiusMultiplier;
+            Config.AddedMagneticRadius = saved.AddedMagneticRadius;
+            Config.InfiniteItems = saved.InfiniteItems;
+
+            // Economy: Prices and Shopping only
+            Config.SellPriceMultiplier = saved.SellPriceMultiplier;
+            Config.BuyPriceMultiplier = saved.BuyPriceMultiplier;
+            Config.FreeShopPurchases = saved.FreeShopPurchases;
+            Config.FreeGeodeProcessing = saved.FreeGeodeProcessing;
+
+            // Buildings: All
+            Config.InstantBuildConstruction = saved.InstantBuildConstruction;
+            Config.InstantBuildUpgrade = saved.InstantBuildUpgrade;
+            Config.InstantHouseUpgrade = saved.InstantHouseUpgrade;
+            Config.InstantCommunityUpgrade = saved.InstantCommunityUpgrade;
+            Config.FreeBuildingConstruction = saved.FreeBuildingConstruction;
+            Config.InstantMachineProcessing = saved.InstantMachineProcessing;
+
+            // World: Specific ones only
+            Config.NeverPassOut = saved.NeverPassOut;
+            Config.AlwaysMaxLuck = saved.AlwaysMaxLuck;
+            Config.BypassFriendshipDoors = saved.BypassFriendshipDoors;
+            Config.BypassTimeRestrictions = saved.BypassTimeRestrictions;
+            Config.BypassFestivalClosures = saved.BypassFestivalClosures;
+            Config.BypassConditionalDoors = saved.BypassConditionalDoors;
+            Config.BypassSpecialClosures = saved.BypassSpecialClosures;
+            Config.AutoAcceptQuests = saved.AutoAcceptQuests;
+            Config.InfiniteQuestTime = saved.InfiniteQuestTime;
+
+            // Relationships: All
+            Config.FriendshipMultiplier = saved.FriendshipMultiplier;
+            Config.NoFriendshipDecay = saved.NoFriendshipDecay;
+            Config.GiveGiftsAnytime = saved.GiveGiftsAnytime;
+
+            // Mining
+            Config.ForceLadderChance = saved.ForceLadderChance;
+
+            ModMonitor.Log("[CKBetterCheatsMenu] Restored saved cheats from config.", LogLevel.Debug);
         }
 
         /// <summary>Complete any pending tool upgrades at the blacksmith.</summary>

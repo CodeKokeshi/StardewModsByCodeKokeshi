@@ -16,6 +16,9 @@ namespace CKBetterCheatsMenu
         /// <summary>Hotkey to open the cheats menu.</summary>
         public KeybindList OpenMenuKey { get; set; } = new KeybindList(SButton.K);
 
+        /// <summary>Saved cheats that persist across game restarts.</summary>
+        public SavedCheats Saved { get; set; } = new SavedCheats();
+
         /*********
         ** Movement & Speed
         *********/
@@ -330,5 +333,128 @@ namespace CKBetterCheatsMenu
 
         /// <summary>Current time override target for the Set Time slider (600-2600). Not persisted.</summary>
         public int SetTimeTarget { get; set; } = 600;
+    }
+
+    /// <summary>Cheats that persist across game restarts when saved via "Save to Config".</summary>
+    public class SavedCheats
+    {
+        /*********
+        ** Player: Movement & Speed (no NoClip)
+        *********/
+        public float SpeedMultiplier { get; set; } = 1.0f;
+        public float AddedSpeedBonus { get; set; } = 0f;
+
+        /*********
+        ** Player: Health & Stamina
+        *********/
+        public bool InfiniteStamina { get; set; } = false;
+        public bool InfiniteHealth { get; set; } = false;
+        public int MaxStaminaOverride { get; set; } = 0;
+        public int MaxHealthOverride { get; set; } = 0;
+        public float StaminaRegenPerSecond { get; set; } = 0f;
+        public float HealthRegenPerSecond { get; set; } = 0f;
+
+        /*********
+        ** Combat: All
+        *********/
+        public float DamageMultiplier { get; set; } = 1.0f;
+        public bool OneHitKill { get; set; } = false;
+        public bool AlwaysCrit { get; set; } = false;
+        public float CritDamageMultiplier { get; set; } = 1.0f;
+        public int AddedDefense { get; set; } = 0;
+        public int AddedAttack { get; set; } = 0;
+        public int AddedImmunity { get; set; } = 0;
+        public bool NoMonsterSpawns { get; set; } = false;
+
+        /*********
+        ** Skills: XP Multiplier only (no level overrides)
+        *********/
+        public float XPMultiplier { get; set; } = 1.0f;
+
+        /*********
+        ** Tools: All
+        *********/
+        public int ToolAreaMultiplier { get; set; } = 1;
+        public bool NoToolStaminaCost { get; set; } = false;
+        public bool InfiniteWater { get; set; } = false;
+        public bool OneHitTools { get; set; } = false;
+        public bool InstantToolUpgrade { get; set; } = false;
+        public bool FreeCrafting { get; set; } = false;
+
+        /*********
+        ** Farming: Crop Settings + Field Protection (no instant growth)
+        *********/
+        public bool CropsNeverDie { get; set; } = false;
+        public int ForceForageQuality { get; set; } = -1;
+        public bool PreventDebrisSpawn { get; set; } = false;
+        public bool TilledSoilDontDecay { get; set; } = false;
+
+        /*********
+        ** Animals: All except hearts overrides
+        *********/
+        public bool MaxAnimalHappiness { get; set; } = false;
+        public bool BuyAnimalsFullyMatured { get; set; } = false;
+        public bool AutoPetAnimals { get; set; } = false;
+        public bool AutoFeedAnimals { get; set; } = false;
+        public bool InfiniteHay { get; set; } = false;
+        public bool AnimalsProduceDaily { get; set; } = false;
+
+        /*********
+        ** Fishing: All
+        *********/
+        public bool InstantFishBite { get; set; } = false;
+        public bool InstantCatch { get; set; } = false;
+        public bool MaxFishQuality { get; set; } = false;
+        public bool AlwaysFindTreasure { get; set; } = false;
+
+        /*********
+        ** Items: Items and Inventory only (no backpack, no recipes)
+        *********/
+        public float MagneticRadiusMultiplier { get; set; } = 1.0f;
+        public int AddedMagneticRadius { get; set; } = 0;
+        public bool InfiniteItems { get; set; } = false;
+
+        /*********
+        ** Economy: Prices and Shopping only (no currency adding)
+        *********/
+        public float SellPriceMultiplier { get; set; } = 1.0f;
+        public float BuyPriceMultiplier { get; set; } = 1.0f;
+        public bool FreeShopPurchases { get; set; } = false;
+        public bool FreeGeodeProcessing { get; set; } = false;
+
+        /*********
+        ** Buildings: All
+        *********/
+        public bool InstantBuildConstruction { get; set; } = false;
+        public bool InstantBuildUpgrade { get; set; } = false;
+        public bool InstantHouseUpgrade { get; set; } = false;
+        public bool InstantCommunityUpgrade { get; set; } = false;
+        public bool FreeBuildingConstruction { get; set; } = false;
+        public bool InstantMachineProcessing { get; set; } = false;
+
+        /*********
+        ** World: Specific ones only
+        *********/
+        public bool NeverPassOut { get; set; } = false;
+        public bool AlwaysMaxLuck { get; set; } = false;
+        public bool BypassFriendshipDoors { get; set; } = false;
+        public bool BypassTimeRestrictions { get; set; } = false;
+        public bool BypassFestivalClosures { get; set; } = false;
+        public bool BypassConditionalDoors { get; set; } = false;
+        public bool BypassSpecialClosures { get; set; } = false;
+        public bool AutoAcceptQuests { get; set; } = false;
+        public bool InfiniteQuestTime { get; set; } = false;
+
+        /*********
+        ** Relationships: All
+        *********/
+        public float FriendshipMultiplier { get; set; } = 1.0f;
+        public bool NoFriendshipDecay { get; set; } = false;
+        public bool GiveGiftsAnytime { get; set; } = false;
+
+        /*********
+        ** Mining: All
+        *********/
+        public int ForceLadderChance { get; set; } = 0;
     }
 }
