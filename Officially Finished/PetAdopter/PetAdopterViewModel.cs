@@ -116,9 +116,8 @@ internal partial class PetAdopterViewModel : INotifyPropertyChanged
     {
         if (!CanAdopt || petOptions.Count == 0) return;
 
-        // Check if there are available pet bowls.
-        int availableBowls = CountAvailableBowls();
-        if (availableBowls <= 0)
+        // If the user enabled "Require Free Bowl", block adoption when none are available.
+        if (ModEntry.Config.RequireFreeBowl && CountAvailableBowls() <= 0)
         {
             StatusText = T("status.no-bowls-short");
             CanAdopt = false;
@@ -206,12 +205,12 @@ internal partial class PetAdopterViewModel : INotifyPropertyChanged
         if (bowls <= 0)
         {
             StatusText = T("status.no-bowls", new { totalPets });
-            CanAdopt = false;
+            CanAdopt = petOptions.Count > 0 && !ModEntry.Config.RequireFreeBowl;
         }
         else
         {
             StatusText = T("status.available", new { bowls, totalPets });
-            CanAdopt = true;
+            CanAdopt = petOptions.Count > 0;
         }
     }
 

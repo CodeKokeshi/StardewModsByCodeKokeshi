@@ -22,5 +22,7 @@
   "gmcm.section-title": "Pet Adopter",
   "gmcm.description": "Adopt any pet breed for free with a simple UI. Configure your hotkey below.",
   "gmcm.open-menu-key.name": "Open Menu Key",
-  "gmcm.open-menu-key.tooltip": "The key combination to open the pet adoption menu."
+  "gmcm.open-menu-key.tooltip": "The key combination to open the pet adoption menu.",
+  "gmcm.require-free-bowl.name": "Require Free Bowl",
+  "gmcm.require-free-bowl.tooltip": "When enabled, you can only adopt a pet if there is an empty pet bowl on the farm. Disabled by default (vanilla has no limit, just a friendship penalty)."
 }

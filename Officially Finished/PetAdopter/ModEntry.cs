@@ -68,6 +68,14 @@ public class ModEntry : Mod
             getValue: () => Config.OpenMenuKey,
             setValue: value => Config.OpenMenuKey = value
         );
+
+        configMenu.AddBoolOption(
+            mod: this.ModManifest,
+            name: () => this.Helper.Translation.Get("gmcm.require-free-bowl.name"),
+            tooltip: () => this.Helper.Translation.Get("gmcm.require-free-bowl.tooltip"),
+            getValue: () => Config.RequireFreeBowl,
+            setValue: value => Config.RequireFreeBowl = value
+        );
     }
 
     private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)

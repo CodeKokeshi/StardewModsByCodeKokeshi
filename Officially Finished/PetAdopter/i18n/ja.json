@@ -22,5 +22,7 @@
   "gmcm.section-title": "Pet Adopter",
   "gmcm.description": "シンプルなUIで任意のペット品種を無料で迎えられます。下でホットキーを設定してください。",
   "gmcm.open-menu-key.name": "メニューを開くキー",
-  "gmcm.open-menu-key.tooltip": "ペット養子縁組メニューを開くキーの組み合わせです。"
+  "gmcm.open-menu-key.tooltip": "ペット養子縁組メニューを開くキーの組み合わせです。",
+  "gmcm.require-free-bowl.name": "空きボウル必須",
+  "gmcm.require-free-bowl.tooltip": "有効にすると、農場に空いているペットボウルがない場合はペットを迎えられません。デフォルトは無効です（バニラでは制限なし、友好度ペナルティのみ）。"
 }
