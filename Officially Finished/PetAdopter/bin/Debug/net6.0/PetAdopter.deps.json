@@ -1,0 +1,43 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v6.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v6.0": {
+      "PetAdopter/1.0.0": {
+        "dependencies": {
+          "Pathoschild.Stardew.ModBuildConfig": "4.4.0",
+          "PropertyChanged.SourceGenerator": "1.0.8"
+        },
+        "runtime": {
+          "PetAdopter.dll": {}
+        }
+      },
+      "Pathoschild.Stardew.ModBuildConfig/4.4.0": {},
+      "PropertyChanged.SourceGenerator/1.0.8": {}
+    }
+  },
+  "libraries": {
+    "PetAdopter/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Pathoschild.Stardew.ModBuildConfig/4.4.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-Yi7/8bZlLS1bqZxft1yZWxJmIBfIoRxQBFIwWrF0AjC4/j/HmWdDC7dbNzzM4ZtOTtjOAQ8AC7WjP6KHgLPpdg==",
+      "path": "pathoschild.stardew.modbuildconfig/4.4.0",
+      "hashPath": "pathoschild.stardew.modbuildconfig.4.4.0.nupkg.sha512"
+    },
+    "PropertyChanged.SourceGenerator/1.0.8": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-XufLv9ReskTWjx3assV8aRAfcHfAATAkR/MugYSHkyYm7d2voQJHtQKSncVMNZiVGwXaEg5aGtWgKMweR11TAg==",
+      "path": "propertychanged.sourcegenerator/1.0.8",
+      "hashPath": "propertychanged.sourcegenerator.1.0.8.nupkg.sha512"
+    }
+  }
+}

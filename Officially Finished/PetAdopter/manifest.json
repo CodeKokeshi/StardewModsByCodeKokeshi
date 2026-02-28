@@ -1,0 +1,16 @@
+{
+  "Name": "Pet Adopter",
+  "Author": "CodeKokeshi",
+  "Version": "1.0.0",
+  "Description": "Instantly adopt any pet breed for free! Browse cats and dogs with a sleek UI, name them, and add them to your farm. Press LShift + V to open.",
+  "UniqueID": "CodeKokeshi.PetAdopter",
+  "EntryDll": "PetAdopter.dll",
+  "MinimumApiVersion": "4.0.0",
+  "UpdateKeys": [],
+  "Dependencies": [
+    {
+      "UniqueID": "focustense.StardewUI",
+      "IsRequired": true
+    }
+  ]
+}
