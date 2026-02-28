@@ -1,6 +1,10 @@
 {
   "menu.title": "Pet Adopter",
   "menu.adopt": "Adopt",
+  "counter.format": "{{current}} / {{total}}",
+  "pet.label": "{{petType}} {{number}}",
+  "pet-type.dog": "Dog",
+  "pet-type.cat": "Cat",
 
   "status.no-pets-found": "No pet types found!",
   "status.no-bowls": "No empty pet bowls! ({{totalPets}} pet(s) on farm)",

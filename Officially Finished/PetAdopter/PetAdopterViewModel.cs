@@ -65,28 +65,24 @@ internal partial class PetAdopterViewModel : INotifyPropertyChanged
     [Notify] private string counterText = "";
 
     /// <summary>Localized adopt button text.</summary>
-    [Notify] private string adoptButtonText = "Adopt";
+    [Notify] private string adoptButtonText = "";
 
     /// <summary>Localized menu title.</summary>
-    [Notify] private string menuTitle = "Pet Adopter";
+    [Notify] private string menuTitle = "";
 
     // ── Constructor ──
     public PetAdopterViewModel()
     {
         // Load i18n strings
-        var i18n = ModEntry.ModHelper?.Translation;
-        if (i18n != null)
-        {
-            AdoptButtonText = i18n.Get("menu.adopt");
-            MenuTitle = i18n.Get("menu.title");
-        }
+        AdoptButtonText = T("menu.adopt");
+        MenuTitle = T("menu.title");
 
         LoadPetOptions();
         if (petOptions.Count > 0)
             UpdateDisplay();
         else
         {
-            PetLabel = i18n?.Get("status.no-pets-found") ?? "No pet types found!";
+            PetLabel = T("status.no-pets-found");
             CanAdopt = false;
         }
 
@@ -124,8 +120,7 @@ internal partial class PetAdopterViewModel : INotifyPropertyChanged
         int availableBowls = CountAvailableBowls();
         if (availableBowls <= 0)
         {
-            var i18n = ModEntry.ModHelper?.Translation;
-            StatusText = i18n?.Get("status.no-bowls-short") ?? "No pet bowls available! Build one first.";
+            StatusText = T("status.no-bowls-short");
             CanAdopt = false;
             Game1.playSound("cancel");
             return;
@@ -167,14 +162,13 @@ internal partial class PetAdopterViewModel : INotifyPropertyChanged
                     var srcRect = new Rectangle(0, 0, 32, 32);
                     // Display as "Dog 1", "Cat 2" etc. (1-indexed for humans).
                     int displayNumber = int.TryParse(breed.Id, out int breedNum) ? breedNum + 1 : petOptions.Count + 1;
-                    string label = $"{typeDisplayName} {displayNumber}";
+                    string label = T("pet.label", new { petType = typeDisplayName, number = displayNumber });
                     petOptions.Add(new PetOption(petType, breed.Id, label, spriteTexture, srcRect));
                 }
                 catch (Exception ex)
                 {
                     ModEntry.ModMonitor?.Log(
-                        ModEntry.ModHelper?.Translation.Get("log.sprite-fail", new { petType, breedId = breed.Id, error = ex.Message })
-                        ?? $"Failed to load sprite for {petType}/{breed.Id}: {ex.Message}",
+                        T("log.sprite-fail", new { petType, breedId = breed.Id, error = ex.Message }),
                         LogLevel.Warn);
                 }
             }
@@ -187,9 +181,9 @@ internal partial class PetAdopterViewModel : INotifyPropertyChanged
             return name;
 
         if (name.Equals("dog", StringComparison.OrdinalIgnoreCase))
-            return "Dog";
+            return T("pet-type.dog");
         if (name.Equals("cat", StringComparison.OrdinalIgnoreCase))
-            return "Cat";
+            return T("pet-type.cat");
 
         return name;
     }
@@ -200,7 +194,7 @@ internal partial class PetAdopterViewModel : INotifyPropertyChanged
         var opt = petOptions[currentIndex];
         PetSprite = Tuple.Create(opt.SpriteTexture, opt.SpriteSourceRect);
         PetLabel = opt.DisplayName;
-        CounterText = $"{currentIndex + 1} / {petOptions.Count}";
+        CounterText = T("counter.format", new { current = currentIndex + 1, total = petOptions.Count });
         RefreshStatus();
     }
 
@@ -208,18 +202,28 @@ internal partial class PetAdopterViewModel : INotifyPropertyChanged
     {
         int bowls = CountAvailableBowls();
         int totalPets = Utility.getAllPets().Count;
-        var i18n = ModEntry.ModHelper?.Translation;
 
         if (bowls <= 0)
         {
-            StatusText = i18n?.Get("status.no-bowls", new { totalPets }) ?? $"No empty pet bowls! ({totalPets} pet(s) on farm)";
+            StatusText = T("status.no-bowls", new { totalPets });
             CanAdopt = false;
         }
         else
         {
-            StatusText = i18n?.Get("status.available", new { bowls, totalPets }) ?? $"{bowls} bowl(s) available  ·  {totalPets} pet(s) on farm";
+            StatusText = T("status.available", new { bowls, totalPets });
             CanAdopt = true;
         }
+    }
+
+    private static string T(string key, object? tokens = null)
+    {
+        var helper = ModEntry.ModHelper;
+        if (helper is null)
+            return key;
+
+        return tokens is null
+            ? helper.Translation.Get(key)
+            : helper.Translation.Get(key, tokens);
     }
 
     private static int CountAvailableBowls()
@@ -292,8 +296,7 @@ internal partial class PetAdopterViewModel : INotifyPropertyChanged
         Game1.drawObjectDialogue(Game1.content.LoadString("Strings\\1_6_Strings:AdoptedPet", name));
 
         ModEntry.ModMonitor?.Log(
-            ModEntry.ModHelper?.Translation.Get("log.adopted", new { petType = selected.PetType, breedId = selected.BreedId, petName = name })
-            ?? $"[Pet Adopter] Adopted {selected.PetType} (breed {selected.BreedId}) named \"{name}\".",
+            T("log.adopted", new { petType = selected.PetType, breedId = selected.BreedId, petName = name }),
             LogLevel.Info);
     }
 }

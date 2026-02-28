@@ -1,0 +1,26 @@
+{
+  "menu.title": "ペット養子縁組",
+  "menu.adopt": "迎える",
+  "counter.format": "{{current}} / {{total}}",
+  "pet.label": "{{petType}} {{number}}",
+  "pet-type.dog": "犬",
+  "pet-type.cat": "猫",
+
+  "status.no-pets-found": "利用可能なペットの種類が見つかりません。",
+  "status.no-bowls": "空いているペットボウルがありません！（農場のペット数: {{totalPets}}）",
+  "status.no-bowls-short": "利用可能なペットボウルがありません。先に設置してください。",
+  "status.available": "利用可能なボウル: {{bowls}}  ・  農場のペット数: {{totalPets}}",
+
+  "log.loaded": "Pet Adopter を読み込みました。ホットキーで養子縁組メニューを開けます。",
+  "log.adopted": "{{petType}}（品種 {{breedId}}）を「{{petName}}」として迎えました。",
+  "log.stardewui-missing": "StardewUI Framework が見つかりません。養子縁組メニューを作成できません。",
+  "log.stardewui-ok": "StardewUI の連携が完了しました。",
+  "log.menu-no-stardewui": "養子縁組メニューを開けません — StardewUI が読み込まれていません。",
+  "log.menu-error": "養子縁組メニューの表示中にエラーが発生しました: {{error}}",
+  "log.sprite-fail": "{{petType}}/{{breedId}} のスプライト読み込みに失敗しました: {{error}}",
+
+  "gmcm.section-title": "Pet Adopter",
+  "gmcm.description": "シンプルなUIで任意のペット品種を無料で迎えられます。下でホットキーを設定してください。",
+  "gmcm.open-menu-key.name": "メニューを開くキー",
+  "gmcm.open-menu-key.tooltip": "ペット養子縁組メニューを開くキーの組み合わせです。"
+}
