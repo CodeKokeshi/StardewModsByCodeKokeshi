@@ -16,12 +16,21 @@ public class ModEntry : Mod
     public override void Entry(IModHelper helper)
     {
         // Incompatibility check — only one Max Quality variant should be active.
-        if (helper.ModRegistry.IsLoaded("CodeKokeshi.MaxQuality")
-            || helper.ModRegistry.IsLoaded("CodeKokeshi.MaxQualityManual"))
+        if (helper.ModRegistry.IsLoaded("CodeKokeshi.MaxQuality"))
         {
             this.Monitor.Log(
-                "[Max Quality - Auto] Incompatible mod detected (MaxQuality or MaxQualityManual). "
-                + "Disable the other Max Quality mod to use Max Quality - Auto.",
+                "[Max Quality - Auto] Incompatible mod detected: CodeKokeshi.MaxQuality. "
+                + "This is an older version of the mod and should be deleted.",
+                LogLevel.Error
+            );
+            return;
+        }
+
+        if (helper.ModRegistry.IsLoaded("CodeKokeshi.MaxQualityManual"))
+        {
+            this.Monitor.Log(
+                "[Max Quality - Auto] Incompatible mod detected: CodeKokeshi.MaxQualityManual (Max Quality - Manual). "
+                + "Remove Max Quality - Manual to use Max Quality - Auto.",
                 LogLevel.Error
             );
             return;
