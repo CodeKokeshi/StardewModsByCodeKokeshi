@@ -25,6 +25,8 @@
     "general.enable-notifications.label": "Enable Notifications",
     "general.enable-notifications.tooltip": "Show HUD notification messages when cheats are applied. Disabled by default.",
     "general.hotkey-hint": "Press the menu hotkey (default: K) to open this menu at any time. Configure the hotkey in config.json.",
+    "gmcm.open-menu-hotkey.label": "Open Menu Hotkey",
+    "gmcm.open-menu-hotkey.tooltip": "Hotkey used to open CK Better Cheats Menu.",
 
     "_comment_player": "=== Player Tab ===",
     "player.section.movement": "Movement and Speed",

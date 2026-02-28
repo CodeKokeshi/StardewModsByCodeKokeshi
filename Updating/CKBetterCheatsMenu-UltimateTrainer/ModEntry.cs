@@ -532,8 +532,8 @@ namespace CKBetterCheatsMenu
                 mod: ModManifest,
                 getValue: () => Config.OpenMenuKey,
                 setValue: value => Config.OpenMenuKey = value,
-                name: () => "Open Menu Hotkey",
-                tooltip: () => "Hotkey used to open CK Better Cheats Menu."
+                name: () => Helper.Translation.Get("gmcm.open-menu-hotkey.label"),
+                tooltip: () => Helper.Translation.Get("gmcm.open-menu-hotkey.tooltip")
             );
 
             Monitor.Log("GMCM integration complete (hotkey + basic toggles).", LogLevel.Debug);

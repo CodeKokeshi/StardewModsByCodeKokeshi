@@ -25,6 +25,8 @@
     "general.enable-notifications.label": "通知を有効化",
     "general.enable-notifications.tooltip": "チート適用時にHUD通知メッセージを表示します。デフォルトでは無効です。",
     "general.hotkey-hint": "メニューホットキー（初期値: K）を押すといつでもこのメニューを開けます。ホットキーはconfig.jsonで設定できます。",
+    "gmcm.open-menu-hotkey.label": "メニューを開くホットキー",
+    "gmcm.open-menu-hotkey.tooltip": "CK Better Cheats Menu を開くためのホットキーです。",
 
     "_comment_player": "=== プレイヤータブ ===",
     "player.section.movement": "移動と速度",
