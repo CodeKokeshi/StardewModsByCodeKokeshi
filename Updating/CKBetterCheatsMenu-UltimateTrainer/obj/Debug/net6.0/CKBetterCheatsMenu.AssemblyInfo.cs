@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CKBetterCheatsMenu")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("2.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("2.0.0+b6b816a561586ca7deb09ff00d6ee868e86cb51c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("2.0.0+f44a6b0438e19e0c2e0e5892833166ad44b54a08")]
 [assembly: System.Reflection.AssemblyProductAttribute("CKBetterCheatsMenu")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CKBetterCheatsMenu")]
 [assembly: System.Reflection.AssemblyVersionAttribute("2.0.0.0")]
