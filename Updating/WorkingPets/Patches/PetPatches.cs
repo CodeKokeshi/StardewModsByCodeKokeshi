@@ -48,9 +48,9 @@ namespace WorkingPets.Patches
                 if (manager == null)
                     return true;
 
-                // If the pet is following or working, skip vanilla RunState entirely
+                // If the pet is following, working, or valley-working, skip vanilla RunState entirely
                 // This prevents the vanilla behavior from changing direction/movement
-                if (manager.IsFollowing || manager.IsWorking)
+                if (manager.IsFollowing || manager.IsWorking || manager.IsValleyWorking)
                 {
                     return false; // Skip original
                 }
@@ -76,8 +76,8 @@ namespace WorkingPets.Patches
                 if (manager == null)
                     return true;
 
-                // If following, don't let the vanilla code mess with the pet's behavior
-                if (manager.IsFollowing)
+                // If following or valley-working, don't let the vanilla code mess with the pet's behavior
+                if (manager.IsFollowing || manager.IsValleyWorking)
                 {
                     return false; // Skip original - don't randomly start sleeping
                 }

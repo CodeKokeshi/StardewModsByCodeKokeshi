@@ -12,6 +12,16 @@ using StardewValley.BellsAndWhistles;
 
 namespace WorkingPets.Behaviors
 {
+    /// <summary>Top-level pet state exposed to the Pet Manager UI.</summary>
+    public enum PetState
+    {
+        Idle,
+        FarmWork,
+        ValleyWork,
+        Exploration,
+        Following
+    }
+
     /// <summary>Work type categories for priority system.</summary>
     public enum WorkType
     {
@@ -98,6 +108,7 @@ namespace WorkingPets.Behaviors
         private bool _isWorking;
         private bool _isFollowing;
         private bool _isExploring;  // NEW: Autonomous explore mode
+        private bool _isValleyWorking;  // Valley work mode (clear debris/trees across the valley)
         private int _tickCounter;
         private bool _isPausedForDialogue;
         
@@ -183,6 +194,9 @@ namespace WorkingPets.Behaviors
         private static readonly HashSet<string> _clearedAreas = new(StringComparer.OrdinalIgnoreCase);
         private static int _lastForageScanDay = -1;  // Reset cleared areas each day
         
+        // Track which areas have been cleared of work targets (for valley work mode)
+        private readonly HashSet<string> _valleyWorkClearedAreas = new(StringComparer.OrdinalIgnoreCase);
+        
         // Single explorer enforcement - only one pet can explore at a time
         private static Guid? _currentExplorerPetId = null;
         
@@ -210,7 +224,23 @@ namespace WorkingPets.Behaviors
         public bool IsWorking => _isWorking;
         public bool IsFollowing => _isFollowing;
         public bool IsExploring => _isExploring;
+        public bool IsValleyWorking => _isValleyWorking;
         public bool IsExplorePaused => _explorePaused;  // Exploration was interrupted but can resume
+        
+        /// <summary>Computed top-level state for the Pet Manager UI.</summary>
+        public PetState CurrentState
+        {
+            get
+            {
+                if (_isFollowing) return PetState.Following;
+                if (_isWorking) return PetState.FarmWork;
+                // Valley work before exploration – both reuse explore routing,
+                // but valley work has its own flag and must take precedence.
+                if (_isValleyWorking) return PetState.ValleyWork;
+                if (_isExploring) return PetState.Exploration;
+                return PetState.Idle;
+            }
+        }
         
         /// <summary>Check if another pet is currently exploring.</summary>
         public static bool IsAnyPetExploring => _currentExplorerPetId.HasValue;
@@ -398,6 +428,15 @@ namespace WorkingPets.Behaviors
             if (_isExploring)
             {
                 _isExploring = false;
+                ResetExploreState();
+            }
+            
+            if (_isValleyWorking)
+            {
+                _isValleyWorking = false;
+                _valleyWorkClearedAreas.Clear();
+                _targetTile = null;
+                _pendingAction = null;
                 ResetExploreState();
             }
             
@@ -793,6 +832,221 @@ namespace WorkingPets.Behaviors
             }
         }
 
+        // =====================================================================
+        //  UNIFIED STATE API  –  Used by Pet Manager UI
+        // =====================================================================
+
+        /// <summary>Transition to a new top-level state. Handles stopping the previous state,
+        /// follow-mode singleton swap, and starting the new state.</summary>
+        public void SetState(PetState newState)
+        {
+            if (_pet == null) return;
+
+            // If switching to follow, handle the singleton swap first
+            if (newState == PetState.Following)
+                HandleFollowSwap();
+
+            // Stop whatever is currently active
+            StopAllModes();
+
+            // Start the requested state
+            switch (newState)
+            {
+                case PetState.Idle:
+                    break; // already idle after StopAllModes
+                case PetState.FarmWork:
+                    StartFarmWork();
+                    break;
+                case PetState.ValleyWork:
+                    StartValleyWork();
+                    break;
+                case PetState.Exploration:
+                    StartExploration();
+                    break;
+                case PetState.Following:
+                    StartFollowing();
+                    break;
+            }
+        }
+
+        /// <summary>Stop every active mode and return the pet to idle.</summary>
+        public void StopAllModes()
+        {
+            if (_isFollowing)
+            {
+                _isFollowing = false;
+                if (_pet != null && _currentFollowerPetId == _pet.petId.Value)
+                    _currentFollowerPetId = null;
+                ResetFollowState();
+                if (_pet != null)
+                {
+                    _pet.farmerPassesThrough = false;
+                    _pet.Halt();
+                }
+            }
+
+            if (_isWorking)
+            {
+                _isWorking = false;
+                StopWorkImmediately();
+            }
+
+            if (_isExploring)
+            {
+                _isExploring = false;
+                _explorePaused = false;
+                if (_pet != null && _currentExplorerPetId == _pet.petId.Value)
+                    _currentExplorerPetId = null;
+                ResetExploreState();
+                if (_pet != null)
+                {
+                    _pet.farmerPassesThrough = false;
+                    _pet.Halt();
+                    _pet.controller = null;
+                    _pet.IsInvisible = false;
+                }
+            }
+
+            if (_isValleyWorking)
+            {
+                _isValleyWorking = false;
+                _targetTile = null;
+                _pendingAction = null;
+                _valleyWorkClearedAreas.Clear();
+                ResetExploreState();
+                if (_pet != null)
+                {
+                    _pet.farmerPassesThrough = false;
+                    _pet.Halt();
+                    _pet.controller = null;
+                }
+            }
+        }
+
+        /// <summary>Handle the follow-mode singleton: if another pet is following,
+        /// idle it first (teleporting it to the farm when the player is off-farm).</summary>
+        private void HandleFollowSwap()
+        {
+            if (!_currentFollowerPetId.HasValue || _pet == null)
+                return;
+            if (_currentFollowerPetId == _pet.petId.Value)
+                return; // This pet is already the follower – nothing to swap.
+
+            // Find the currently following pet and idle it
+            foreach (var otherPet in MultiPetManager.GetAllPets())
+            {
+                if (otherPet.petId.Value != _currentFollowerPetId.Value)
+                    continue;
+
+                var otherMgr = ModEntry.PetManager?.GetManagerForPet(otherPet);
+                if (otherMgr == null) break;
+
+                bool playerOnFarm = Game1.player?.currentLocation?.Name == "Farm";
+
+                // Stop the other pet
+                otherMgr.StopAllModes();
+
+                // If not on the farm, teleport the old follower back
+                if (!playerOnFarm && otherPet.currentLocation?.Name != "Farm")
+                {
+                    var farm = Game1.getFarm();
+                    if (farm != null)
+                        Game1.warpCharacter(otherPet, farm, new Vector2(54, 8));
+                }
+                break;
+            }
+        }
+
+        private void StartFarmWork()
+        {
+            _isWorking = true;
+            _tickCounter = 0;
+            _targetTile = null;
+            _pendingAction = null;
+            _noWorkNotificationShown = false;
+
+            if (_pet != null && _pet.currentLocation?.Name != "Farm")
+                Game1.warpCharacter(_pet, "Farm", new Vector2(64, 15));
+        }
+
+        private void StartValleyWork()
+        {
+            if (_pet == null) return;
+
+            _isValleyWorking = true;
+            _tickCounter = 0;
+            _targetTile = null;
+            _pendingAction = null;
+            _valleyWorkClearedAreas.Clear();
+
+            _exploreClockwise = _random.Next(2) == 0;
+            _currentExploreAreaIndex = 0;
+            ResetExploreAreaState();
+
+            string? targetArea = GetNextAreaWithClearables();
+            if (targetArea != null)
+            {
+                TeleportToExploreArea(targetArea);
+                _pet.farmerPassesThrough = true;
+                _pet.controller = null;
+                _pet.Halt();
+            }
+            else
+            {
+                _isValleyWorking = false;
+                string petName = _pet.Name ?? ModEntry.I18n.Get("pet.genericName");
+                Game1.addHUDMessage(new HUDMessage(
+                    ModEntry.I18n.Get("hud.valleyWork.noWork", new { petName }),
+                    HUDMessage.newQuest_type));
+            }
+        }
+
+        private void StartExploration()
+        {
+            if (_pet?.currentLocation == null) return;
+            if (!CanExplore) return;
+
+            _isExploring = true;
+            _hasExploredToday = false;
+            _explorePaused = false;
+            _currentExplorerPetId = _pet.petId.Value;
+
+            _exploreClockwise = _random.Next(2) == 0;
+            _currentExploreAreaIndex = 0;
+            ResetExploreAreaState();
+
+            string? targetArea = GetNextAreaWithForage();
+            if (targetArea == null)
+            {
+                FinishExploringForDay("no forage found");
+                return;
+            }
+
+            TeleportToExploreArea(targetArea);
+            _pet.farmerPassesThrough = true;
+            _pet.controller = null;
+            _pet.Halt();
+        }
+
+        private void StartFollowing()
+        {
+            if (_pet == null) return;
+
+            _isFollowing = true;
+            _currentFollowerPetId = _pet.petId.Value;
+            ResetFollowState();
+            _pet.farmerPassesThrough = true;
+            _pet.controller = null;
+            _pet.Halt();
+
+            // Warp pet to player if in a different location
+            if (_pet.currentLocation?.Name != Game1.player?.currentLocation?.Name)
+            {
+                if (Game1.player?.currentLocation != null)
+                    Game1.warpCharacter(_pet, Game1.player.currentLocation, Game1.player.Tile);
+            }
+        }
+
         public void PauseForDialogue()
         {
             _isPausedForDialogue = true;
@@ -826,6 +1080,14 @@ namespace WorkingPets.Behaviors
             if (CheckInventoryFull())
             {
                 return; // Stop all activities if inventory full
+            }
+
+            // Handle valley work mode - clearing across the valley
+            if (_isValleyWorking)
+            {
+                _idleTicks = 0;
+                UpdateValleyWork();
+                return;
             }
 
             // Handle explore mode - autonomous foraging across the valley
@@ -921,6 +1183,10 @@ namespace WorkingPets.Behaviors
             {
                 _isWorking = bool.TryParse(value, out bool result) && result;
             }
+            if (pet.modData.TryGetValue("WorkingPets.IsValleyWorking", out string? vwValue))
+            {
+                _isValleyWorking = bool.TryParse(vwValue, out bool vwResult) && vwResult;
+            }
             
             // Load this pet's inventory
             _inventoryManager?.Load(pet);
@@ -933,6 +1199,7 @@ namespace WorkingPets.Behaviors
             
             // Save work state
             pet.modData["WorkingPets.IsWorking"] = _isWorking.ToString();
+            pet.modData["WorkingPets.IsValleyWorking"] = _isValleyWorking.ToString();
             
             // Save this pet's inventory
             _inventoryManager?.Save(pet);
@@ -2069,6 +2336,312 @@ namespace WorkingPets.Behaviors
             Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.explore.finished", new { petName, reason }), HUDMessage.newQuest_type));
         }
         
+        // =====================================================================
+        //  VALLEY WORK MODE  –  Clear debris / chop trees across the valley
+        // =====================================================================
+
+        /// <summary>Update valley work mode (farm work behaviour applied across valley locations).</summary>
+        private void UpdateValleyWork()
+        {
+            if (_pet == null) return;
+
+            // Inventory full check
+            if (CheckInventoryFull())
+            {
+                _isValleyWorking = false;
+                _valleyWorkClearedAreas.Clear();
+                _targetTile = null;
+                _pendingAction = null;
+                ResetExploreState();
+                if (_pet != null)
+                {
+                    _pet.farmerPassesThrough = false;
+                    _pet.Halt();
+                    _pet.controller = null;
+                }
+                return;
+            }
+
+            var location = _pet.currentLocation;
+            if (location == null) return;
+
+            // Take control
+            _pet.farmerPassesThrough = true;
+            _pet.controller = null;
+
+            if (_pet.CurrentBehavior == Pet.behavior_Sleep || _pet.CurrentBehavior == "SitDown")
+                _pet.CurrentBehavior = "Walk";
+
+            // Check if in a valid area
+            if (!IsValidExploreArea(location.Name))
+            {
+                string? targetArea = GetNextAreaWithClearables();
+                if (targetArea != null)
+                    TeleportToExploreArea(targetArea);
+                else
+                    FinishValleyWorkForDay("nothing to clear");
+                return;
+            }
+
+            Vector2 petPos = _pet.Position;
+
+            // Wall-pass mode (reuse explore's wall-pass logic)
+            if (_followState == FollowState.WallPassing && _wallPassTarget.HasValue)
+            {
+                _wallPassTicks++;
+                float distToTarget = Vector2.Distance(petPos, _wallPassTarget.Value);
+
+                if (distToTarget <= 64f || _wallPassTicks >= WALL_PASS_MAX_TICKS)
+                {
+                    ExitWallPassMode();
+                    _exploreStuckTicks = 0;
+                }
+                else
+                {
+                    MoveWithWallPass(_wallPassTarget.Value);
+                    _lastPosition = petPos;
+                    return;
+                }
+            }
+
+            // If area has no clearable targets, wait then advance
+            if (_exploreAreaComplete)
+            {
+                _exploreAreaDoneTimer++;
+                StopMovingSmooth();
+                if (_exploreAreaDoneTimer >= EXPLORE_AREA_DONE_DELAY)
+                    TryAdvanceValleyWorkArea();
+                return;
+            }
+
+            // If we have a work target, move toward it (reuses farm-work movement)
+            if (_targetTile.HasValue)
+            {
+                MoveTowardTarget();
+                return;
+            }
+
+            // Scan for work periodically
+            _tickCounter++;
+            if (_tickCounter < ModEntry.Config.TicksBetweenActions) return;
+            _tickCounter = 0;
+
+            bool foundWork = ScanForValleyWork(location);
+            if (!foundWork)
+            {
+                _exploreAreaComplete = true;
+                _exploreAreaDoneTimer = 0;
+            }
+        }
+
+        /// <summary>Scan the current location for clearable objects (same types as farm work).</summary>
+        private bool ScanForValleyWork(GameLocation location)
+        {
+            if (_pet == null) return false;
+
+            Vector2 petTile = _pet.Tile;
+            var config = ModEntry.Config;
+            var candidates = new List<(Vector2 tile, float distance, Action action)>();
+            int workRadius = config.WorkRadius;
+
+            // Debris
+            if (config.ClearDebris)
+            {
+                foreach (var pair in location.objects.Pairs)
+                {
+                    if (IsDebris(pair.Value))
+                    {
+                        float dist = Vector2.Distance(petTile, pair.Key);
+                        if (dist <= workRadius && !_unreachableTiles.Contains(pair.Key))
+                        {
+                            var tile = pair.Key;
+                            var obj = pair.Value;
+                            candidates.Add((tile, dist, () => ClearDebrisAt(location, tile, obj)));
+                        }
+                    }
+                }
+            }
+
+            // Trees
+            if (config.ChopTrees)
+            {
+                foreach (var pair in location.terrainFeatures.Pairs)
+                {
+                    if (pair.Value is Tree tree && tree.growthStage.Value >= 1 && !tree.stump.Value)
+                    {
+                        float dist = Vector2.Distance(petTile, pair.Key);
+                        if (dist <= workRadius && !_unreachableTiles.Contains(pair.Key))
+                        {
+                            var tile = pair.Key;
+                            candidates.Add((tile, dist, () => ChopTreeAt(location, tile, tree)));
+                        }
+                    }
+                }
+            }
+
+            // Stumps and logs
+            if (config.ClearStumpsAndLogs)
+            {
+                foreach (var pair in location.terrainFeatures.Pairs)
+                {
+                    if (pair.Value is Tree tree && tree.stump.Value)
+                    {
+                        float dist = Vector2.Distance(petTile, pair.Key);
+                        if (dist <= workRadius && !_unreachableTiles.Contains(pair.Key))
+                        {
+                            var tile = pair.Key;
+                            candidates.Add((tile, dist, () => RemoveStumpAt(location, tile, tree)));
+                        }
+                    }
+                }
+
+                foreach (var clump in location.resourceClumps)
+                {
+                    if (clump.parentSheetIndex.Value == 600 || clump.parentSheetIndex.Value == 602)
+                    {
+                        float dist = Vector2.Distance(petTile, clump.Tile);
+                        if (dist <= workRadius && !_unreachableTiles.Contains(clump.Tile))
+                        {
+                            var targetClump = clump;
+                            candidates.Add((clump.Tile, dist, () => RemoveLargeStump(location, targetClump)));
+                        }
+                    }
+                }
+            }
+
+            // Boulders
+            if (config.BreakBoulders)
+            {
+                foreach (var clump in location.resourceClumps)
+                {
+                    if (IsBoulderClump(clump.parentSheetIndex.Value))
+                    {
+                        float dist = Vector2.Distance(petTile, clump.Tile);
+                        if (dist <= workRadius && !_unreachableTiles.Contains(clump.Tile))
+                        {
+                            var targetClump = clump;
+                            candidates.Add((clump.Tile, dist, () => BreakBoulder(location, targetClump)));
+                        }
+                    }
+                }
+            }
+
+            if (candidates.Count > 0)
+            {
+                var nearest = candidates.OrderBy(c => c.distance).First();
+                SetJob(nearest.tile, nearest.action);
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>Get the next area that has clearable work targets.</summary>
+        private string? GetNextAreaWithClearables()
+        {
+            string[] route = _exploreClockwise ? EXPLORE_ROUTE_CLOCKWISE : EXPLORE_ROUTE_COUNTERCLOCKWISE;
+
+            for (int i = 0; i < route.Length; i++)
+            {
+                int idx = (_currentExploreAreaIndex + i) % route.Length;
+                string areaName = route[idx];
+
+                if (_valleyWorkClearedAreas.Contains(areaName)) continue;
+
+                var location = Game1.getLocationFromName(areaName);
+                if (location == null) continue;
+
+                if (HasAnyClearableWork(location))
+                {
+                    _currentExploreAreaIndex = idx;
+                    return areaName;
+                }
+                else
+                {
+                    _valleyWorkClearedAreas.Add(areaName);
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>Quick check if a location has any debris / trees / stumps / boulders to clear.</summary>
+        private bool HasAnyClearableWork(GameLocation location)
+        {
+            var config = ModEntry.Config;
+
+            if (config.ClearDebris)
+            {
+                foreach (var obj in location.objects.Values)
+                    if (IsDebris(obj)) return true;
+            }
+
+            if (config.ChopTrees)
+            {
+                foreach (var feature in location.terrainFeatures.Values)
+                    if (feature is Tree tree && tree.growthStage.Value >= 1 && !tree.stump.Value) return true;
+            }
+
+            if (config.ClearStumpsAndLogs)
+            {
+                foreach (var feature in location.terrainFeatures.Values)
+                    if (feature is Tree tree && tree.stump.Value) return true;
+                foreach (var clump in location.resourceClumps)
+                    if (clump.parentSheetIndex.Value == 600 || clump.parentSheetIndex.Value == 602) return true;
+            }
+
+            if (config.BreakBoulders)
+            {
+                foreach (var clump in location.resourceClumps)
+                    if (IsBoulderClump(clump.parentSheetIndex.Value)) return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>Advance to the next valley work area or finish if all areas are cleared.</summary>
+        private void TryAdvanceValleyWorkArea()
+        {
+            if (_pet?.currentLocation == null) return;
+
+            _valleyWorkClearedAreas.Add(_pet.currentLocation.Name);
+
+            _currentExploreAreaIndex = (_currentExploreAreaIndex + 1) %
+                (_exploreClockwise ? EXPLORE_ROUTE_CLOCKWISE.Length : EXPLORE_ROUTE_COUNTERCLOCKWISE.Length);
+
+            string? nextArea = GetNextAreaWithClearables();
+            if (nextArea == null)
+            {
+                FinishValleyWorkForDay("all areas cleared");
+                return;
+            }
+
+            TeleportToExploreArea(nextArea);
+        }
+
+        /// <summary>Finish valley work for the day and return pet to the farm.</summary>
+        private void FinishValleyWorkForDay(string reason)
+        {
+            if (_pet == null) return;
+
+            _isValleyWorking = false;
+            _valleyWorkClearedAreas.Clear();
+            ResetExploreState();
+
+            var farm = Game1.getFarm();
+            if (farm != null)
+                Game1.warpCharacter(_pet, farm, new Vector2(64, 15));
+
+            _pet.farmerPassesThrough = false;
+            _pet.Halt();
+            _pet.controller = null;
+
+            string petName = _pet.Name ?? ModEntry.I18n.Get("pet.genericName");
+            Game1.addHUDMessage(new HUDMessage(
+                ModEntry.I18n.Get("hud.valleyWork.finished", new { petName, reason }),
+                HUDMessage.newQuest_type));
+        }
+
         /// <summary>Check if an area is valid for exploration.</summary>
         private bool IsValidExploreArea(string locationName)
         {
@@ -2228,7 +2801,6 @@ namespace WorkingPets.Behaviors
                 Vector2 arrival = GetSafeArrivalTile(targetLocation, spawnTile);
                 Game1.warpCharacter(_pet, targetLocation, arrival);
                 ResetExploreAreaState();
-                _isExploring = true;
             }
             else
             {
@@ -2645,12 +3217,19 @@ namespace WorkingPets.Behaviors
             {
                 _noWorkNotificationShown = false;
             }
-            // Only show "no work" notification once per work session
-            else if (!_noWorkNotificationShown && config.ShowWorkingMessages)
+            // No work found → switch to idle immediately
+            else
             {
-                _noWorkNotificationShown = true;
                 string petName = _pet?.Name ?? ModEntry.I18n.Get("pet.genericName");
-                Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.work.noWork", new { petName }), HUDMessage.newQuest_type));
+
+                if (!_noWorkNotificationShown && config.ShowWorkingMessages)
+                {
+                    _noWorkNotificationShown = true;
+                    Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.work.noWork", new { petName }), HUDMessage.newQuest_type));
+                }
+
+                // Immediately revert to idle so the pet doesn't keep scanning
+                SetState(PetState.Idle);
             }
         }
 
@@ -2995,7 +3574,7 @@ namespace WorkingPets.Behaviors
             return false;
         }
 
-        private void ClearDebrisAt(Farm farm, Vector2 tile, StardewValley.Object obj)
+        private void ClearDebrisAt(GameLocation farm, Vector2 tile, StardewValley.Object obj)
         {
             if (!farm.objects.ContainsKey(tile))
             {
@@ -3050,7 +3629,7 @@ namespace WorkingPets.Behaviors
             foreach (var item in drops) InventoryManager.AddItem(item);
         }
 
-        private void ChopTreeAt(Farm farm, Vector2 tile, Tree tree)
+        private void ChopTreeAt(GameLocation farm, Vector2 tile, Tree tree)
         {
             if (!farm.terrainFeatures.ContainsKey(tile)) return;
 
@@ -3124,7 +3703,7 @@ namespace WorkingPets.Behaviors
             }
         }
 
-        private void RemoveStumpAt(Farm farm, Vector2 tile, Tree tree)
+        private void RemoveStumpAt(GameLocation farm, Vector2 tile, Tree tree)
         {
             if (!farm.terrainFeatures.ContainsKey(tile)) return;
 
@@ -3154,7 +3733,7 @@ namespace WorkingPets.Behaviors
             }
         }
 
-        private void RemoveLargeStump(Farm farm, ResourceClump clump)
+        private void RemoveLargeStump(GameLocation farm, ResourceClump clump)
         {
             Vector2 tile = clump.Tile;
             int index = farm.resourceClumps.IndexOf(clump);
@@ -3196,7 +3775,7 @@ namespace WorkingPets.Behaviors
             }
         }
 
-        private void BreakBoulder(Farm farm, ResourceClump clump)
+        private void BreakBoulder(GameLocation farm, ResourceClump clump)
         {
             Vector2 tile = clump.Tile;
             int index = farm.resourceClumps.IndexOf(clump);

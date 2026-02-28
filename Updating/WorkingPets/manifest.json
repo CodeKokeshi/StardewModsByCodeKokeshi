@@ -1,15 +1,19 @@
 {
   "Name": "Working Pets",
   "Author": "CodeKokeshi",
-  "Version": "1.4.0",
-  "Description": "Transform your pets into helpful farmhands! Works with multiple pets (Pet Licenses compatible). Features pet map tracking, whistle command via Animals page, debris clearing, tree chopping, boulder breaking, and daily scavenging. Each pet works independently with smart collision avoidance and toggleable work/follow modes.",
+  "Version": "2.0.0",
+  "Description": "Transform your pets into helpful farmhands! Pet Manager UI to set each pet's mode: Farm Work, Valley Work, Exploration, Follow, or Idle. Features valley-wide debris clearing, tree chopping, autonomous foraging, and smart follow. Press V to open.",
   "UniqueID": "CodeKokeshi.WorkingPets",
   "EntryDll": "WorkingPets.dll",
-  "MinimumApiVersion": "3.0.0",
+  "MinimumApiVersion": "4.0.0",
   "UpdateKeys": [
     "Nexus:41161"
   ],
   "Dependencies": [
+    {
+      "UniqueID": "focustense.StardewUI",
+      "IsRequired": true
+    },
     {
       "UniqueID": "spacechase0.GenericModConfigMenu",
       "IsRequired": false

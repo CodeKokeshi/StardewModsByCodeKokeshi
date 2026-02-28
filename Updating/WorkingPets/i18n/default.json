@@ -1,29 +1,20 @@
 {
-  "log.loaded": "Working Pets loaded! Right-click your pet to open commands, or press your Whistle key to call pets.",
+  "log.loaded": "Working Pets loaded! Right-click your pet to open commands, or press your Pet Manager key to manage pets.",
 
   "pet.genericName": "Your pet",
 
-  "petMenu.greeting.exploring": "{{petName}} is out exploring the valley!",
   "petMenu.greeting.following": "{{petName}} is happily following you!",
-  "petMenu.greeting.working": "{{petName}} pauses and looks at you, tail wagging.",
   "petMenu.greeting.idle": "{{petName}} looks up at you expectantly.",
 
   "petMenu.option.follow.start": "Follow me, {{petName}}!",
   "petMenu.option.follow.stop": "That's enough following for now, {{petName}}",
-  
-  "petMenu.option.explore.start": "Go explore the valley, {{petName}}!",
-  "petMenu.option.explore.resume": "Continue exploring, {{petName}}!",
-  "petMenu.option.explore.stop": "Come back home, {{petName}}",
 
-  "petMenu.option.work.start": "Ask {{petName}} to help around the farm",
-  "petMenu.option.work.stop": "Let {{petName}} rest",
+  "petMenu.option.inventory.withCount": "Open {{petName}}'s Pouch ({{totalItems}} items)",
+  "petMenu.option.inventory.empty": "Open {{petName}}'s Pouch",
 
-  "petMenu.option.inventory.withCount": "Check what {{petName}} has found ({{totalItems}} items)",
-  "petMenu.option.inventory.empty": "Check {{petName}}'s pouch",
-
-  "petMenu.option.pet": "Give {{petName}} some love",
-  "petMenu.option.rename": "Give {{petName}} a new name",
-  "petMenu.option.cancel": "Never mind",
+  "petMenu.option.pet": "Show {{petName}} some love",
+  "petMenu.option.petManager": "Open Pet Manager",
+  "petMenu.option.cancel": "Never Mind",
 
   "petMenu.inventory.title": "{{petName}}'s Finds",
 
@@ -33,9 +24,14 @@
   "hud.explore.finished": "{{petName}} finished exploring ({{reason}}) and is resting.",
   "hud.follow.start": "{{petName}} is now following you!",
   "hud.follow.stop": "{{petName}} is no longer following you.",
+  "hud.state.idle": "{{petName}} is now idle.",
   "hud.work.start": "{{petName}} is now helping on the farm!",
   "hud.work.stop": "{{petName}} is taking a break.",
   "hud.work.noWork": "{{petName}} looked around but found nothing to do!",
+  "hud.valleyWork.start": "{{petName}} is now clearing debris across the valley!",
+  "hud.valleyWork.stop": "{{petName}} stopped valley work.",
+  "hud.valleyWork.noWork": "{{petName}} couldn't find anything to clear in the valley.",
+  "hud.valleyWork.finished": "{{petName}} finished valley work ({{reason}}) and is resting.",
   "hud.scavenge.morning": "{{petName}} found {{addedCount}} item(s) overnight!",
   "hud.chestDeposit.morning": "{{petName}} deposited {{depositedCount}} item(s) into your chests!",
   "hud.genericError": "Something went wrong!",
@@ -46,6 +42,45 @@
   "hud.inventory.full": "{{petName}}'s inventory is full!",
   "hud.pet.atLocation": "{{petName}} is at {{location}}.",
   "hud.follow.anotherFollowing": "Another pet is already following you!",
+
+  "petManager.title": "Pet Manager",
+  "petManager.noPets": "You don't have any pets yet!",
+
+  "petManager.tab.manage": "Manage",
+  "petManager.tab.pets": "Pets",
+  "petManager.tab.settings": "Settings",
+
+  "petManager.status.idle": "Idle",
+  "petManager.status.farmWork": "Farm Work",
+  "petManager.status.valleyWork": "Valley Work",
+  "petManager.status.exploration": "Exploring",
+  "petManager.status.following": "Following",
+
+  "petManager.tooltip.idle": "Set to Idle",
+  "petManager.tooltip.farmWork": "Farm Work - clear debris on the farm",
+  "petManager.tooltip.valleyWork": "Valley Work - clear weeds and trees across the valley",
+  "petManager.tooltip.exploration": "Exploration - forage across the valley",
+  "petManager.tooltip.follow": "Follow - follow the player",
+  "petManager.tooltip.rename": "Give this pet a new name",
+
+  "petManager.tooltip.idle.active": "Currently Idle",
+  "petManager.tooltip.farmWork.active": "Currently working on the farm",
+  "petManager.tooltip.valleyWork.active": "Currently clearing the valley",
+  "petManager.tooltip.exploration.active": "Currently exploring",
+  "petManager.tooltip.follow.active": "Currently following you",
+
+  "petManager.location": "{{location}}",
+  "petManager.location.unknown": "Unknown",
+
+  "petManager.settings.clearDebris": "Clear Debris (weeds, stones, twigs)",
+  "petManager.settings.chopTrees": "Chop Trees",
+  "petManager.settings.clearStumps": "Clear Stumps & Logs",
+  "petManager.settings.breakBoulders": "Break Boulders",
+  "petManager.settings.showWorkingMsg": "Show Working Messages",
+  "petManager.settings.showStateNotif": "Show State Notifications",
+  "petManager.settings.forageFollow": "Forage While Following",
+  "petManager.settings.followOutside": "Follow Outside Farm",
+  "petManager.settings.autoDeposit": "Auto-deposit to Chests",
 
   "whistleMenu.title": "Whistle Pet",
   "whistleMenu.noPets": "You don't have any pets yet!",

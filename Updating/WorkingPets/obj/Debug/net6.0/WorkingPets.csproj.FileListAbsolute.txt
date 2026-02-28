@@ -34,3 +34,12 @@ D:\December 2025 OS\Development\StardewModding\Updating\WorkingPets\obj\Debug\ne
 D:\December 2025 OS\Development\StardewModding\Updating\WorkingPets\obj\Debug\net6.0\WorkingPets.csproj.CoreCompileInputs.cache
 D:\December 2025 OS\Development\StardewModding\Updating\WorkingPets\obj\Debug\net6.0\WorkingPets.sourcelink.json
 D:\December 2025 OS\Development\StardewModding\Updating\WorkingPets\obj\Debug\net6.0\WorkingPets.dll
+D:\December 2025 OS\Development\StardewModding\Updating\WorkingPets\bin\Debug\net6.0\assets\views\exploration_mode.png
+D:\December 2025 OS\Development\StardewModding\Updating\WorkingPets\bin\Debug\net6.0\assets\views\farm_work_mode.png
+D:\December 2025 OS\Development\StardewModding\Updating\WorkingPets\bin\Debug\net6.0\assets\views\follow_mode.png
+D:\December 2025 OS\Development\StardewModding\Updating\WorkingPets\bin\Debug\net6.0\assets\views\idle_mode.png
+D:\December 2025 OS\Development\StardewModding\Updating\WorkingPets\bin\Debug\net6.0\assets\views\PetManagerMenu.sml
+D:\December 2025 OS\Development\StardewModding\Updating\WorkingPets\bin\Debug\net6.0\assets\views\valley_work_mode.png
+D:\December 2025 OS\Development\StardewModding\Updating\WorkingPets\bin\Debug\net6.0\assets\views\pet_tab.png
+D:\December 2025 OS\Development\StardewModding\Updating\WorkingPets\bin\Debug\net6.0\assets\views\rename_tab.png
+D:\December 2025 OS\Development\StardewModding\Updating\WorkingPets\bin\Debug\net6.0\assets\views\settings_tab.png

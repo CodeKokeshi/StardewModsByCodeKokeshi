@@ -7,6 +7,9 @@
         "build": {
           "build/Pathoschild.Stardew.ModBuildConfig.targets": {}
         }
+      },
+      "PropertyChanged.SourceGenerator/1.0.8": {
+        "type": "package"
       }
     }
   },
@@ -30,11 +33,26 @@
         "pathoschild.stardew.modbuildconfig.4.4.0.nupkg.sha512",
         "pathoschild.stardew.modbuildconfig.nuspec"
       ]
+    },
+    "PropertyChanged.SourceGenerator/1.0.8": {
+      "sha512": "XufLv9ReskTWjx3assV8aRAfcHfAATAkR/MugYSHkyYm7d2voQJHtQKSncVMNZiVGwXaEg5aGtWgKMweR11TAg==",
+      "type": "package",
+      "path": "propertychanged.sourcegenerator/1.0.8",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "analyzers/dotnet/cs/PropertyChanged.SourceGenerator.dll",
+        "icon.png",
+        "propertychanged.sourcegenerator.1.0.8.nupkg.sha512",
+        "propertychanged.sourcegenerator.nuspec"
+      ]
     }
   },
   "projectFileDependencyGroups": {
     "net6.0": [
-      "Pathoschild.Stardew.ModBuildConfig >= 4.*"
+      "Pathoschild.Stardew.ModBuildConfig >= 4.*",
+      "PropertyChanged.SourceGenerator >= 1.0.8"
     ]
   },
   "packageFolders": {
@@ -83,6 +101,12 @@
           "Pathoschild.Stardew.ModBuildConfig": {
             "target": "Package",
             "version": "[4.*, )"
+          },
+          "PropertyChanged.SourceGenerator": {
+            "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+            "suppressParent": "All",
+            "target": "Package",
+            "version": "[1.0.8, )"
           }
         },
         "imports": [

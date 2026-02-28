@@ -47,6 +47,12 @@
             "Pathoschild.Stardew.ModBuildConfig": {
               "target": "Package",
               "version": "[4.*, )"
+            },
+            "PropertyChanged.SourceGenerator": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[1.0.8, )"
             }
           },
           "imports": [

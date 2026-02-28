@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using HarmonyLib;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
+using StardewUI.Framework;
 using StardewValley;
 using StardewValley.Characters;
 using WorkingPets.Behaviors;
@@ -47,6 +48,9 @@ namespace WorkingPets
         *********/
         /// <summary>Whether the 'no pets' notification has been shown today.</summary>
         private bool HasShownNoPetsNotifToday = false;
+
+        /// <summary>StardewUI view engine.</summary>
+        private IViewEngine? _viewEngine;
 
         /*********
         ** Public methods
@@ -96,15 +100,16 @@ namespace WorkingPets
             if (!Context.IsWorldReady)
                 return;
 
-            // Toggle whistle menu (allow closing even when menu is open)
+            // Toggle Pet Manager menu
             if (Config.WhistleKey.JustPressed())
             {
-                if (Game1.activeClickableMenu is WhistleMenu)
+                if (Game1.activeClickableMenu != null)
                 {
+                    // Close active menu if it's our Pet Manager (StardewUI handles its own close)
                     Game1.activeClickableMenu.exitThisMenu();
                     Game1.playSound("bigDeSelect");
                 }
-                else if (Game1.activeClickableMenu == null)
+                else
                 {
                     // Check if player has any pets
                     bool hasPets = false;
@@ -126,15 +131,14 @@ namespace WorkingPets
                         // Show notification only once per day
                         if (!HasShownNoPetsNotifToday)
                         {
-                            Game1.showGlobalMessage(I18n.Get("whistleMenu.noPets"));
+                            Game1.showGlobalMessage(I18n.Get("petManager.noPets"));
                             HasShownNoPetsNotifToday = true;
                         }
                         // Don't play sound or open menu
                     }
                     else
                     {
-                        Game1.activeClickableMenu = new WhistleMenu();
-                        Game1.playSound("bigSelect");
+                        OpenPetManagerMenu();
                     }
                 }
             }
@@ -184,6 +188,18 @@ namespace WorkingPets
         /// <summary>Raised after the game is launched, right before the first update tick.</summary>
         private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
         {
+            // ── StardewUI ──
+            _viewEngine = this.Helper.ModRegistry.GetApi<IViewEngine>("focustense.StardewUI");
+            if (_viewEngine != null)
+            {
+                _viewEngine.RegisterViews("Mods/CodeKokeshi.WorkingPets/Views", "assets/views");
+                this.Monitor.Log("StardewUI registered.", LogLevel.Debug);
+            }
+            else
+            {
+                this.Monitor.Log("StardewUI not found – Pet Manager menu will be unavailable.", LogLevel.Warn);
+            }
+
             // Get Generic Mod Config Menu's API (if it's installed)
             var configMenu = this.Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
             if (configMenu is null)
@@ -605,6 +621,45 @@ namespace WorkingPets
         private void OnRenderingHud(object? sender, RenderingHudEventArgs e)
         {
             UI.PetMapTracker.DrawPetIcons(e.SpriteBatch);
+        }
+
+        /// <summary>Get the StardewUI view engine (may be null if StardewUI isn't loaded).</summary>
+        public StardewUI.Framework.IViewEngine? GetViewEngine() => _viewEngine;
+
+        /// <summary>Open the StardewUI Pet Manager menu.</summary>
+        public void OpenPetManagerMenu()
+        {
+            if (_viewEngine == null)
+            {
+                this.Monitor.Log("Cannot open Pet Manager – StardewUI not loaded.", LogLevel.Warn);
+                return;
+            }
+
+            try
+            {
+                var viewModel = new PetManagerViewModel();
+                var controller = _viewEngine.CreateMenuControllerFromAsset(
+                    "Mods/CodeKokeshi.WorkingPets/Views/PetManagerMenu",
+                    viewModel
+                );
+
+                controller.EnableCloseButton();
+                controller.DimmingAmount = 0.75f;
+
+                // Auto-save settings and flush state notifications when menu closes
+                controller.Closed += () =>
+                {
+                    viewModel.Settings.SaveToConfig();
+                    viewModel.FlushNotifications();
+                };
+
+                Game1.activeClickableMenu = controller.Menu;
+                Game1.playSound("bigSelect");
+            }
+            catch (Exception ex)
+            {
+                this.Monitor.Log($"Error opening Pet Manager: {ex.Message}", LogLevel.Error);
+            }
         }
 
         /// <summary>Gets the player's pet.</summary>

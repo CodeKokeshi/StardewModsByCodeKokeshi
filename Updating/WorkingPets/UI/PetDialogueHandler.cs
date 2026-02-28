@@ -52,80 +52,37 @@ namespace WorkingPets.UI
             manager?.PauseForDialogue();
             
             string petName = pet.Name ?? ModEntry.I18n.Get("pet.genericName");
-            bool isWorking = manager?.IsWorking ?? false;
             bool isFollowing = manager?.IsFollowing ?? false;
-            bool isExploring = manager?.IsExploring ?? false;
             int totalItems = manager?.InventoryManager?.TotalItemCount ?? 0;
 
-            // Build response options - natural dialogue style
+            // Build response options
             var responses = new List<Response>();
 
-            // Follow option
+            // 1. Follow option
             if (isFollowing)
-            {
                 responses.Add(new Response("ToggleFollow", ModEntry.I18n.Get("petMenu.option.follow.stop", new { petName })));
-            }
             else
-            {
                 responses.Add(new Response("ToggleFollow", ModEntry.I18n.Get("petMenu.option.follow.start", new { petName })));
-            }
-            
-            // Explore option - autonomous foraging across the valley
-            if (isExploring)
-            {
-                responses.Add(new Response("ToggleExplore", ModEntry.I18n.Get("petMenu.option.explore.stop", new { petName })));
-            }
-            else if (manager?.CanExplore == true)
-            {
-                // Can explore (hasn't explored today OR exploration was paused)
-                if (manager?.IsExplorePaused == true)
-                {
-                    responses.Add(new Response("ToggleExplore", ModEntry.I18n.Get("petMenu.option.explore.resume", new { petName })));
-                }
-                else
-                {
-                    responses.Add(new Response("ToggleExplore", ModEntry.I18n.Get("petMenu.option.explore.start", new { petName })));
-                }
-            }
-            // If !CanExplore, don't show the explore option (already done for today)
 
-            // Work option (always available - selecting it cancels follow mode)
-            if (isWorking)
-            {
-                responses.Add(new Response("ToggleWork", ModEntry.I18n.Get("petMenu.option.work.stop", new { petName })));
-            }
-            else
-            {
-                responses.Add(new Response("ToggleWork", ModEntry.I18n.Get("petMenu.option.work.start", new { petName })));
-            }
-
+            // 2. Pouch (inventory)
             if (totalItems > 0)
-            {
                 responses.Add(new Response("OpenInventory", ModEntry.I18n.Get("petMenu.option.inventory.withCount", new { petName, totalItems })));
-            }
             else
-            {
                 responses.Add(new Response("OpenInventory", ModEntry.I18n.Get("petMenu.option.inventory.empty", new { petName })));
-            }
 
+            // 3. Love
             responses.Add(new Response("PetThem", ModEntry.I18n.Get("petMenu.option.pet", new { petName })));
 
-            // One-time rename option - only show if not used yet
-            if (!pet.modData.ContainsKey(RENAME_USED_KEY))
-            {
-                responses.Add(new Response("Rename", ModEntry.I18n.Get("petMenu.option.rename", new { petName })));
-            }
+            // 4. Pet Manager
+            responses.Add(new Response("OpenPetManager", ModEntry.I18n.Get("petMenu.option.petManager")));
 
+            // 5. Never mind
             responses.Add(new Response("Cancel", ModEntry.I18n.Get("petMenu.option.cancel")));
 
             // Create question dialogue
             string greeting;
-            if (isExploring)
-                greeting = ModEntry.I18n.Get("petMenu.greeting.exploring", new { petName });
-            else if (isFollowing)
+            if (isFollowing)
                 greeting = ModEntry.I18n.Get("petMenu.greeting.following", new { petName });
-            else if (isWorking)
-                greeting = ModEntry.I18n.Get("petMenu.greeting.working", new { petName });
             else
                 greeting = ModEntry.I18n.Get("petMenu.greeting.idle", new { petName });
 
@@ -150,14 +107,6 @@ namespace WorkingPets.UI
                 case "ToggleFollow":
                     HandleToggleFollow(pet, manager);
                     break;
-                    
-                case "ToggleExplore":
-                    HandleToggleExplore(pet, manager);
-                    break;
-
-                case "ToggleWork":
-                    HandleToggleWork(pet, manager);
-                    break;
 
                 case "OpenInventory":
                     HandleOpenInventory(pet);
@@ -167,13 +116,15 @@ namespace WorkingPets.UI
                     HandlePetAction(pet, who);
                     break;
 
-                case "Rename":
-                    HandleRename(pet);
+                case "OpenPetManager":
+                    // Close dialogue, then open the Pet Manager UI
+                    Game1.dialogueUp = false;
+                    Game1.player.canMove = true;
+                    ModEntry.Instance.OpenPetManagerMenu();
                     break;
 
                 case "Cancel":
                 default:
-                    // Do nothing
                     break;
             }
             
@@ -263,6 +214,29 @@ namespace WorkingPets.UI
                 PlayPetSound(pet, "BARK");
                 if (ModEntry.Config.ShowStateNotifications)
                     Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.work.stop", new { petName }), HUDMessage.newQuest_type));
+            }
+        }
+
+        private static void HandleToggleValleyWork(Pet? pet, PetWorkManager? manager)
+        {
+            if (manager == null) return;
+
+            string petName = pet?.Name ?? "Your pet";
+
+            if (manager.IsValleyWorking)
+            {
+                // Stop valley work → idle
+                manager.SetState(Behaviors.PetState.Idle);
+                PlayPetSound(pet, "BARK");
+                if (ModEntry.Config.ShowStateNotifications)
+                    Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.valleyWork.stop", new { petName }), HUDMessage.newQuest_type));
+            }
+            else
+            {
+                manager.SetState(Behaviors.PetState.ValleyWork);
+                PlayPetSound(pet, "BARK");
+                if (ModEntry.Config.ShowStateNotifications && manager.IsValleyWorking) // only if it actually started
+                    Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.valleyWork.start", new { petName }), HUDMessage.newQuest_type));
             }
         }
 
