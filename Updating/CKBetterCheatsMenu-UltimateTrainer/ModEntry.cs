@@ -448,7 +448,7 @@ namespace CKBetterCheatsMenu
             );
 
             TryPatch(
-                original: AccessTools.Method(typeof(Crop), nameof(Crop.IsInSeason)),
+                original: AccessTools.Method(typeof(Crop), nameof(Crop.IsInSeason), new Type[] { typeof(GameLocation) }),
                 postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Crop_IsInSeason_Postfix)),
                 description: "Crop.IsInSeason (CropsNeverDie)"
             );
@@ -461,6 +461,9 @@ namespace CKBetterCheatsMenu
         *********/
         private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
         {
+            // Optional GMCM integration (hotkey + basic toggles)
+            RegisterGenericModConfigMenu();
+
             // Initialize StardewUI
             viewEngine = Helper.ModRegistry.GetApi<IViewEngine>("focustense.StardewUI");
             if (viewEngine == null)
@@ -473,6 +476,67 @@ namespace CKBetterCheatsMenu
             viewEngine.RegisterViews("Mods/CodeKokeshi.CKBetterCheatsMenu/Views", "assets/views");
 
             Monitor.Log("StardewUI integration complete!", LogLevel.Debug);
+        }
+
+        /// <summary>Register a lightweight GMCM page for hotkeys/basic settings.</summary>
+        private void RegisterGenericModConfigMenu()
+        {
+            var gmcm = Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
+            if (gmcm == null)
+            {
+                Monitor.Log("GMCM not found; skipping optional GMCM integration.", LogLevel.Trace);
+                return;
+            }
+
+            gmcm.Register(
+                mod: ModManifest,
+                reset: () =>
+                {
+                    var diskConfig = Helper.ReadConfig<ModConfig>();
+                    Config.ModEnabled = diskConfig.ModEnabled;
+                    Config.EnableNotifications = diskConfig.EnableNotifications;
+                    Config.OpenMenuKey = diskConfig.OpenMenuKey;
+                },
+                save: () =>
+                {
+                    var diskConfig = Helper.ReadConfig<ModConfig>();
+                    diskConfig.ModEnabled = Config.ModEnabled;
+                    diskConfig.EnableNotifications = Config.EnableNotifications;
+                    diskConfig.OpenMenuKey = Config.OpenMenuKey;
+                    Helper.WriteConfig(diskConfig);
+                }
+            );
+
+            gmcm.AddSectionTitle(
+                mod: ModManifest,
+                text: () => Helper.Translation.Get("general.section.master-toggle")
+            );
+
+            gmcm.AddBoolOption(
+                mod: ModManifest,
+                getValue: () => Config.ModEnabled,
+                setValue: value => Config.ModEnabled = value,
+                name: () => Helper.Translation.Get("general.mod-enabled.label"),
+                tooltip: () => Helper.Translation.Get("general.mod-enabled.tooltip")
+            );
+
+            gmcm.AddBoolOption(
+                mod: ModManifest,
+                getValue: () => Config.EnableNotifications,
+                setValue: value => Config.EnableNotifications = value,
+                name: () => Helper.Translation.Get("general.enable-notifications.label"),
+                tooltip: () => Helper.Translation.Get("general.enable-notifications.tooltip")
+            );
+
+            gmcm.AddKeybindList(
+                mod: ModManifest,
+                getValue: () => Config.OpenMenuKey,
+                setValue: value => Config.OpenMenuKey = value,
+                name: () => "Open Menu Hotkey",
+                tooltip: () => "Hotkey used to open CK Better Cheats Menu."
+            );
+
+            Monitor.Log("GMCM integration complete (hotkey + basic toggles).", LogLevel.Debug);
         }
 
         private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)

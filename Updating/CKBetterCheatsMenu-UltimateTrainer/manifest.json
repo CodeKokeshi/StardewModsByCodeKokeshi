@@ -11,6 +11,10 @@
     {
       "UniqueID": "focustense.StardewUI",
       "IsRequired": true
+    },
+    {
+      "UniqueID": "spacechase0.GenericModConfigMenu",
+      "IsRequired": false
     }
   ]
 }

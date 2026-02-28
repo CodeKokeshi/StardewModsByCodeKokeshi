@@ -1,3 +1,30 @@
+v1.1.0
+
+New:
+- Added full Japanese localization via i18n (`i18n/ja.json`) covering tabs, labels, tooltips, formatter text, warp categories, and HUD messages.
+- Added `Always Perfect Catch` option to the Fishing tab UI.
+- Added persistence wiring for `AlwaysPerfectCatch` (runtime config + saved cheats restore on launch).
+- Added crop protection Harmony coverage for `Crop.Kill` and `Crop.IsInSeason`.
+
+Fixed:
+- Fixed the time-freeze darkening bug where the day visually progressed to night even when time was frozen.
+- Fixed freeze behavior consistency for `Freeze Time`, `Freeze Time Indoors`, and `Freeze Time in Mines` by consolidating logic into one clock-update prefix path.
+- Fixed `Crops Never Die` not being fully functional across season checks and crop-kill paths.
+- Fixed `Added Defense` config existing but not being applied to incoming damage.
+- Fixed `Always Perfect Catch` existing in config/patch logic but not exposed or persisted through the menu.
+- Fixed `Instant Catch` always creating tiny fish size values.
+
+Changed:
+- Changed time-freeze runtime handling to reset `Game1.gameTimeInterval` while frozen to keep lighting/time visuals stable.
+- Changed `Animals Produce Daily` processing from every-second polling to day-start application for efficiency.
+- Changed fishing cheat behavior to support both `Always Perfect Catch` and `Always Find Treasure` together.
+- Changed save-load flow to clear cached patch state for weapons/tools before reapplying runtime config.
+
+Removed:
+- Removed redundant secondary mines-only `performTenMinuteClockUpdate` prefix in favor of a single consolidated freeze-time prefix.
+- Removed `OnTimeChanged` fallback rewinds for freeze modes (time is now prevented before side effects instead of reverted afterward).
+- Removed unnecessary per-second `Animals Produce Daily` updates.
+
 v1.0.0
 
 Cheats:
