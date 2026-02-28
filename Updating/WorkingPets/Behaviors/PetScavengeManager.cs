@@ -64,7 +64,7 @@ namespace WorkingPets.Behaviors
                 }
             }
 
-            if (addedCount > 0)
+            if (addedCount > 0 && ModEntry.Config.ShowScavengeNotifications)
             {
                 // Simple notification in the morning
                 Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.scavenge.morning", new { petName = pet.Name, addedCount }), HUDMessage.newQuest_type));

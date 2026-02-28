@@ -284,8 +284,10 @@ internal partial class SettingsViewModel : INotifyPropertyChanged
     [Notify] private bool skipTappedTrees;
     [Notify] private bool clearStumpsAndLogs;
     [Notify] private bool breakBoulders;
-    [Notify] private bool showWorkingMessages;
+    [Notify] private bool showWorkNotifications;
     [Notify] private bool showStateNotifications;
+    [Notify] private bool showScavengeNotifications;
+    [Notify] private bool showDepositNotifications;
     [Notify] private bool forageWhileFollowing;
     [Notify] private bool followOutsideFarm;
     [Notify] private bool autoDepositToChests;
@@ -296,8 +298,10 @@ internal partial class SettingsViewModel : INotifyPropertyChanged
     public string SkipTappedTreesLabel => PetRowViewModel.T("petManager.settings.skipTappedTrees");
     public string ClearStumpsLabel => PetRowViewModel.T("petManager.settings.clearStumps");
     public string BreakBouldersLabel => PetRowViewModel.T("petManager.settings.breakBoulders");
-    public string ShowWorkingMsgLabel => PetRowViewModel.T("petManager.settings.showWorkingMsg");
+    public string ShowWorkNotifLabel => PetRowViewModel.T("petManager.settings.showWorkNotif");
     public string ShowStateNotifLabel => PetRowViewModel.T("petManager.settings.showStateNotif");
+    public string ShowScavengeNotifLabel => PetRowViewModel.T("petManager.settings.showScavengeNotif");
+    public string ShowDepositNotifLabel => PetRowViewModel.T("petManager.settings.showDepositNotif");
     public string ForageFollowLabel => PetRowViewModel.T("petManager.settings.forageFollow");
     public string FollowOutsideLabel => PetRowViewModel.T("petManager.settings.followOutside");
     public string AutoDepositLabel => PetRowViewModel.T("petManager.settings.autoDeposit");
@@ -315,8 +319,10 @@ internal partial class SettingsViewModel : INotifyPropertyChanged
         SkipTappedTrees = c.SkipTappedTrees;
         ClearStumpsAndLogs = c.ClearStumpsAndLogs;
         BreakBoulders = c.BreakBoulders;
-        ShowWorkingMessages = c.ShowWorkingMessages;
+        ShowWorkNotifications = c.ShowWorkNotifications;
         ShowStateNotifications = c.ShowStateNotifications;
+        ShowScavengeNotifications = c.ShowScavengeNotifications;
+        ShowDepositNotifications = c.ShowDepositNotifications;
         ForageWhileFollowing = c.ForageWhileFollowing;
         FollowOutsideFarm = c.FollowOutsideFarm;
         AutoDepositToChests = c.AutoDepositToChests;
@@ -331,8 +337,10 @@ internal partial class SettingsViewModel : INotifyPropertyChanged
         c.SkipTappedTrees = SkipTappedTrees;
         c.ClearStumpsAndLogs = ClearStumpsAndLogs;
         c.BreakBoulders = BreakBoulders;
-        c.ShowWorkingMessages = ShowWorkingMessages;
+        c.ShowWorkNotifications = ShowWorkNotifications;
         c.ShowStateNotifications = ShowStateNotifications;
+        c.ShowScavengeNotifications = ShowScavengeNotifications;
+        c.ShowDepositNotifications = ShowDepositNotifications;
         c.ForageWhileFollowing = ForageWhileFollowing;
         c.FollowOutsideFarm = FollowOutsideFarm;
         c.AutoDepositToChests = AutoDepositToChests;

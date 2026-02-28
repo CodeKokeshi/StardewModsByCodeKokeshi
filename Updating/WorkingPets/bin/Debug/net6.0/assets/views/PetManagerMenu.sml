@@ -346,13 +346,23 @@
                 <!-- Notification Toggles -->
                 <lane orientation="horizontal" vertical-content-alignment="middle" margin="0, 0, 0, 8">
                     <checkbox layout="content"
-                              is-checked={<>ShowWorkingMessages}
-                              label-text={ShowWorkingMsgLabel} />
+                              is-checked={<>ShowWorkNotifications}
+                              label-text={ShowWorkNotifLabel} />
                 </lane>
                 <lane orientation="horizontal" vertical-content-alignment="middle" margin="0, 0, 0, 8">
                     <checkbox layout="content"
                               is-checked={<>ShowStateNotifications}
                               label-text={ShowStateNotifLabel} />
+                </lane>
+                <lane orientation="horizontal" vertical-content-alignment="middle" margin="0, 0, 0, 8">
+                    <checkbox layout="content"
+                              is-checked={<>ShowScavengeNotifications}
+                              label-text={ShowScavengeNotifLabel} />
+                </lane>
+                <lane orientation="horizontal" vertical-content-alignment="middle" margin="0, 0, 0, 8">
+                    <checkbox layout="content"
+                              is-checked={<>ShowDepositNotifications}
+                              label-text={ShowDepositNotifLabel} />
                 </lane>
 
             </lane>

@@ -285,10 +285,10 @@ namespace WorkingPets
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
-                name: () => "Show Work Messages",
-                tooltip: () => "Show HUD messages when your pet clears things.",
-                getValue: () => Config.ShowWorkingMessages,
-                setValue: value => Config.ShowWorkingMessages = value
+                name: () => "Show Work Notifications",
+                tooltip: () => "Show HUD messages when your pet starts/stops working, or finds nothing to do.",
+                getValue: () => Config.ShowWorkNotifications,
+                setValue: value => Config.ShowWorkNotifications = value
             );
 
             configMenu.AddBoolOption(
@@ -324,9 +324,25 @@ namespace WorkingPets
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
                 name: () => "Show State Notifications",
-                tooltip: () => "Show HUD messages when your pet starts/stops following, working, or exploring.",
+                tooltip: () => "Show HUD messages when your pet changes state (idle, follow, explore, work).",
                 getValue: () => Config.ShowStateNotifications,
                 setValue: value => Config.ShowStateNotifications = value
+            );
+
+            configMenu.AddBoolOption(
+                mod: this.ModManifest,
+                name: () => "Show Scavenge Notifications",
+                tooltip: () => "Show morning HUD messages when your pet finds items overnight.",
+                getValue: () => Config.ShowScavengeNotifications,
+                setValue: value => Config.ShowScavengeNotifications = value
+            );
+
+            configMenu.AddBoolOption(
+                mod: this.ModManifest,
+                name: () => "Show Deposit Notifications",
+                tooltip: () => "Show morning HUD messages when pet items are auto-deposited to chests.",
+                getValue: () => Config.ShowDepositNotifications,
+                setValue: value => Config.ShowDepositNotifications = value
             );
 
             // === Work Types ===
@@ -595,7 +611,7 @@ namespace WorkingPets
                             manager.InventoryManager.AddItem(item);
                         }
 
-                        if (depositedCount > 0)
+                        if (depositedCount > 0 && Config.ShowDepositNotifications)
                         {
                             Game1.addHUDMessage(new HUDMessage(
                                 I18n.Get("hud.chestDeposit.morning", new { petName = pet.Name, depositedCount }), 

@@ -654,7 +654,7 @@ namespace WorkingPets.Behaviors
             if (_isWorking)
             {
                 // Show work started notification
-                if (_pet != null)
+                if (_pet != null && ModEntry.Config.ShowStateNotifications)
                 {
                     string petName = _pet.Name ?? ModEntry.I18n.Get("pet.genericName");
                     Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.work.start", new { petName }), HUDMessage.newQuest_type));
@@ -663,7 +663,7 @@ namespace WorkingPets.Behaviors
             else
             {
                 // Show work stopped notification
-                if (_pet != null)
+                if (_pet != null && ModEntry.Config.ShowStateNotifications)
                 {
                     string petName = _pet.Name ?? ModEntry.I18n.Get("pet.genericName");
                     Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.work.stop", new { petName }), HUDMessage.newQuest_type));
@@ -724,8 +724,11 @@ namespace WorkingPets.Behaviors
                 _pet.controller = null; // Clear any vanilla pathfinding
                 _pet.Halt();
                 
-                string petName = _pet.Name ?? ModEntry.I18n.Get("pet.genericName");
-                Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.follow.start", new { petName }), HUDMessage.newQuest_type));
+                if (ModEntry.Config.ShowStateNotifications)
+                {
+                    string petName = _pet.Name ?? ModEntry.I18n.Get("pet.genericName");
+                    Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.follow.start", new { petName }), HUDMessage.newQuest_type));
+                }
             }
             else
             {
@@ -737,8 +740,11 @@ namespace WorkingPets.Behaviors
                 _pet.farmerPassesThrough = false; // Restore collision when not following
                 _pet.Halt();
                 
-                string petName = _pet.Name ?? ModEntry.I18n.Get("pet.genericName");
-                Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.follow.stop", new { petName }), HUDMessage.newQuest_type));
+                if (ModEntry.Config.ShowStateNotifications)
+                {
+                    string petName = _pet.Name ?? ModEntry.I18n.Get("pet.genericName");
+                    Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.follow.stop", new { petName }), HUDMessage.newQuest_type));
+                }
             }
         }
 
@@ -831,9 +837,12 @@ namespace WorkingPets.Behaviors
                 _pet.Halt();
                 
                 // Show notification
-                string petName = _pet.Name ?? ModEntry.I18n.Get("pet.genericName");
-                string direction = _exploreClockwise ? "clockwise" : "counter-clockwise";
-                Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.explore.startWithRoute", new { petName, direction }), HUDMessage.newQuest_type));
+                if (ModEntry.Config.ShowStateNotifications)
+                {
+                    string petName = _pet.Name ?? ModEntry.I18n.Get("pet.genericName");
+                    string direction = _exploreClockwise ? "clockwise" : "counter-clockwise";
+                    Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.explore.startWithRoute", new { petName, direction }), HUDMessage.newQuest_type));
+                }
             }
         }
         
@@ -1023,6 +1032,13 @@ namespace WorkingPets.Behaviors
 
             if (_pet != null && _pet.currentLocation?.Name != "Farm")
                 Game1.warpCharacter(_pet, "Farm", new Vector2(64, 15));
+
+            // Notification for Pet Manager UI path
+            if (_pet != null && ModEntry.Config.ShowStateNotifications)
+            {
+                string petName = _pet.Name ?? ModEntry.I18n.Get("pet.genericName");
+                Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.work.start", new { petName }), HUDMessage.newQuest_type));
+            }
         }
 
         private void StartValleyWork()
@@ -1046,14 +1062,24 @@ namespace WorkingPets.Behaviors
                 _pet.farmerPassesThrough = true;
                 _pet.controller = null;
                 _pet.Halt();
+
+                // Notification for Pet Manager UI path
+                if (ModEntry.Config.ShowStateNotifications)
+                {
+                    string petName = _pet.Name ?? ModEntry.I18n.Get("pet.genericName");
+                    Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.valleyWork.start", new { petName }), HUDMessage.newQuest_type));
+                }
             }
             else
             {
                 _isValleyWorking = false;
-                string petName = _pet.Name ?? ModEntry.I18n.Get("pet.genericName");
-                Game1.addHUDMessage(new HUDMessage(
-                    ModEntry.I18n.Get("hud.valleyWork.noWork", new { petName }),
-                    HUDMessage.newQuest_type));
+                if (ModEntry.Config.ShowWorkNotifications)
+                {
+                    string petName = _pet.Name ?? ModEntry.I18n.Get("pet.genericName");
+                    Game1.addHUDMessage(new HUDMessage(
+                        ModEntry.I18n.Get("hud.valleyWork.noWork", new { petName }),
+                        HUDMessage.newQuest_type));
+                }
             }
         }
 
@@ -1100,6 +1126,13 @@ namespace WorkingPets.Behaviors
             {
                 if (Game1.player?.currentLocation != null)
                     Game1.warpCharacter(_pet, Game1.player.currentLocation, Game1.player.Tile);
+            }
+
+            // Notification for Pet Manager UI path
+            if (ModEntry.Config.ShowStateNotifications)
+            {
+                string petName = _pet.Name ?? ModEntry.I18n.Get("pet.genericName");
+                Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.follow.start", new { petName }), HUDMessage.newQuest_type));
             }
         }
 
@@ -3308,7 +3341,7 @@ namespace WorkingPets.Behaviors
             {
                 string petName = _pet?.Name ?? ModEntry.I18n.Get("pet.genericName");
 
-                if (!_noWorkNotificationShown && config.ShowWorkingMessages)
+                if (!_noWorkNotificationShown && config.ShowWorkNotifications)
                 {
                     _noWorkNotificationShown = true;
                     Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.work.noWork", new { petName }), HUDMessage.newQuest_type));

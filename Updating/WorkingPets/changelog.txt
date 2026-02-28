@@ -1,3 +1,40 @@
+1.5.0
+Fixes
+- Fixed stale static pet state persisting across title returns by clearing runtime state on ReturnedToTitle.
+- Fixed warp-back logic order at day start so pets can correctly return home before daily flags reset.
+- Fixed overnight scavenge using shared/global inventory; scavenge now writes to each pet's own inventory.
+- Fixed follow mode being blocked by full inventory checks (follow now works even when inventory is full).
+- Fixed forage behavior oscillation/back-and-forth loops with a cooldown after canceling forage.
+- Fixed overflow item drops appearing at the wrong pet by tracking inventory owner pet for overflow drops.
+- Fixed follow/explore persistence not being saved/loaded reliably between sessions.
+- Fixed occasional pet sound crash from null turtle sound cues by hardening sound playback.
+- Fixed tapped trees being chopped by pets when tree chopping is enabled (with new tapper-safe logic).
+- Fixed inconsistent tree growth-stage checks for chopping/clearing logic.
+- Fixed cat-biased purr text being used for non-cat pets in dialogue.
+
+Changes
+- Added granular notification settings:
+	- Show Work Notifications
+	- Show State Notifications
+	- Show Scavenge Notifications
+	- Show Deposit Notifications
+- Added missing work-start HUD notifications when work is started from Pet Manager (farm and valley paths).
+- Updated all relevant notifications to honor the correct setting toggles.
+- Improved Pet Manager UX:
+	- Pets now remain idle cleanly when no valid work is found.
+	- Larger UI text for better readability.
+	- More lively/expressive pet dialogue wording.
+	- Active-state tooltips for mode buttons.
+	- State-change notifications from menu actions are queued and shown after menu closes.
+- Completed localization sweep: removed remaining hardcoded strings and aligned text keys across code/UI.
+- Added full Japanese localization support and synchronized translation keys with English.
+- Removed deprecated/unused dialogue handlers and cleaned related code paths.
+
+News
+- Stability-focused update for 1.5.0 with major behavior reliability improvements for multi-mode pets.
+- Pet Manager state switching is now more consistent and predictable across save/load, sleep, and day transitions.
+- Notification system is now fully user-controllable for quieter or more verbose gameplay.
+
 1.4.0
 - Exploration system with circular routes (clockwise/counter-clockwise, randomly chosen)
 - Pet teleports directly to areas with forageables, pre-scans all areas first

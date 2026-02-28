@@ -25,14 +25,20 @@ namespace WorkingPets
         /// <summary>Number of inventory slots for the pet (max 36).</summary>
         public int InventorySize { get; set; } = 36;
 
-        /// <summary>Whether to show floating text when pet clears something.</summary>
-        public bool ShowWorkingMessages { get; set; } = true;
+        /// <summary>Whether to show floating text and HUD messages for pet work actions (start, stop, no work found).</summary>
+        public bool ShowWorkNotifications { get; set; } = true;
         
         /// <summary>Whether to show HUD notifications when pet picks up items.</summary>
         public bool ShowForageNotifications { get; set; } = false;
         
         /// <summary>Whether to show HUD notifications for follow/work/explore state changes.</summary>
         public bool ShowStateNotifications { get; set; } = false;
+
+        /// <summary>Whether to show morning scavenge result notifications.</summary>
+        public bool ShowScavengeNotifications { get; set; } = true;
+
+        /// <summary>Whether to show morning chest deposit result notifications.</summary>
+        public bool ShowDepositNotifications { get; set; } = true;
 
         /// <summary>Whether the pet can follow you outside the farm.</summary>
         public bool FollowOutsideFarm { get; set; } = true;
