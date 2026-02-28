@@ -266,7 +266,7 @@
                             <button click=|OnRename()|
                                     tooltip={RenameTooltip}
                                     margin="8, 0, 0, 0">
-                                <label text="Rename"
+                                                        <label text={RenameButtonText}
                                        margin="8, 4" />
                             </button>
 
@@ -297,6 +297,11 @@
                     <checkbox layout="content"
                               is-checked={<>ChopTrees}
                               label-text={ChopTreesLabel} />
+                </lane>
+                <lane orientation="horizontal" vertical-content-alignment="middle" margin="0, 0, 0, 8">
+                    <checkbox layout="content"
+                              is-checked={<>SkipTappedTrees}
+                              label-text={SkipTappedTreesLabel} />
                 </lane>
                 <lane orientation="horizontal" vertical-content-alignment="middle" margin="0, 0, 0, 8">
                     <checkbox layout="content"

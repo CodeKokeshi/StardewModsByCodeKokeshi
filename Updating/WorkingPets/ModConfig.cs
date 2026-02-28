@@ -56,6 +56,9 @@ namespace WorkingPets
         /// <summary>Whether to chop down fully grown trees.</summary>
         public bool ChopTrees { get; set; } = false;
 
+        /// <summary>Whether to skip trees that have a tapper attached.</summary>
+        public bool SkipTappedTrees { get; set; } = true;
+
         /// <summary>Whether to break large boulders.</summary>
         public bool BreakBoulders { get; set; } = false;
 

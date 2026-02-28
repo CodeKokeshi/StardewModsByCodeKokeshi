@@ -1,0 +1,102 @@
+{
+  "log.loaded": "Working Petsが読み込まれました！ペットを右クリックしてコマンドを開くか、ペットマネージャーキーを押して管理できます。",
+  "log.petManager.notLoaded": "ペットマネージャーを開けません - StardewUIが読み込まれていません。",
+  "log.petManager.openError": "ペットマネージャーを開くときにエラー: {{error}}",
+  "log.petInventory.openError": "ペットのインベントリを開くときにエラー: {{error}}",
+  "log.animalPage.noManager": "ペット {{petName}} のマネージャーが見つかりません",
+
+  "pet.genericName": "あなたのペット",
+
+  "petMenu.greeting.following": "{{petName}}は嬉しそうにあなたについてきています！",
+  "petMenu.greeting.idle": "{{petName}}はあなたを期待に満ちた目で見上げています。",
+
+  "petMenu.option.follow.start": "ついてきて、{{petName}}！",
+  "petMenu.option.follow.stop": "もう大丈夫だよ、{{petName}}",
+
+  "petMenu.option.inventory.withCount": "{{petName}}のポーチを開く（{{totalItems}}個）",
+  "petMenu.option.inventory.empty": "{{petName}}のポーチを開く",
+
+  "petMenu.option.pet": "{{petName}}を可愛がる",
+  "petMenu.option.petManager": "ペットマネージャーを開く",
+  "petMenu.option.cancel": "やめておく",
+
+  "petMenu.inventory.title": "{{petName}}の収集品",
+  "petMenu.petAction.alreadyPetted": "{{petName}}は満足そうにしています。今日はもう十分に可愛がってあげました。",
+  "petMenu.petAction.love": "{{petName}}はとても喜んでいます！",
+
+  "hud.explore.start": "{{petName}}は谷を探索中！自分で採集物を集めてくれます。",
+  "hud.explore.startWithRoute": "{{petName}}が探索を開始しました（{{direction}}ルート）！",
+  "hud.explore.finished": "{{petName}}は探索を終えて（{{reason}}）休んでいます。",
+  "hud.follow.start": "{{petName}}があなたについてきます！",
+  "hud.follow.stop": "{{petName}}はもうついてきません。",
+  "hud.state.idle": "{{petName}}は待機中です。",
+  "hud.work.start": "{{petName}}が農場のお手伝いを始めました！",
+  "hud.work.stop": "{{petName}}はひと休みしています。",
+  "hud.work.noWork": "{{petName}}は見回しましたが、やることが見つかりませんでした！",
+  "hud.valleyWork.start": "{{petName}}が谷のゴミ掃除を始めました！",
+  "hud.valleyWork.noWork": "{{petName}}は谷で片付けるものを見つけられませんでした。",
+  "hud.valleyWork.finished": "{{petName}}は谷の作業を終えて（{{reason}}）休んでいます。",
+  "hud.scavenge.morning": "{{petName}}が一晩で{{addedCount}}個のアイテムを見つけました！",
+  "hud.chestDeposit.morning": "{{petName}}が{{depositedCount}}個のアイテムをチェストに入れました！",
+  "hud.genericError": "何かがうまくいきませんでした！",
+
+  "hud.whistle.coming": "{{petName}}があなたの元へ向かっています！",
+  "hud.whistle.alreadyFollowing": "{{petName}}はすでについてきています！",
+  "hud.rename.success": "{{oldName}}は{{newName}}になりました！",
+  "hud.inventory.full": "{{petName}}のインベントリがいっぱいです！",
+  "hud.pet.atLocation": "{{petName}}は{{location}}にいます。",
+  "hud.follow.anotherFollowing": "別のペットがすでについてきています！",
+
+  "petManager.title": "ペットマネージャー",
+  "petManager.noPets": "まだペットがいません！",
+
+  "petManager.tab.manage": "管理",
+  "petManager.tab.pets": "ペット",
+  "petManager.tab.settings": "設定",
+
+  "petManager.status.idle": "待機中",
+  "petManager.status.farmWork": "農場作業中",
+  "petManager.status.valleyWork": "谷の作業中",
+  "petManager.status.exploration": "探索中",
+  "petManager.status.following": "追従中",
+
+  "petManager.tooltip.idle": "待機状態にする",
+  "petManager.tooltip.farmWork": "農場作業 - 農場のゴミを片付ける",
+  "petManager.tooltip.valleyWork": "谷の作業 - 谷の雑草や木を片付ける",
+  "petManager.tooltip.exploration": "探索 - 谷で採集物を集める",
+  "petManager.tooltip.follow": "追従 - プレイヤーについていく",
+  "petManager.tooltip.rename": "このペットに新しい名前をつける",
+  "petManager.button.rename": "名前変更",
+
+  "petManager.tooltip.idle.active": "現在待機中",
+  "petManager.tooltip.farmWork.active": "現在農場で作業中",
+  "petManager.tooltip.valleyWork.active": "現在谷を片付け中",
+  "petManager.tooltip.exploration.active": "現在探索中",
+  "petManager.tooltip.follow.active": "現在あなたについてきています",
+
+  "petManager.location": "{{location}}",
+  "petManager.location.unknown": "不明",
+
+  "petManager.settings.clearDebris": "ゴミを片付ける（雑草・石・小枝）",
+  "petManager.settings.chopTrees": "木を切る",
+  "petManager.settings.skipTappedTrees": "タッパー付きの木をスキップ",
+  "petManager.settings.clearStumps": "切り株と丸太を片付ける",
+  "petManager.settings.breakBoulders": "岩を壊す",
+  "petManager.settings.showWorkingMsg": "作業メッセージを表示",
+  "petManager.settings.showStateNotif": "状態変更の通知を表示",
+  "petManager.settings.forageFollow": "追従中に採集する",
+  "petManager.settings.followOutside": "農場外でも追従する",
+  "petManager.settings.autoDeposit": "チェストに自動収納",
+
+  "whistleMenu.title": "ペットを呼ぶ",
+  "whistleMenu.noPets": "まだペットがいません！",
+  "whistleMenu.hover.whistle": "{{petName}}を呼んでついてきてもらう",
+  "whistleMenu.hover.alreadyFollowing": "{{petName}}はすでについてきています！",
+  "whistleMenu.hover.anotherFollowing": "別のペットがすでについてきています！",
+  "whistleMenu.hover.atLocation": "{{petName}}は{{location}}にいます",
+
+  "whistleMenu.status.idle": "待機中",
+  "whistleMenu.status.exploring": "探索中（{{location}}）",
+  "whistleMenu.status.following": "追従中",
+  "whistleMenu.status.working": "作業中"
+}

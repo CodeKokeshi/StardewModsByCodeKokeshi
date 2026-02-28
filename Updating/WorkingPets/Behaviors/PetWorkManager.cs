@@ -334,7 +334,8 @@ namespace WorkingPets.Behaviors
             {
                 foreach (var feature in farm.terrainFeatures.Values)
                 {
-                    if (feature is Tree tree && tree.growthStage.Value >= 0 && !tree.stump.Value)
+                    if (feature is Tree tree && tree.growthStage.Value >= 1 && !tree.stump.Value
+                        && !(config.SkipTappedTrees && tree.tapped.Value))
                     {
                         return true;
                     }
@@ -628,7 +629,9 @@ namespace WorkingPets.Behaviors
                 // Must be in same location as player
                 if (_pet.currentLocation?.Name != Game1.player?.currentLocation?.Name)
                 {
-                    string locationName = _pet.currentLocation?.DisplayName ?? _pet.currentLocation?.Name ?? "unknown";
+                    string locationName = _pet.currentLocation?.DisplayName
+                        ?? _pet.currentLocation?.Name
+                        ?? ModEntry.I18n.Get("petManager.location.unknown");
                     string petName = _pet.Name ?? ModEntry.I18n.Get("pet.genericName");
                     Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.pet.atLocation", new { petName, location = locationName }), HUDMessage.error_type));
                     return;
@@ -2467,7 +2470,8 @@ namespace WorkingPets.Behaviors
             {
                 foreach (var pair in location.terrainFeatures.Pairs)
                 {
-                    if (pair.Value is Tree tree && tree.growthStage.Value >= 1 && !tree.stump.Value)
+                    if (pair.Value is Tree tree && tree.growthStage.Value >= 1 && !tree.stump.Value
+                        && !(config.SkipTappedTrees && tree.tapped.Value))
                     {
                         float dist = Vector2.Distance(petTile, pair.Key);
                         if (dist <= workRadius && !_unreachableTiles.Contains(pair.Key))
@@ -2579,7 +2583,8 @@ namespace WorkingPets.Behaviors
             if (config.ChopTrees)
             {
                 foreach (var feature in location.terrainFeatures.Values)
-                    if (feature is Tree tree && tree.growthStage.Value >= 1 && !tree.stump.Value) return true;
+                    if (feature is Tree tree && tree.growthStage.Value >= 1 && !tree.stump.Value
+                        && !(config.SkipTappedTrees && tree.tapped.Value)) return true;
             }
 
             if (config.ClearStumpsAndLogs)
@@ -3279,12 +3284,13 @@ namespace WorkingPets.Behaviors
                 }
             }
 
-            // Trees (includes seeds at stage 0)
+            // Trees
             if (config.ChopTrees)
             {
                 foreach (var pair in farm.terrainFeatures.Pairs)
                 {
-                    if (pair.Value is Tree tree && tree.growthStage.Value >= 0 && !tree.stump.Value) // Stage 0 = seed, 1-4 = growing, 5 = full
+                    if (pair.Value is Tree tree && tree.growthStage.Value >= 1 && !tree.stump.Value
+                        && !(config.SkipTappedTrees && tree.tapped.Value))
                     {
                         float dist = Vector2.Distance(petTile, pair.Key);
                         if (dist <= workRadius)
@@ -3427,6 +3433,7 @@ namespace WorkingPets.Behaviors
             {
                 if (pair.Value is not Tree tree) continue;
                 if (tree.growthStage.Value < 1 || tree.stump.Value) continue;
+                if (ModEntry.Config.SkipTappedTrees && tree.tapped.Value) continue;
 
                 float dist = Vector2.Distance(petTile, pair.Key);
                 if (dist > ModEntry.Config.WorkRadius) continue;

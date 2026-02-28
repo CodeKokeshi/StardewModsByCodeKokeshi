@@ -1,5 +1,9 @@
 {
   "log.loaded": "Working Pets loaded! Right-click your pet to open commands, or press your Pet Manager key to manage pets.",
+  "log.petManager.notLoaded": "Cannot open Pet Manager - StardewUI not loaded.",
+  "log.petManager.openError": "Error opening Pet Manager: {{error}}",
+  "log.petInventory.openError": "Error opening pet inventory: {{error}}",
+  "log.animalPage.noManager": "No manager found for pet {{petName}}",
 
   "pet.genericName": "Your pet",
 
@@ -17,10 +21,11 @@
   "petMenu.option.cancel": "Never Mind",
 
   "petMenu.inventory.title": "{{petName}}'s Finds",
+  "petMenu.petAction.alreadyPetted": "{{petName}} looks content. You've already given them attention today.",
+  "petMenu.petAction.love": "{{petName}} loves the attention!",
 
   "hud.explore.start": "{{petName}} is now exploring the valley! They'll collect forageables on their own.",
   "hud.explore.startWithRoute": "{{petName}} started exploring ({{direction}} route)!",
-  "hud.explore.stop": "{{petName}} has returned from exploring.",
   "hud.explore.finished": "{{petName}} finished exploring ({{reason}}) and is resting.",
   "hud.follow.start": "{{petName}} is now following you!",
   "hud.follow.stop": "{{petName}} is no longer following you.",
@@ -29,7 +34,6 @@
   "hud.work.stop": "{{petName}} is taking a break.",
   "hud.work.noWork": "{{petName}} looked around but found nothing to do!",
   "hud.valleyWork.start": "{{petName}} is now clearing debris across the valley!",
-  "hud.valleyWork.stop": "{{petName}} stopped valley work.",
   "hud.valleyWork.noWork": "{{petName}} couldn't find anything to clear in the valley.",
   "hud.valleyWork.finished": "{{petName}} finished valley work ({{reason}}) and is resting.",
   "hud.scavenge.morning": "{{petName}} found {{addedCount}} item(s) overnight!",
@@ -62,6 +66,7 @@
   "petManager.tooltip.exploration": "Exploration - forage across the valley",
   "petManager.tooltip.follow": "Follow - follow the player",
   "petManager.tooltip.rename": "Give this pet a new name",
+  "petManager.button.rename": "Rename",
 
   "petManager.tooltip.idle.active": "Currently Idle",
   "petManager.tooltip.farmWork.active": "Currently working on the farm",
@@ -74,6 +79,7 @@
 
   "petManager.settings.clearDebris": "Clear Debris (weeds, stones, twigs)",
   "petManager.settings.chopTrees": "Chop Trees",
+  "petManager.settings.skipTappedTrees": "Skip Trees with Tappers",
   "petManager.settings.clearStumps": "Clear Stumps & Logs",
   "petManager.settings.breakBoulders": "Break Boulders",
   "petManager.settings.showWorkingMsg": "Show Working Messages",

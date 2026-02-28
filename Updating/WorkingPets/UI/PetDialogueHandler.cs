@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Characters;
@@ -12,11 +11,6 @@ namespace WorkingPets.UI
     /// <summary>Handles pet dialogue and menu interactions.</summary>
     public static class PetDialogueHandler
     {
-        /*********
-        ** Constants
-        *********/
-        private const string RENAME_USED_KEY = "WorkingPets.RenameUsed";
-        
         /*********
         ** Fields
         *********/
@@ -30,10 +24,19 @@ namespace WorkingPets.UI
         private static void PlayPetSound(Pet? pet, string soundType = "BARK")
         {
             if (pet == null) return;
-            
-            // Use the pet's built-in PlaySound method which handles type-specific sounds
-            // "BARK" gets converted to the appropriate sound for each pet type
-            pet.PlaySound(soundType, true, -1, -1);
+
+            try
+            {
+                // Use the pet's built-in PlaySound method which handles type-specific sounds
+                // "BARK" gets converted to the appropriate sound for each pet type
+                // Wrapped in try-catch because some pet types (e.g. turtle) may have
+                // null or missing sound cues, causing ArgumentNullException in SoundBank
+                pet.PlaySound(soundType, true, -1, -1);
+            }
+            catch (Exception)
+            {
+                // Sound not available for this pet type — silently ignore
+            }
         }
 
         /*********
@@ -138,7 +141,7 @@ namespace WorkingPets.UI
             
             manager.ToggleFollow();
 
-            string petName = pet?.Name ?? "Your pet";
+            string petName = pet?.Name ?? ModEntry.I18n.Get("pet.genericName");
 
             if (manager.IsFollowing)
             {
@@ -154,92 +157,6 @@ namespace WorkingPets.UI
             }
         }
         
-        private static void HandleToggleExplore(Pet? pet, PetWorkManager? manager)
-        {
-            if (manager == null) return;
-            
-            manager.ToggleExplore();
-
-            string petName = pet?.Name ?? "Your pet";
-
-            if (manager.IsExploring)
-            {
-                PlayPetSound(pet, "BARK");
-                if (ModEntry.Config.ShowStateNotifications)
-                    Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.explore.start", new { petName }), HUDMessage.newQuest_type));
-            }
-            else
-            {
-                PlayPetSound(pet, "BARK");
-                if (ModEntry.Config.ShowStateNotifications)
-                    Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.explore.stop", new { petName }), HUDMessage.newQuest_type));
-            }
-        }
-
-        private static void HandleToggleWork(Pet? pet, PetWorkManager? manager)
-        {
-            if (manager == null) return;
-            
-            string petName = pet?.Name ?? "Your pet";
-            
-            // If trying to start work, do a quick pre-check
-            if (!manager.IsWorking)
-            {
-                // Check if there's any work to do BEFORE starting
-                if (!PetWorkManager.HasAnyWorkOnFarm())
-                {
-                    PlayPetSound(pet, "BARK");
-                    Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.work.noWork", new { petName }), HUDMessage.newQuest_type));
-                    return; // Don't start work mode
-                }
-            }
-            
-            // If currently following, stop following first
-            if (manager.IsFollowing)
-            {
-                manager.StopFollowing();
-            }
-            
-            manager.ToggleWork();
-
-            // Play sound and show message
-            if (manager.IsWorking)
-            {
-                PlayPetSound(pet, "BARK");
-                if (ModEntry.Config.ShowStateNotifications)
-                    Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.work.start", new { petName }), HUDMessage.newQuest_type));
-            }
-            else
-            {
-                PlayPetSound(pet, "BARK");
-                if (ModEntry.Config.ShowStateNotifications)
-                    Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.work.stop", new { petName }), HUDMessage.newQuest_type));
-            }
-        }
-
-        private static void HandleToggleValleyWork(Pet? pet, PetWorkManager? manager)
-        {
-            if (manager == null) return;
-
-            string petName = pet?.Name ?? "Your pet";
-
-            if (manager.IsValleyWorking)
-            {
-                // Stop valley work → idle
-                manager.SetState(Behaviors.PetState.Idle);
-                PlayPetSound(pet, "BARK");
-                if (ModEntry.Config.ShowStateNotifications)
-                    Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.valleyWork.stop", new { petName }), HUDMessage.newQuest_type));
-            }
-            else
-            {
-                manager.SetState(Behaviors.PetState.ValleyWork);
-                PlayPetSound(pet, "BARK");
-                if (ModEntry.Config.ShowStateNotifications && manager.IsValleyWorking) // only if it actually started
-                    Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.valleyWork.start", new { petName }), HUDMessage.newQuest_type));
-            }
-        }
-
         private static void HandleOpenInventory(Pet? pet)
         {
             try
@@ -274,7 +191,7 @@ namespace WorkingPets.UI
             }
             catch (Exception ex)
             {
-                ModEntry.Instance.Monitor.Log($"Error opening pet inventory: {ex}", LogLevel.Error);
+                ModEntry.Instance.Monitor.Log(ModEntry.I18n.Get("log.petInventory.openError", new { error = ex }), LogLevel.Error);
                 Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.genericError"), HUDMessage.error_type));
             }
         }
@@ -290,14 +207,14 @@ namespace WorkingPets.UI
             if (pet == null || pet.currentLocation == null)
                 return;
 
-            string petName = pet.Name ?? "Your pet";
+            string petName = pet.Name ?? ModEntry.I18n.Get("pet.genericName");
 
             // Check if already petted today using lastPetDay (the vanilla way)
             if (pet.lastPetDay.TryGetValue(who.UniqueMultiplayerID, out int lastDay) && lastDay == Game1.Date.TotalDays)
             {
                 // Already petted today
                 pet.doEmote(32); // Happy emote
-                Game1.drawObjectDialogue($"{petName} purrs contentedly. You've already given them attention today.");
+                Game1.drawObjectDialogue(ModEntry.I18n.Get("petMenu.petAction.alreadyPetted", new { petName }));
                 return;
             }
 
@@ -315,44 +232,7 @@ namespace WorkingPets.UI
             pet.doEmote(20); // Heart emote
             pet.playContentSound();
 
-            Game1.drawObjectDialogue($"{petName} loves the attention!");
-        }
-
-        private static void HandleRename(Pet? pet)
-        {
-            if (pet == null)
-                return;
-
-            string oldName = pet.Name ?? "Your pet";
-
-            // Open the naming menu (same one used when first getting a pet)
-            Game1.activeClickableMenu = new NamingMenu(
-                (string newName) => 
-                {
-                    if (!string.IsNullOrWhiteSpace(newName))
-                    {
-                        // Set the new name exactly like vanilla does
-                        pet.Name = newName;
-                        pet.displayName = newName;
-
-                        // Mark rename as used - this option won't appear in dialogue again
-                        // but will now appear in settings menu instead
-                        pet.modData[RENAME_USED_KEY] = "true";
-
-                        Game1.playSound("newArtifact");
-                        Game1.addHUDMessage(new HUDMessage(ModEntry.I18n.Get("hud.rename.success", new { oldName, newName }), HUDMessage.newQuest_type));
-                    }
-                    
-                    // Force close menu and ensure player can move
-                    Game1.exitActiveMenu();
-                    Game1.player.canMove = true;
-                    Game1.dialogueUp = false;
-                },
-                Game1.content.LoadString("Strings\\StringsFromCSFiles:Event.cs.1236"), // "Name your pet:"
-                pet.Name // Default to current name
-            );
-
-            Game1.playSound("bigSelect");
+            Game1.drawObjectDialogue(ModEntry.I18n.Get("petMenu.petAction.love", new { petName }));
         }
     }
 }

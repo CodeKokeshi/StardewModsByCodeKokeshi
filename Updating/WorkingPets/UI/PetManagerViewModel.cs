@@ -215,6 +215,7 @@ internal partial class PetRenameRowViewModel : INotifyPropertyChanged
     [Notify] private string locationText = "";
 
     public string RenameTooltip => PetRowViewModel.T("petManager.tooltip.rename");
+    public string RenameButtonText => PetRowViewModel.T("petManager.button.rename");
 
     public PetRenameRowViewModel(Pet pet, PetManagerViewModel parent)
     {
@@ -231,7 +232,7 @@ internal partial class PetRenameRowViewModel : INotifyPropertyChanged
 
     public void OnRename()
     {
-        string oldName = _pet.Name ?? "Pet";
+        string oldName = _pet.Name ?? PetRowViewModel.T("pet.genericName");
 
         Game1.activeClickableMenu = new NamingMenu(
             (string newName) =>
@@ -280,6 +281,7 @@ internal partial class SettingsViewModel : INotifyPropertyChanged
 {
     [Notify] private bool clearDebris;
     [Notify] private bool chopTrees;
+    [Notify] private bool skipTappedTrees;
     [Notify] private bool clearStumpsAndLogs;
     [Notify] private bool breakBoulders;
     [Notify] private bool showWorkingMessages;
@@ -291,6 +293,7 @@ internal partial class SettingsViewModel : INotifyPropertyChanged
     // Labels (read-only)
     public string ClearDebrisLabel => PetRowViewModel.T("petManager.settings.clearDebris");
     public string ChopTreesLabel => PetRowViewModel.T("petManager.settings.chopTrees");
+    public string SkipTappedTreesLabel => PetRowViewModel.T("petManager.settings.skipTappedTrees");
     public string ClearStumpsLabel => PetRowViewModel.T("petManager.settings.clearStumps");
     public string BreakBouldersLabel => PetRowViewModel.T("petManager.settings.breakBoulders");
     public string ShowWorkingMsgLabel => PetRowViewModel.T("petManager.settings.showWorkingMsg");
@@ -309,6 +312,7 @@ internal partial class SettingsViewModel : INotifyPropertyChanged
         var c = ModEntry.Config;
         ClearDebris = c.ClearDebris;
         ChopTrees = c.ChopTrees;
+        SkipTappedTrees = c.SkipTappedTrees;
         ClearStumpsAndLogs = c.ClearStumpsAndLogs;
         BreakBoulders = c.BreakBoulders;
         ShowWorkingMessages = c.ShowWorkingMessages;
@@ -324,6 +328,7 @@ internal partial class SettingsViewModel : INotifyPropertyChanged
         var c = ModEntry.Config;
         c.ClearDebris = ClearDebris;
         c.ChopTrees = ChopTrees;
+        c.SkipTappedTrees = SkipTappedTrees;
         c.ClearStumpsAndLogs = ClearStumpsAndLogs;
         c.BreakBoulders = BreakBoulders;
         c.ShowWorkingMessages = ShowWorkingMessages;

@@ -272,7 +272,8 @@ namespace WorkingPets.Behaviors
                 
                 if (result.Chest != null)
                 {
-                    string location = result.Chest.Location?.DisplayName ?? "Unknown";
+                    string location = result.Chest.Location?.DisplayName
+                        ?? ModEntry.I18n.Get("petManager.location.unknown");
                     string key = $"{item.DisplayName} (Q{item.Quality})";
                     preview[key] = location;
                 }

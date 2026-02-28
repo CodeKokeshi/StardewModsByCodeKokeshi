@@ -41,7 +41,7 @@ public static class WhistleButton
             false
         );
         
-        // Draw whistle icon (use the dog/bone icon from game cursors)
+        // Draw whistle icon (pet icon from game cursors)
         float iconScale = IsHovering ? 3.2f : 3f;
         Vector2 iconPos = new Vector2(
             x + 32 - (10 * iconScale / 2),

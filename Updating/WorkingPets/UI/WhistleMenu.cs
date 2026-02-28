@@ -357,7 +357,9 @@ public class WhistleMenu : IClickableMenu
                     else
                     {
                         // Show where the pet actually is
-                        string locationName = entry.Pet.currentLocation?.DisplayName ?? entry.Pet.currentLocation?.Name ?? "unknown";
+                        string locationName = entry.Pet.currentLocation?.DisplayName
+                            ?? entry.Pet.currentLocation?.Name
+                            ?? ModEntry.I18n.Get("petManager.location.unknown");
                         HoverText = ModEntry.I18n.Get("whistleMenu.hover.atLocation", new { petName = entry.DisplayName, location = locationName });
                     }
                 }

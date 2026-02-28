@@ -631,7 +631,7 @@ namespace WorkingPets
         {
             if (_viewEngine == null)
             {
-                this.Monitor.Log("Cannot open Pet Manager – StardewUI not loaded.", LogLevel.Warn);
+                this.Monitor.Log(I18n.Get("log.petManager.notLoaded"), LogLevel.Warn);
                 return;
             }
 
@@ -658,7 +658,7 @@ namespace WorkingPets
             }
             catch (Exception ex)
             {
-                this.Monitor.Log($"Error opening Pet Manager: {ex.Message}", LogLevel.Error);
+                this.Monitor.Log(I18n.Get("log.petManager.openError", new { error = ex.Message }), LogLevel.Error);
             }
         }
 

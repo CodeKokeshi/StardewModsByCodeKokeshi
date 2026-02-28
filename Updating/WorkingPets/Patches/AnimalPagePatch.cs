@@ -76,8 +76,11 @@ public static class AnimalPagePatch
         if (pet.currentLocation != player.currentLocation)
         {
             // Pet is in a different location - show where it is
-            string locationName = pet.currentLocation?.DisplayName ?? pet.currentLocation?.Name ?? "unknown";
-            Game1.showRedMessage($"{pet.displayName} is at {locationName}.");
+            string petName = pet.displayName ?? pet.Name ?? ModEntry.I18n.Get("pet.genericName");
+            string locationName = pet.currentLocation?.DisplayName
+                ?? pet.currentLocation?.Name
+                ?? ModEntry.I18n.Get("petManager.location.unknown");
+            Game1.showRedMessage(ModEntry.I18n.Get("hud.pet.atLocation", new { petName, location = locationName }));
             Game1.playSound("cancel");
             return;
         }
@@ -86,7 +89,7 @@ public static class AnimalPagePatch
         var manager = ModEntry.PetManager?.GetManagerForPet(pet);
         if (manager == null)
         {
-            ModEntry.Instance?.Monitor.Log($"No manager found for pet {pet.displayName}", LogLevel.Warn);
+            ModEntry.Instance?.Monitor.Log(ModEntry.I18n.Get("log.animalPage.noManager", new { petName = pet.displayName }), LogLevel.Warn);
             return;
         }
 
