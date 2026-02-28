@@ -158,6 +158,7 @@ namespace WorkingPets.Behaviors
         private int _forageStuckTicks = 0;
         private HashSet<Vector2> _unreachableForageTiles = new();
         private int _unreachableForageClearTimer = 0;
+        private int _forageCancelCooldown = 0; // Cooldown after cancelling a forage to prevent oscillation
         
         // Wall-pass target (can be player OR forage target)
         private Vector2? _wallPassTarget = null;
@@ -305,6 +306,57 @@ namespace WorkingPets.Behaviors
         
         /// <summary>Get the current explore location name for display.</summary>
         public string? CurrentExploreLocation => _isExploring ? _pet?.currentLocation?.Name : null;
+
+        /// <summary>Clear all static state. Call when returning to title to prevent cross-save contamination.</summary>
+        public static void ClearAllStaticState()
+        {
+            _currentExplorerPetId = null;
+            _currentFollowerPetId = null;
+            _clearedAreas.Clear();
+            _lastForageScanDay = -1;
+            _playerLastForagedTick = -99999;
+            _playerForageLocation = null;
+        }
+
+        /// <summary>Stop all active modes and return this pet to idle. Used before saving to prevent stranded states.</summary>
+        public void ReturnToIdle()
+        {
+            if (_isFollowing)
+            {
+                _isFollowing = false;
+                if (_pet != null && _currentFollowerPetId == _pet.petId.Value)
+                    _currentFollowerPetId = null;
+                ResetFollowState();
+            }
+            if (_isExploring)
+            {
+                _isExploring = false;
+                if (_pet != null && _currentExplorerPetId == _pet.petId.Value)
+                    _currentExplorerPetId = null;
+                ResetExploreState();
+            }
+            if (_isValleyWorking)
+            {
+                _isValleyWorking = false;
+                _valleyWorkClearedAreas.Clear();
+                _targetTile = null;
+                _pendingAction = null;
+                ResetExploreState();
+            }
+            if (_isWorking)
+            {
+                _isWorking = false;
+                _targetTile = null;
+                _pendingAction = null;
+            }
+            if (_pet != null)
+            {
+                _pet.farmerPassesThrough = false;
+                _pet.controller = null;
+                _pet.Halt();
+                _pet.IsInvisible = false;
+            }
+        }
         
         /// <summary>Quick check if there's any work available on the farm (instant scan).</summary>
         public static bool HasAnyWorkOnFarm()
@@ -402,6 +454,7 @@ namespace WorkingPets.Behaviors
         {
             _pet = pet;
             _inventoryManager = new PetInventoryManager();
+            _inventoryManager.OwnerPet = pet;
             LoadState(pet);
         }
         
@@ -1080,9 +1133,11 @@ namespace WorkingPets.Behaviors
             }
             
             // === CHECK IF INVENTORY IS FULL ===
-            if (CheckInventoryFull())
+            // Skip this check for follow mode — pet should still follow even if inventory is full
+            // (only foraging is blocked, not movement)
+            if (!_isFollowing && CheckInventoryFull())
             {
-                return; // Stop all activities if inventory full
+                return; // Stop work/explore activities if inventory full
             }
 
             // Handle valley work mode - clearing across the valley
@@ -1106,6 +1161,12 @@ namespace WorkingPets.Behaviors
             if (_isFollowing)
             {
                 _idleTicks = 0; // Not idle while following
+                // If inventory is full, clear any forage target (but keep following)
+                if (InventoryManager.IsFull && _foragingTarget.HasValue)
+                {
+                    _foragingTarget = null;
+                    _followState = FollowState.Idle;
+                }
                 UpdateFollow();
                 return;
             }
@@ -1190,6 +1251,18 @@ namespace WorkingPets.Behaviors
             {
                 _isValleyWorking = bool.TryParse(vwValue, out bool vwResult) && vwResult;
             }
+            if (pet.modData.TryGetValue("WorkingPets.IsFollowing", out string? fValue))
+            {
+                _isFollowing = bool.TryParse(fValue, out bool fResult) && fResult;
+                if (_isFollowing)
+                    _currentFollowerPetId = pet.petId.Value;
+            }
+            if (pet.modData.TryGetValue("WorkingPets.IsExploring", out string? eValue))
+            {
+                _isExploring = bool.TryParse(eValue, out bool eResult) && eResult;
+                if (_isExploring)
+                    _currentExplorerPetId = pet.petId.Value;
+            }
             
             // Load this pet's inventory
             _inventoryManager?.Load(pet);
@@ -1203,6 +1276,8 @@ namespace WorkingPets.Behaviors
             // Save work state
             pet.modData["WorkingPets.IsWorking"] = _isWorking.ToString();
             pet.modData["WorkingPets.IsValleyWorking"] = _isValleyWorking.ToString();
+            pet.modData["WorkingPets.IsFollowing"] = _isFollowing.ToString();
+            pet.modData["WorkingPets.IsExploring"] = _isExploring.ToString();
             
             // Save this pet's inventory
             _inventoryManager?.Save(pet);
@@ -1560,7 +1635,12 @@ namespace WorkingPets.Behaviors
             // === SCAN FOR FORAGEABLES (ONLY IF PLAYER IS ACTIVELY FORAGING) ===
             // This is a simple scan - pet picks up nearby items only when player is actively foraging
             bool playerForaging = IsPlayerActivelyForaging();
-            if (ModEntry.Config.ForageWhileFollowing && playerForaging && petLocation != null && _followState != FollowState.WallPassing && !_foragingTarget.HasValue)
+            
+            // Decrement forage cancel cooldown
+            if (_forageCancelCooldown > 0) _forageCancelCooldown--;
+            
+            // Don't scan while on cooldown from a recent cancel (prevents oscillation)
+            if (ModEntry.Config.ForageWhileFollowing && playerForaging && petLocation != null && _followState != FollowState.WallPassing && !_foragingTarget.HasValue && _forageCancelCooldown <= 0)
             {
                 _forageScanTimer++;
                 if (_forageScanTimer >= FORAGE_SCAN_INTERVAL)
@@ -1611,6 +1691,7 @@ namespace WorkingPets.Behaviors
                     _foragingTarget = null;
                     _forageStuckTicks = 0;
                     _followState = FollowState.Idle;
+                    _forageCancelCooldown = 120; // ~2 second cooldown before scanning for forage again
                     SyncDirectionToTarget(playerPos);
                     // Don't return - continue to normal following logic below
                 }

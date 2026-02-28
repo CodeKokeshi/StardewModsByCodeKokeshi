@@ -16,6 +16,9 @@ namespace WorkingPets.Behaviors
         *********/
         private readonly List<Item?> _inventory;
         private const string INVENTORY_KEY = "WorkingPets.Inventory";
+        
+        /// <summary>The pet that owns this inventory (used for overflow item drops).</summary>
+        private Pet? _ownerPet;
 
         /*********
         ** Constructor
@@ -33,6 +36,9 @@ namespace WorkingPets.Behaviors
         /*********
         ** Properties
         *********/
+        /// <summary>Set the owner pet for this inventory (for overflow drops).</summary>
+        public Pet? OwnerPet { get => _ownerPet; set => _ownerPet = value; }
+
         /// <summary>The pet's inventory as IInventory for menu compatibility.</summary>
         public IList<Item?> Inventory => _inventory;
 
@@ -116,8 +122,8 @@ namespace WorkingPets.Behaviors
                 }
             }
 
-            // Inventory full - drop on ground
-            Pet? pet = ModEntry.GetPlayerPet();
+            // Inventory full - drop on ground near the owning pet (not the first pet found)
+            Pet? pet = _ownerPet ?? ModEntry.GetPlayerPet();
             if (pet != null && pet.currentLocation != null)
             {
                 Game1.createItemDebris(item, pet.Position, 2, pet.currentLocation);

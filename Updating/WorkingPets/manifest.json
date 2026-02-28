@@ -1,7 +1,7 @@
 {
   "Name": "Working Pets",
   "Author": "CodeKokeshi",
-  "Version": "2.0.0",
+  "Version": "1.5.0",
   "Description": "Transform your pets into helpful farmhands! Pet Manager UI to set each pet's mode: Farm Work, Valley Work, Exploration, Follow, or Idle. Features valley-wide debris clearing, tree chopping, autonomous foraging, and smart follow. Press V to open.",
   "UniqueID": "CodeKokeshi.WorkingPets",
   "EntryDll": "WorkingPets.dll",

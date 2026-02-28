@@ -26,10 +26,13 @@ namespace WorkingPets.Behaviors
             { "FoodSnacks", new[] { "(O)194", "(O)210", "(O)216" } }, // Fried Egg, Bread, Tortilla (small fun finds)
         };
 
-        public void PerformDailyScavenge(Pet pet)
+        public void PerformDailyScavenge(Pet pet, PetInventoryManager? petInventory = null)
         {
             if (pet == null)
                 return;
+
+            // Use the pet's own inventory if available, fall back to global
+            var inventory = petInventory ?? ModEntry.InventoryManager;
 
             // Always scavenge overnight (working/following/idle doesn't matter).
             // Keep quantity small, but allow a wide variety of possible items.
@@ -54,8 +57,8 @@ namespace WorkingPets.Behaviors
                 if (newItem == null)
                     continue;
                 
-                // Add to inventory
-                if (ModEntry.InventoryManager.AddItem(newItem))
+                // Add to this pet's inventory (not the global singleton)
+                if (inventory.AddItem(newItem))
                 {
                     addedCount++;
                 }

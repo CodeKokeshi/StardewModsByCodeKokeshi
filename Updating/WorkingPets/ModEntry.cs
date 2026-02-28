@@ -80,6 +80,7 @@ namespace WorkingPets
             helper.Events.GameLoop.GameLaunched += OnGameLaunched;
             helper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
             helper.Events.GameLoop.Saving += OnSaving;
+            helper.Events.GameLoop.ReturnedToTitle += OnReturnedToTitle;
             helper.Events.GameLoop.UpdateTicked += OnUpdateTicked;
             helper.Events.GameLoop.DayStarted += OnDayStarted;
             helper.Events.Display.MenuChanged += OnMenuChanged;
@@ -490,8 +491,36 @@ namespace WorkingPets
         /// <summary>Raised before the game saves.</summary>
         private void OnSaving(object? sender, SavingEventArgs e)
         {
+            // Warp any off-farm pets back home before saving
+            // (follow/explore can strand pets in remote locations)
+            var allPets = MultiPetManager.GetAllPets();
+            foreach (var pet in allPets)
+            {
+                var manager = PetManager.GetManagerForPet(pet);
+                if (manager == null) continue;
+
+                // Stop active modes so pets don't resume in a broken state
+                if (manager.IsFollowing || manager.IsExploring)
+                {
+                    manager.ReturnToIdle();
+                }
+
+                // Warp off-farm pets back to the farm
+                if (pet.currentLocation?.Name != "Farm" && pet.currentLocation?.Name != "FarmHouse")
+                {
+                    Game1.warpCharacter(pet, "Farm", new Microsoft.Xna.Framework.Vector2(54, 8));
+                }
+            }
+
             // Save state for all pets (includes their individual inventories)
             PetManager.SaveAllStates();
+        }
+
+        /// <summary>Raised when returning to the title screen. Clears all static state to prevent cross-save contamination.</summary>
+        private void OnReturnedToTitle(object? sender, StardewModdingAPI.Events.ReturnedToTitleEventArgs e)
+        {
+            PetWorkManager.ClearAllStaticState();
+            PetManager.InitializeAllPets(); // Clears _petManagers, reservations, etc.
         }
 
         /// <summary>Raised every game tick (~60 times per second).</summary>
@@ -515,17 +544,19 @@ namespace WorkingPets
             // Trigger daily scavenge for each pet
             foreach (var pet in allPets)
             {
-                ScavengeManager.PerformDailyScavenge(pet);
-                
-                // Reset daily flags (auto-explore, etc.)
+                // Use per-pet inventory for scavenging
                 var manager = PetManager.GetManagerForPet(pet);
-                manager?.ResetDailyFlags();
+                ScavengeManager.PerformDailyScavenge(pet, manager?.InventoryManager);
                 
-                // Ensure pet is on the farm if it was working
-                if (manager?.IsWorking == true && pet.currentLocation?.Name != "Farm")
+                // Warp pet back to farm BEFORE resetting flags (so we can check IsWorking/IsValleyWorking)
+                if ((manager?.IsWorking == true || manager?.IsValleyWorking == true)
+                    && pet.currentLocation?.Name != "Farm")
                 {
                     Game1.warpCharacter(pet, "Farm", new Microsoft.Xna.Framework.Vector2(54, 8));
                 }
+                
+                // Reset daily flags (auto-explore, etc.) — AFTER warp check
+                manager?.ResetDailyFlags();
             }
 
             // Auto-deposit pet inventory items to matching chests (for each pet)
