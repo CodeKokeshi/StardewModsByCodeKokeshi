@@ -1,0 +1,12 @@
+{
+  "Name": "Max Quality - Auto",
+  "Author": "CodeKokeshi",
+  "Version": "1.2.0",
+  "Description": "Automatically applies iridium quality to items in your inventory and open chests. Designed for mobile-friendly use — no hotkey needed.",
+  "UniqueID": "CodeKokeshi.MaxQualityAuto",
+  "EntryDll": "MaxQualityAuto.dll",
+  "MinimumApiVersion": "4.0.0",
+  "UpdateKeys": [
+    "Nexus:41507"
+  ]
+}
