@@ -406,6 +406,7 @@ namespace CKBetterCheatsMenu
         ** Fishing: All
         *********/
         public bool InstantFishBite { get; set; } = false;
+        public bool AlwaysPerfectCatch { get; set; } = false;
         public bool InstantCatch { get; set; } = false;
         public bool MaxFishQuality { get; set; } = false;
         public bool AlwaysFindTreasure { get; set; } = false;

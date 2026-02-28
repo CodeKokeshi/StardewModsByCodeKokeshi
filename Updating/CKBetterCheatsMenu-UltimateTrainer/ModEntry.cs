@@ -437,11 +437,20 @@ namespace CKBetterCheatsMenu
                 description: "GameLocation.checkAction (BypassAllDoors)"
             );
 
-            // === Freeze Time in Mines (separate prefix from base FreezeTime) ===
+            // === Freeze Time in Mines (now handled by consolidated prefix above) ===
+            // Removed separate MinesPrefix — all freeze logic is in PlayerPatches.Game1_PerformTenMinuteClockUpdate_Prefix
+
+            // === Crop Protection (CropsNeverDie) ===
             TryPatch(
-                original: AccessTools.Method(typeof(Game1), nameof(Game1.performTenMinuteClockUpdate)),
-                prefix: new HarmonyMethod(typeof(WorldPatches), nameof(WorldPatches.Game1_PerformTenMinuteClockUpdate_MinesPrefix)),
-                description: "Game1.performTenMinuteClockUpdate (MinesOnly)"
+                original: AccessTools.Method(typeof(Crop), nameof(Crop.Kill)),
+                prefix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Crop_Kill_Prefix)),
+                description: "Crop.Kill (CropsNeverDie)"
+            );
+
+            TryPatch(
+                original: AccessTools.Method(typeof(Crop), nameof(Crop.IsInSeason)),
+                postfix: new HarmonyMethod(typeof(PlayerPatches), nameof(PlayerPatches.Crop_IsInSeason_Postfix)),
+                description: "Crop.IsInSeason (CropsNeverDie)"
             );
 
             Monitor.Log("All Harmony patches applied!", LogLevel.Debug);
@@ -468,6 +477,9 @@ namespace CKBetterCheatsMenu
 
         private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
         {
+            // Clear cached weapon/tool data to prevent memory leaks
+            PlayerPatches.ClearCachedData();
+
             // Re-read config from disk every time a save is loaded.
             // This ensures returning to title and loading behaves identically to relaunching the game.
             var diskConfig = Helper.ReadConfig<ModConfig>();
@@ -533,6 +545,23 @@ namespace CKBetterCheatsMenu
             else
             {
                 player.ignoreCollisions = false;
+            }
+
+            // === Time Freeze: Reset gameTimeInterval to prevent day darkening ===
+            // Game1.UpdateGameClock runs every frame and updates outdoor lighting based on
+            // gameTimeInterval. If performTenMinuteClockUpdate is skipped (our Harmony prefix),
+            // gameTimeInterval never resets to 0, causing the lighting formula to darken the
+            // screen even though timeOfDay hasn't changed. Resetting it here fixes the bug.
+            {
+                bool shouldFreeze = Config.FreezeTime
+                    || (Config.FreezeTimeIndoors && Game1.currentLocation != null && !Game1.currentLocation.IsOutdoors)
+                    || (Config.FreezeTimeMines && Game1.currentLocation != null
+                        && (Game1.currentLocation is MineShaft || Game1.currentLocation is VolcanoDungeon));
+
+                if (shouldFreeze)
+                {
+                    Game1.gameTimeInterval = 0;
+                }
             }
 
             // No monster spawns - remove all monsters
@@ -703,18 +732,7 @@ namespace CKBetterCheatsMenu
             }
 
             // Animals produce daily — set daysSinceLastLay high so they produce on next check
-            if (Config.AnimalsProduceDaily)
-            {
-                var farm = Game1.getFarm();
-                if (farm != null)
-                {
-                    foreach (var animal in farm.getAllFarmAnimals())
-                    {
-                        if (animal.daysSinceLastLay.Value < 99)
-                            animal.daysSinceLastLay.Value = 99;
-                    }
-                }
-            }
+            // (Moved to OnDayStarted for efficiency — no need to run every second)
 
             // Auto-accept daily quest immediately when enabled
             if (Config.AutoAcceptQuests)
@@ -757,6 +775,39 @@ namespace CKBetterCheatsMenu
                 WorldPatches.CompleteCommunityUpgrades();
             if (Config.InstantToolUpgrade)
                 CompleteToolUpgrade();
+
+            // Animals produce daily — set daysSinceLastLay high at start of day
+            if (Config.AnimalsProduceDaily)
+            {
+                var farm = Game1.getFarm();
+                if (farm != null)
+                {
+                    foreach (var animal in farm.getAllFarmAnimals())
+                    {
+                        if (animal.daysSinceLastLay.Value < 99)
+                            animal.daysSinceLastLay.Value = 99;
+                    }
+                }
+            }
+
+            // CropsNeverDie safety net — revive any already-dead crops
+            if (Config.CropsNeverDie)
+            {
+                int revived = 0;
+                foreach (var location in Game1.locations)
+                {
+                    foreach (var pair in location.terrainFeatures.Pairs)
+                    {
+                        if (pair.Value is HoeDirt dirt && dirt.crop != null && dirt.crop.dead.Value)
+                        {
+                            dirt.crop.dead.Value = false;
+                            revived++;
+                        }
+                    }
+                }
+                if (revived > 0)
+                    Monitor.Log($"[CropsNeverDie] Revived {revived} dead crop(s).", LogLevel.Info);
+            }
         }
 
         private void OnDayEnding(object? sender, DayEndingEventArgs e)
@@ -782,17 +833,11 @@ namespace CKBetterCheatsMenu
             if (!Context.IsWorldReady || !Config.ModEnabled)
                 return;
 
-            // Freeze time indoors
-            if (Config.FreezeTimeIndoors && !Game1.currentLocation.IsOutdoors)
-            {
-                Game1.timeOfDay = e.OldTime;
-            }
-
-            // Freeze time in mines (backup for when Harmony prefix might not fire)
-            if (Config.FreezeTimeMines && (Game1.currentLocation is MineShaft || Game1.currentLocation is VolcanoDungeon))
-            {
-                Game1.timeOfDay = e.OldTime;
-            }
+            // Note: FreezeTime, FreezeTimeIndoors, and FreezeTimeMines are all handled by the
+            // consolidated Harmony prefix on Game1.performTenMinuteClockUpdate (PlayerPatches).
+            // The gameTimeInterval reset in OnUpdateTicked prevents day darkening.
+            // No OnTimeChanged fallback is needed — the Harmony prefix prevents the time change
+            // from occurring in the first place, avoiding all side effects.
         }
 
         private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
@@ -880,6 +925,7 @@ namespace CKBetterCheatsMenu
 
             // Fishing: All
             Config.InstantFishBite = saved.InstantFishBite;
+            Config.AlwaysPerfectCatch = saved.AlwaysPerfectCatch;
             Config.InstantCatch = saved.InstantCatch;
             Config.MaxFishQuality = saved.MaxFishQuality;
             Config.AlwaysFindTreasure = saved.AlwaysFindTreasure;

@@ -147,6 +147,8 @@
     "fishing.section.fishing": "Fishing",
     "fishing.instant-bite.label": "Instant Fish Bite",
     "fishing.instant-bite.tooltip": "Fish bite immediately when you cast.",
+    "fishing.perfect-catch.label": "Always Perfect Catch",
+    "fishing.perfect-catch.tooltip": "Automatically get a perfect catch every time (no minigame skill needed).",
     "fishing.instant-catch.label": "Instant Catch",
     "fishing.instant-catch.tooltip": "Skip the fishing minigame entirely.",
     "fishing.max-quality.label": "Max Fish Quality",

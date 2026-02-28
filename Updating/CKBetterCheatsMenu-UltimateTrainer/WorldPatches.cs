@@ -725,28 +725,5 @@ namespace CKBetterCheatsMenu
             return true;
         }
 
-        /*********
-        ** Freeze Time in Mines
-        *********/
-
-        /// <summary>Freeze time when in mines/skull cavern/volcano.</summary>
-        public static bool Game1_PerformTenMinuteClockUpdate_MinesPrefix()
-        {
-            if (!Context.IsWorldReady || !ModEntry.Config.ModEnabled)
-                return true;
-
-            if (ModEntry.Config.FreezeTimeMines && Game1.currentLocation is MineShaft)
-            {
-                return false;
-            }
-
-            // Also check for volcano dungeon
-            if (ModEntry.Config.FreezeTimeMines && Game1.currentLocation is VolcanoDungeon)
-            {
-                return false;
-            }
-
-            return true;
-        }
     }
 }

@@ -325,6 +325,9 @@
                 <cheat-toggle label={#fishing.instant-bite.label}
                               tooltip={#fishing.instant-bite.tooltip}
                               checked={<>InstantFishBite} />
+                <cheat-toggle label={#fishing.perfect-catch.label}
+                              tooltip={#fishing.perfect-catch.tooltip}
+                              checked={<>AlwaysPerfectCatch} />
                 <cheat-toggle label={#fishing.instant-catch.label}
                               tooltip={#fishing.instant-catch.tooltip}
                               checked={<>InstantCatch} />

@@ -156,6 +156,7 @@ namespace CKBetterCheatsMenu
         ** Fishing
         *********/
         [Notify] private bool instantFishBite;
+        [Notify] private bool alwaysPerfectCatch;
         [Notify] private bool instantCatch;
         [Notify] private bool maxFishQuality;
         [Notify] private bool alwaysFindTreasure;
@@ -907,6 +908,7 @@ namespace CKBetterCheatsMenu
             AlwaysMaxLuck = config.AlwaysMaxLuck;
 
             InstantFishBite = config.InstantFishBite;
+            AlwaysPerfectCatch = config.AlwaysPerfectCatch;
             InstantCatch = config.InstantCatch;
             MaxFishQuality = config.MaxFishQuality;
             AlwaysFindTreasure = config.AlwaysFindTreasure;
@@ -1015,6 +1017,7 @@ namespace CKBetterCheatsMenu
             config.AlwaysMaxLuck = AlwaysMaxLuck;
 
             config.InstantFishBite = InstantFishBite;
+            config.AlwaysPerfectCatch = AlwaysPerfectCatch;
             config.InstantCatch = InstantCatch;
             config.MaxFishQuality = MaxFishQuality;
             config.AlwaysFindTreasure = AlwaysFindTreasure;
@@ -1158,6 +1161,7 @@ namespace CKBetterCheatsMenu
 
                 // Fishing: All
                 InstantFishBite = InstantFishBite,
+                AlwaysPerfectCatch = AlwaysPerfectCatch,
                 InstantCatch = InstantCatch,
                 MaxFishQuality = MaxFishQuality,
                 AlwaysFindTreasure = AlwaysFindTreasure,

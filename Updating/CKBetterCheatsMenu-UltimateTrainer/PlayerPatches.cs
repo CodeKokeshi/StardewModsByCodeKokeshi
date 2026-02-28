@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Menus;
+using StardewValley.Locations;
 using StardewValley.Monsters;
 using StardewValley.TerrainFeatures;
 using StardewValley.Tools;
@@ -16,7 +17,7 @@ namespace CKBetterCheatsMenu
     /// <summary>Harmony patches for player cheats.</summary>
     public static class PlayerPatches
     {
-        /// <summary>Patch to make player invincible (Infinite HP / block all damage).</summary>
+        /// <summary>Patch to make player invincible (Infinite HP / block all damage) and apply AddedDefense.</summary>
         public static bool Farmer_TakeDamage_Prefix(Farmer __instance, ref int damage, Monster damager)
         {
             if (!Context.IsWorldReady || __instance != Game1.player || !ModEntry.Config.ModEnabled)
@@ -26,6 +27,12 @@ namespace CKBetterCheatsMenu
             {
                 damage = 0;
                 return false;
+            }
+
+            // Apply added defense (reduces incoming damage before game's own defense calc)
+            if (ModEntry.Config.AddedDefense > 0)
+            {
+                damage = Math.Max(0, damage - ModEntry.Config.AddedDefense);
             }
 
             return true;
@@ -317,16 +324,24 @@ namespace CKBetterCheatsMenu
             }
         }
 
-        /// <summary>Patch to freeze time.</summary>
+        /// <summary>Patch to freeze time (handles all three freeze modes: global, indoors, mines).</summary>
         public static bool Game1_PerformTenMinuteClockUpdate_Prefix()
         {
             if (!Context.IsWorldReady || !ModEntry.Config.ModEnabled)
                 return true;
 
+            // Global freeze
             if (ModEntry.Config.FreezeTime)
-            {
                 return false;
-            }
+
+            // Freeze indoors only
+            if (ModEntry.Config.FreezeTimeIndoors && Game1.currentLocation != null && !Game1.currentLocation.IsOutdoors)
+                return false;
+
+            // Freeze in mines/skull cavern/volcano
+            if (ModEntry.Config.FreezeTimeMines && Game1.currentLocation != null
+                && (Game1.currentLocation is MineShaft || Game1.currentLocation is VolcanoDungeon))
+                return false;
 
             return true;
         }
@@ -431,7 +446,8 @@ namespace CKBetterCheatsMenu
                 fish.TryGetTempData<bool>("IsBossFish", out bool bossFish);
                 Farmer who = __instance.lastUser;
 
-                int fishSize = 1;
+                // Generate a reasonable random fish size (game uses 15-60+ range)
+                int fishSize = Game1.random.Next(15, 55);
                 int quality = ModEntry.Config.MaxFishQuality ? 4 : 0;
                 bool treasureCaught = ModEntry.Config.AlwaysFindTreasure;
 
@@ -441,7 +457,7 @@ namespace CKBetterCheatsMenu
                     quality,
                     0,
                     treasureCaught,
-                    true,
+                    true,       // wasPerfect
                     false,
                     fish.SetFlagOnPickup,
                     bossFish,
@@ -454,7 +470,7 @@ namespace CKBetterCheatsMenu
             return true;
         }
 
-        /// <summary>Patch to force treasure in fishing minigame.</summary>
+        /// <summary>Patch to force treasure and/or perfect catch in fishing minigame.</summary>
         public static void BobberBar_Constructor_Postfix(BobberBar __instance)
         {
             if (!Context.IsWorldReady || !ModEntry.Config.ModEnabled)
@@ -464,6 +480,13 @@ namespace CKBetterCheatsMenu
             {
                 __instance.treasure = true;
                 __instance.treasureAppearTimer = 0f;
+            }
+
+            // Always perfect catch: instantly complete the minigame with a perfect catch
+            if (ModEntry.Config.AlwaysPerfectCatch)
+            {
+                __instance.perfect = true;
+                __instance.distanceFromCatching = 1f;
             }
         }
 
@@ -557,6 +580,40 @@ namespace CKBetterCheatsMenu
 
             if (ModEntry.Config.GiveGiftsAnytime)
                 __result = 0;
+        }
+
+        /*********
+        ** Crop Protection (CropsNeverDie)
+        *********/
+
+        /// <summary>Prevent crops from being killed (season change, lightning, etc.).</summary>
+        public static bool Crop_Kill_Prefix()
+        {
+            if (!ModEntry.Config.ModEnabled || !ModEntry.Config.CropsNeverDie)
+                return true;
+
+            return false; // Skip Kill() entirely
+        }
+
+        /// <summary>Override Crop.IsInSeason to always return true when CropsNeverDie is enabled, preventing season-based crop removal.</summary>
+        public static void Crop_IsInSeason_Postfix(ref bool __result)
+        {
+            if (!ModEntry.Config.ModEnabled || !ModEntry.Config.CropsNeverDie)
+                return;
+
+            __result = true;
+        }
+
+        /*********
+        ** Cache Cleanup
+        *********/
+
+        /// <summary>Clear cached weapon/tool data to prevent memory leaks across save loads.</summary>
+        public static void ClearCachedData()
+        {
+            originalCritChances.Clear();
+            originalCritMultipliers.Clear();
+            originalToolEfficiency.Clear();
         }
     }
 }
