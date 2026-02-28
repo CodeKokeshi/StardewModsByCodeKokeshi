@@ -6,7 +6,7 @@
   "UniqueID": "CodeKokeshi.PetAdopter",
   "EntryDll": "PetAdopter.dll",
   "MinimumApiVersion": "4.0.0",
-  "UpdateKeys": [],
+  "UpdateKeys": ["Nexus:42945"],
   "Dependencies": [
     {
       "UniqueID": "focustense.StardewUI",

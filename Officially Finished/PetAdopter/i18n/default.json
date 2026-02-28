@@ -1,0 +1,22 @@
+{
+  "menu.title": "Pet Adopter",
+  "menu.adopt": "Adopt",
+
+  "status.no-pets-found": "No pet types found!",
+  "status.no-bowls": "No empty pet bowls! ({{totalPets}} pet(s) on farm)",
+  "status.no-bowls-short": "No pet bowls available! Build one first.",
+  "status.available": "{{bowls}} bowl(s) available  ·  {{totalPets}} pet(s) on farm",
+
+  "log.loaded": "Pet Adopter loaded! Press your hotkey to open the adoption menu.",
+  "log.adopted": "Adopted {{petType}} (breed {{breedId}}) named \"{{petName}}\".",
+  "log.stardewui-missing": "StardewUI Framework not found! Cannot create adoption menu.",
+  "log.stardewui-ok": "StardewUI integration complete!",
+  "log.menu-no-stardewui": "Cannot open adoption menu — StardewUI not loaded.",
+  "log.menu-error": "Error opening adoption menu: {{error}}",
+  "log.sprite-fail": "Failed to load sprite for {{petType}}/{{breedId}}: {{error}}",
+
+  "gmcm.section-title": "Pet Adopter",
+  "gmcm.description": "Adopt any pet breed for free with a simple UI. Configure your hotkey below.",
+  "gmcm.open-menu-key.name": "Open Menu Key",
+  "gmcm.open-menu-key.tooltip": "The key combination to open the pet adoption menu."
+}

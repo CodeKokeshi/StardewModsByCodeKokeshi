@@ -23,16 +23,20 @@ internal class PetOption
     public string PetType { get; }
     public string BreedId { get; }
     public string DisplayName { get; }
-    public Texture2D IconTexture { get; }
-    public Rectangle IconSourceRect { get; }
 
-    public PetOption(string petType, string breedId, string displayName, Texture2D iconTexture, Rectangle iconSourceRect)
+    /// <summary>The actual pet sprite sheet (e.g. Animals/Cat0) for a full appearance preview.</summary>
+    public Texture2D SpriteTexture { get; }
+
+    /// <summary>Source rect for one frame of the pet sprite (32x32, sitting pose).</summary>
+    public Rectangle SpriteSourceRect { get; }
+
+    public PetOption(string petType, string breedId, string displayName, Texture2D spriteTexture, Rectangle spriteSourceRect)
     {
         PetType = petType;
         BreedId = breedId;
         DisplayName = displayName;
-        IconTexture = iconTexture;
-        IconSourceRect = iconSourceRect;
+        SpriteTexture = spriteTexture;
+        SpriteSourceRect = spriteSourceRect;
     }
 }
 
@@ -45,10 +49,10 @@ internal partial class PetAdopterViewModel : INotifyPropertyChanged
 
     // ── Bound properties ──
 
-    /// <summary>The icon sprite to display (texture + source rect tuple for StardewUI).</summary>
+    /// <summary>The pet sprite to display (texture + source rect tuple for StardewUI).</summary>
     [Notify] private Tuple<Texture2D, Rectangle>? petSprite;
 
-    /// <summary>Display label, e.g. "Cat — Breed 1".</summary>
+    /// <summary>Display label, e.g. "Dog 1".</summary>
     [Notify] private string petLabel = "";
 
     /// <summary>Status text shown below the adopt button.</summary>
@@ -60,15 +64,29 @@ internal partial class PetAdopterViewModel : INotifyPropertyChanged
     /// <summary>Counter text like "2 / 6".</summary>
     [Notify] private string counterText = "";
 
+    /// <summary>Localized adopt button text.</summary>
+    [Notify] private string adoptButtonText = "Adopt";
+
+    /// <summary>Localized menu title.</summary>
+    [Notify] private string menuTitle = "Pet Adopter";
+
     // ── Constructor ──
     public PetAdopterViewModel()
     {
+        // Load i18n strings
+        var i18n = ModEntry.ModHelper?.Translation;
+        if (i18n != null)
+        {
+            AdoptButtonText = i18n.Get("menu.adopt");
+            MenuTitle = i18n.Get("menu.title");
+        }
+
         LoadPetOptions();
         if (petOptions.Count > 0)
             UpdateDisplay();
         else
         {
-            PetLabel = "No pet types found!";
+            PetLabel = i18n?.Get("status.no-pets-found") ?? "No pet types found!";
             CanAdopt = false;
         }
 
@@ -106,7 +124,8 @@ internal partial class PetAdopterViewModel : INotifyPropertyChanged
         int availableBowls = CountAvailableBowls();
         if (availableBowls <= 0)
         {
-            StatusText = "No pet bowls available! Build one first.";
+            var i18n = ModEntry.ModHelper?.Translation;
+            StatusText = i18n?.Get("status.no-bowls-short") ?? "No pet bowls available! Build one first.";
             CanAdopt = false;
             Game1.playSound("cancel");
             return;
@@ -135,30 +154,51 @@ internal partial class PetAdopterViewModel : INotifyPropertyChanged
         {
             string petType = kvp.Key;
             PetData data = kvp.Value;
-            string typeDisplayName = TokenParser.ParseText(data.DisplayName) ?? petType;
+            string typeDisplayName = NormalizePetTypeName(TokenParser.ParseText(data.DisplayName) ?? petType);
 
             foreach (PetBreed breed in data.Breeds)
             {
                 try
                 {
-                    var texture = Game1.content.Load<Texture2D>(breed.IconTexture);
-                    var srcRect = breed.IconSourceRect;
-                    string label = $"{typeDisplayName}  —  Breed {breed.Id}";
-                    petOptions.Add(new PetOption(petType, breed.Id, label, texture, srcRect));
+                    // Load the actual pet sprite sheet (e.g. "Animals/Cat0") for a real appearance preview.
+                    string spriteSheetPath = breed.Texture;
+                    var spriteTexture = Game1.content.Load<Texture2D>(spriteSheetPath);
+                    // Frame 0 = sitting/facing-down pose, 32x32 per frame.
+                    var srcRect = new Rectangle(0, 0, 32, 32);
+                    // Display as "Dog 1", "Cat 2" etc. (1-indexed for humans).
+                    int displayNumber = int.TryParse(breed.Id, out int breedNum) ? breedNum + 1 : petOptions.Count + 1;
+                    string label = $"{typeDisplayName} {displayNumber}";
+                    petOptions.Add(new PetOption(petType, breed.Id, label, spriteTexture, srcRect));
                 }
                 catch (Exception ex)
                 {
-                    ModEntry.ModMonitor?.Log($"Failed to load icon for {petType}/{breed.Id}: {ex.Message}", LogLevel.Warn);
+                    ModEntry.ModMonitor?.Log(
+                        ModEntry.ModHelper?.Translation.Get("log.sprite-fail", new { petType, breedId = breed.Id, error = ex.Message })
+                        ?? $"Failed to load sprite for {petType}/{breed.Id}: {ex.Message}",
+                        LogLevel.Warn);
                 }
             }
         }
+    }
+
+    private static string NormalizePetTypeName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return name;
+
+        if (name.Equals("dog", StringComparison.OrdinalIgnoreCase))
+            return "Dog";
+        if (name.Equals("cat", StringComparison.OrdinalIgnoreCase))
+            return "Cat";
+
+        return name;
     }
 
     private void UpdateDisplay()
     {
         if (petOptions.Count == 0) return;
         var opt = petOptions[currentIndex];
-        PetSprite = Tuple.Create(opt.IconTexture, opt.IconSourceRect);
+        PetSprite = Tuple.Create(opt.SpriteTexture, opt.SpriteSourceRect);
         PetLabel = opt.DisplayName;
         CounterText = $"{currentIndex + 1} / {petOptions.Count}";
         RefreshStatus();
@@ -168,15 +208,16 @@ internal partial class PetAdopterViewModel : INotifyPropertyChanged
     {
         int bowls = CountAvailableBowls();
         int totalPets = Utility.getAllPets().Count;
+        var i18n = ModEntry.ModHelper?.Translation;
 
         if (bowls <= 0)
         {
-            StatusText = $"No empty pet bowls! ({totalPets} pet(s) on farm)";
+            StatusText = i18n?.Get("status.no-bowls", new { totalPets }) ?? $"No empty pet bowls! ({totalPets} pet(s) on farm)";
             CanAdopt = false;
         }
         else
         {
-            StatusText = $"{bowls} bowl(s) available  ·  {totalPets} pet(s) on farm";
+            StatusText = i18n?.Get("status.available", new { bowls, totalPets }) ?? $"{bowls} bowl(s) available  ·  {totalPets} pet(s) on farm";
             CanAdopt = true;
         }
     }
@@ -250,6 +291,9 @@ internal partial class PetAdopterViewModel : INotifyPropertyChanged
         Game1.exitActiveMenu();
         Game1.drawObjectDialogue(Game1.content.LoadString("Strings\\1_6_Strings:AdoptedPet", name));
 
-        ModEntry.ModMonitor?.Log($"[Pet Adopter] Adopted {selected.PetType} (breed {selected.BreedId}) named \"{name}\".", LogLevel.Info);
+        ModEntry.ModMonitor?.Log(
+            ModEntry.ModHelper?.Translation.Get("log.adopted", new { petType = selected.PetType, breedId = selected.BreedId, petName = name })
+            ?? $"[Pet Adopter] Adopted {selected.PetType} (breed {selected.BreedId}) named \"{name}\".",
+            LogLevel.Info);
     }
 }

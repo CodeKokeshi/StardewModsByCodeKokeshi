@@ -6,7 +6,7 @@
     <banner background={@Mods/StardewUI/Sprites/BannerBackground}
             background-border-thickness="48,0"
             padding="12"
-            text="Pet Adopter" />
+            text={MenuTitle} />
 
     <!-- Main content frame -->
     <frame layout="480px content"
@@ -18,7 +18,7 @@
 
         <lane orientation="vertical" horizontal-content-alignment="middle">
 
-            <!-- Pet icon row: <-- [icon] --> -->
+            <!-- Pet icon row: [arrow left] [icon] [arrow right] -->
             <lane orientation="horizontal"
                   horizontal-content-alignment="middle"
                   vertical-content-alignment="middle"
@@ -37,12 +37,12 @@
                 </button>
 
                 <!-- Pet portrait -->
-                <frame layout="96px 96px"
+                <frame layout="128px 128px"
                        background={@Mods/StardewUI/Sprites/MenuSlotTransparent}
                        horizontal-content-alignment="middle"
                        vertical-content-alignment="middle">
-                    <image layout="80px"
-                           sprite={<>PetSprite}
+                    <image layout="112px"
+                           sprite={PetSprite}
                            fit="Stretch" />
                 </frame>
 
@@ -80,14 +80,13 @@
                        background={@Mods/StardewUI/Sprites/ButtonDark}
                        padding="12, 8"
                        horizontal-content-alignment="middle">
-                    <label text="Adopt" bold="true" color="#FFF" />
+                    <label text={AdoptButtonText} bold="true" color="#FFF" />
                 </frame>
             </button>
 
             <!-- Status text -->
             <label layout="content"
                    margin="0, 4, 0, 0"
-                   color="#888"
                    text={StatusText} />
 
         </lane>

@@ -8,3 +8,5 @@ D:\December 2025 OS\Development\StardewModding\Officially Finished\PetAdopter\bi
 D:\December 2025 OS\Development\StardewModding\Officially Finished\PetAdopter\bin\Debug\net6.0\PetAdopter.deps.json
 D:\December 2025 OS\Development\StardewModding\Officially Finished\PetAdopter\bin\Debug\net6.0\PetAdopter.dll
 D:\December 2025 OS\Development\StardewModding\Officially Finished\PetAdopter\obj\Debug\net6.0\PetAdopter.dll
+D:\December 2025 OS\Development\StardewModding\Officially Finished\PetAdopter\bin\Debug\net6.0\assets\views\left_arrow.png
+D:\December 2025 OS\Development\StardewModding\Officially Finished\PetAdopter\bin\Debug\net6.0\assets\views\right_arrow.png
