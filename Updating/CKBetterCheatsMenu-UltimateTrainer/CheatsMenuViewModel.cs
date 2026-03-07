@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -823,7 +824,20 @@ namespace CKBetterCheatsMenu
         *********/
         public CheatsMenuViewModel()
         {
-            LoadFromConfig(ModEntry.Config);
+            try
+            {
+                LoadFromConfig(ModEntry.Config);
+            }
+            catch (Exception ex)
+            {
+                // Defensive fallback: FormatException can occur when Windows regional settings use a
+                // comma decimal separator, or when another mod writes incompatible data into a shared
+                // memory space. Load a clean set of defaults so the menu can still open normally.
+                ModEntry.ModMonitor.Log(
+                    $"[CKBetterCheatsMenu] Failed to load config values — falling back to safe defaults. Detail: {ex.Message}",
+                    LogLevel.Warn);
+                try { LoadFromConfig(new ModConfig()); } catch { /* Continue with source-generator property defaults. */ }
+            }
             InitTabs();
             RefreshWarpLocations();
 
@@ -1240,9 +1254,9 @@ namespace CKBetterCheatsMenu
                 Game1.addHUDMessage(new HUDMessage(message, type));
         }
 
-        public Func<float, string> FormatMultiplier { get; } = value => $"{value:F1}x";
+        public Func<float, string> FormatMultiplier { get; } = value => $"{value.ToString("F1", CultureInfo.InvariantCulture)}x";
 
-        public Func<float, string> FormatFlat { get; } = value => $"+{value:F1}";
+        public Func<float, string> FormatFlat { get; } = value => $"+{value.ToString("F1", CultureInfo.InvariantCulture)}";
 
         public Func<float, string> FormatInt { get; } = value => $"{(int)value}";
 
@@ -1277,7 +1291,7 @@ namespace CKBetterCheatsMenu
         public Func<float, string> FormatLuck { get; } = value =>
         {
             if (value <= -0.5f) return T("format.disabled");
-            return $"{value:F2}";
+            return value.ToString("F2", CultureInfo.InvariantCulture);
         };
 
         public Func<float, string> FormatToolArea { get; } = value =>
@@ -1289,13 +1303,13 @@ namespace CKBetterCheatsMenu
         public Func<float, string> FormatRadius { get; } = value =>
         {
             int v = (int)value;
-            return ModEntry.ModHelper.Translation.Get("format.radius", new { px = v, tiles = $"{v / 64f:F1}" });
+            return ModEntry.ModHelper.Translation.Get("format.radius", new { px = v, tiles = (v / 64f).ToString("F1", CultureInfo.InvariantCulture) });
         };
 
         public Func<float, string> FormatBuyPrice { get; } = value =>
         {
             if (value <= 0.01f) return T("format.buy-free");
-            return $"{value:F1}x";
+            return $"{value.ToString("F1", CultureInfo.InvariantCulture)}x";
         };
 
         public Func<float, string> FormatWeather { get; } = value =>

@@ -1077,9 +1077,43 @@ namespace CKBetterCheatsMenu
 
                 Game1.activeClickableMenu = controller.Menu;
             }
+            catch (FormatException fex)
+            {
+                // System.FormatException is typically caused by Windows regional settings using a
+                // comma decimal separator, or by another mod writing data in an incompatible format.
+                // Retry with a clean default config so the menu can always open normally.
+                Monitor.Log($"[CKBetterCheatsMenu] FormatException while opening menu (likely locale or mod conflict) — retrying with safe defaults. Detail: {fex.Message}", LogLevel.Warn);
+                try
+                {
+                    var safeViewModel = new CheatsMenuViewModel();
+                    safeViewModel.LoadFromConfig(new ModConfig
+                    {
+                        ModEnabled = Config.ModEnabled,
+                        OpenMenuKey = Config.OpenMenuKey,
+                        EnableNotifications = Config.EnableNotifications
+                    });
+                    var safeController = viewEngine.CreateMenuControllerFromAsset(
+                        "Mods/CodeKokeshi.CKBetterCheatsMenu/Views/CheatsMenu",
+                        safeViewModel
+                    );
+                    safeController.EnableCloseButton();
+                    safeController.DimmingAmount = 0.75f;
+                    safeController.Closing += () =>
+                    {
+                        safeViewModel.SaveToConfig(Config);
+                        Monitor.Log("Cheats synced to runtime config (safe-defaults fallback).", LogLevel.Trace);
+                    };
+                    Game1.activeClickableMenu = safeController.Menu;
+                    Monitor.Log("[CKBetterCheatsMenu] Menu opened with safe default values.", LogLevel.Info);
+                }
+                catch (Exception fallbackEx)
+                {
+                    Monitor.Log($"[CKBetterCheatsMenu] Critical: could not open cheats menu even with safe defaults: {fallbackEx.Message}", LogLevel.Error);
+                }
+            }
             catch (Exception ex)
             {
-                Monitor.Log($"Error opening cheats menu: {ex.Message}", LogLevel.Error);
+                Monitor.Log($"[CKBetterCheatsMenu] Error opening cheats menu: {ex.Message}", LogLevel.Error);
             }
         }
     }

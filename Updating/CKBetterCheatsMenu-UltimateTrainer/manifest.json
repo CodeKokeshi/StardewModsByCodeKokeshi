@@ -1,7 +1,7 @@
 {
   "Name": "CK Better Cheats Menu",
   "Author": "CodeKokeshi",
-  "Version": "1.1.0",
+  "Version": "1.1.1",
   "Description": "Comprehensive cheats menu mod with a beautiful StardewUI tabbed interface. Customize movement, stamina, health, combat, tools, skills, fishing, and much more — all organized into easy-to-navigate tabs.",
   "UniqueID": "CodeKokeshi.CKBetterCheatsMenu",
   "EntryDll": "CKBetterCheatsMenu.dll",
